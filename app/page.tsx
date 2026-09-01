@@ -43,6 +43,7 @@ interface Spot {
   longitude: number;
   image_url?: string;
   user_id?: string;
+  created_at?: string;
 }
 
 const CATEGORIES = [
@@ -79,9 +80,11 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [copiedSpotId, setCopiedSpotId] = useState<string | null>(null);
 
-  // Search State
+  // Search & Autocomplete State
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
   // Spot Detail View State
@@ -160,7 +163,11 @@ export default function Home() {
 
   const fetchSpots = async () => {
     try {
-      const { data, error } = await supabase.from('spots').select('*');
+      const { data, error } = await supabase
+        .from('spots')
+        .select('*')
+        .order('id', { ascending: false });
+
       if (!error && data) {
         setSpots(data as Spot[]);
       }
@@ -235,6 +242,49 @@ export default function Home() {
       }
     }
   }, [loading, spots]);
+
+  // Live Autocomplete Search Handler
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 3) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
+        );
+        const data = await res.json();
+        setSearchResults(data || []);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error('Search error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSelectSearchResult = (item: any) => {
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    setShowDropdown(false);
+    setSearchQuery(item.display_name);
+
+    if (map.current) {
+      map.current.flyTo({
+        center: [lon, lat],
+        zoom: 16,
+        essential: true,
+      });
+    }
+  };
 
   // Filter spots by category
   const filteredSpots = spots.filter((spot) => {
@@ -326,7 +376,7 @@ export default function Home() {
         });
         return;
       } catch (err) {
-        // Fallback to clipboard if share modal is dismissed or unsupported
+        // Fallback to clipboard
       }
     }
 
@@ -412,40 +462,6 @@ export default function Home() {
       setViewingSpot(null);
     }
     setDeleting(false);
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-    if (!query || !map.current) return;
-
-    setIsSearching(true);
-    try {
-      const coordMatch = query.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
-      if (coordMatch) {
-        const lat = parseFloat(coordMatch[1]);
-        const lon = parseFloat(coordMatch[3]);
-        dropPreviewAndOpenModal(lat, lon, '');
-        setIsSearching(false);
-        return;
-      }
-
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
-      );
-      const data = await res.json();
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
-        dropPreviewAndOpenModal(lat, lon, query);
-      } else {
-        alert('Location not found. Try entering GPS coordinates or clicking directly on the map.');
-      }
-    } catch (err) {
-      console.error('Search error:', err);
-    } finally {
-      setIsSearching(false);
-    }
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -535,7 +551,7 @@ export default function Home() {
           previewMarkerRef.current = null;
         }
 
-        setSpots((prev) => [...prev, data[0] as Spot]);
+        setSpots((prev) => [data[0] as Spot, ...prev]);
         setIsModalOpen(false);
         setSearchQuery('');
 
@@ -561,7 +577,6 @@ export default function Home() {
     setViewingSpot(spot);
     setIsDrawerOpen(false);
 
-    // Update URL bar without reload for easy manual copying
     if (spot.id && typeof window !== 'undefined') {
       window.history.replaceState(null, '', `?spot=${spot.id}`);
     }
@@ -689,7 +704,7 @@ export default function Home() {
                 display: 'flex',
                 alignItems: 'center',
               }}
-              title="View All Spots"
+              title="View Field Notes"
             >
               <List style={{ width: '15px', height: '15px' }} />
             </button>
@@ -722,52 +737,93 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} style={{ position: 'relative', width: '100%' }}>
-          <Search
-            style={{
-              position: 'absolute',
-              left: '14px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#94a3b8',
-              width: '16px',
-              height: '16px',
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Search address, landmark, or GPS coords..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              backgroundColor: '#ffffff',
-              padding: '12px 40px 12px 38px',
-              fontSize: '13px',
-              borderRadius: '14px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
-              outline: 'none',
-              color: '#0f172a',
-            }}
-          />
-          {isSearching && (
-            <Loader2
+        {/* Search Bar with Live Autocomplete */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
+            <Search
               style={{
                 position: 'absolute',
-                right: '14px',
+                left: '14px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#ef4444',
+                color: '#94a3b8',
                 width: '16px',
                 height: '16px',
-                animation: 'spin 1s linear infinite',
               }}
             />
+            <input
+              type="text"
+              placeholder="Search address, landmark, or GPS coords..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: '#ffffff',
+                padding: '12px 40px 12px 38px',
+                fontSize: '13px',
+                borderRadius: showDropdown ? '14px 14px 0 0' : '14px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
+                outline: 'none',
+                color: '#0f172a',
+              }}
+            />
+            {isSearching && (
+              <Loader2
+                style={{
+                  position: 'absolute',
+                  right: '14px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#ef4444',
+                  width: '16px',
+                  height: '16px',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+            )}
+          </form>
+
+          {/* Autocomplete Dropdown */}
+          {showDropdown && searchResults.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: '#ffffff',
+                borderRadius: '0 0 14px 14px',
+                border: '1px solid #e2e8f0',
+                borderTop: 'none',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                maxHeight: '220px',
+                overflowY: 'auto',
+                zIndex: 10000,
+              }}
+            >
+              {searchResults.map((item, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectSearchResult(item)}
+                  style={{
+                    padding: '10px 14px',
+                    fontSize: '12px',
+                    color: '#334155',
+                    cursor: 'pointer',
+                    borderBottom: idx < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                >
+                  {item.display_name}
+                </div>
+              ))}
+            </div>
           )}
-        </form>
+        </div>
 
         {/* Category Filter Pills */}
         <div
@@ -936,7 +992,6 @@ export default function Home() {
             </div>
 
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              {/* Share Spot Button */}
               <button
                 onClick={() => handleShareSpot(viewingSpot)}
                 style={{
@@ -963,7 +1018,6 @@ export default function Home() {
                 )}
               </button>
 
-              {/* Creator-Only Controls */}
               {currentUser && viewingSpot.user_id === currentUser.id && (
                 <>
                   <button
@@ -1012,7 +1066,6 @@ export default function Home() {
             </p>
           )}
 
-          {/* Navigation Buttons */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${viewingSpot.latitude},${viewingSpot.longitude}`}
@@ -1060,7 +1113,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Slide-Out List / Drawer View */}
+      {/* 5. Slide-Out List / Field Notes Drawer View */}
       {isDrawerOpen && (
         <div
           style={{
@@ -1088,7 +1141,10 @@ export default function Home() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Saved Spots</h2>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Field Notes</h2>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Latest spots logged on the map</p>
+              </div>
               <button
                 onClick={() => setIsDrawerOpen(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
@@ -1100,7 +1156,7 @@ export default function Home() {
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {spots.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
-                  No spots saved yet. Click the map or search to add one!
+                  No spots logged yet. Click the map or search to add one!
                 </p>
               ) : (
                 spots.map((spot) => (
@@ -1210,7 +1266,6 @@ export default function Home() {
               Sign in to curate, pin, and protect your favorite local spots.
             </p>
 
-            {/* Google OAuth Button */}
             <button
               onClick={handleGoogleSignIn}
               style={{
@@ -1258,7 +1313,6 @@ export default function Home() {
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
             </div>
 
-            {/* Email Magic Link Form */}
             {magicLinkSent ? (
               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
                 <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 6px auto' }} />
