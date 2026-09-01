@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Ensure maplibre canvas stays behind UI overlays */
+.maplibregl-canvas-container {
+  z-index: 0 !important;
+}
+
+.maplibregl-control-container {
+  z-index: 10 !important;
+}
