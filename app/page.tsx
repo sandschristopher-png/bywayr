@@ -30,6 +30,8 @@ import {
   CheckCircle2,
   Share2,
   Check,
+  Bookmark,
+  BookmarkCheck,
 } from 'lucide-react';
 
 interface Spot {
@@ -78,7 +80,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry'>('fieldNotes');
   const [copiedSpotId, setCopiedSpotId] = useState<string | null>(null);
+
+  // Must-Try / Bookmarks State
+  const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
+  const [savingBookmark, setSavingBookmark] = useState(false);
 
   // Search & Autocomplete State
   const [searchQuery, setSearchQuery] = useState('');
@@ -159,6 +166,7 @@ export default function Home() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setMustTrySpotIds([]);
   };
 
   const fetchSpots = async () => {
@@ -178,9 +186,64 @@ export default function Home() {
     }
   };
 
+  const fetchMustTryBookmarks = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('spot_id')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        setMustTrySpotIds(data.map((item: any) => item.spot_id));
+      }
+    } catch (err) {
+      console.error('Failed to load bookmarks:', err);
+    }
+  };
+
   useEffect(() => {
     fetchSpots();
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      fetchMustTryBookmarks(currentUser.id);
+    } else {
+      setMustTrySpotIds([]);
+    }
+  }, [currentUser]);
+
+  const toggleMustTry = async (spotId?: string) => {
+    if (!spotId) return;
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setSavingBookmark(true);
+    const isBookmarked = mustTrySpotIds.includes(spotId);
+
+    if (isBookmarked) {
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('spot_id', spotId);
+
+      if (!error) {
+        setMustTrySpotIds((prev) => prev.filter((id) => id !== spotId));
+      }
+    } else {
+      const { error } = await supabase
+        .from('bookmarks')
+        .insert([{ user_id: currentUser.id, spot_id: spotId }]);
+
+      if (!error) {
+        setMustTrySpotIds((prev) => [...prev, spotId]);
+      }
+    }
+    setSavingBookmark(false);
+  };
 
   // Initialize Map
   useEffect(() => {
@@ -249,6 +312,21 @@ export default function Home() {
     if (query.length < 3) {
       setSearchResults([]);
       setShowDropdown(false);
+      return;
+    }
+
+    const coordMatch = query.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lon = parseFloat(coordMatch[3]);
+      setSearchResults([
+        {
+          lat: lat.toString(),
+          lon: lon.toString(),
+          display_name: `GPS Coordinates: ${lat}, ${lon}`,
+        },
+      ]);
+      setShowDropdown(true);
       return;
     }
 
@@ -582,6 +660,11 @@ export default function Home() {
     }
   };
 
+  const displayedDrawerSpots =
+    drawerTab === 'fieldNotes'
+      ? spots
+      : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
+
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
       {/* 1. Map Canvas */}
@@ -704,7 +787,7 @@ export default function Home() {
                 display: 'flex',
                 alignItems: 'center',
               }}
-              title="View Field Notes"
+              title="View Field Notes & Must-Try"
             >
               <List style={{ width: '15px', height: '15px' }} />
             </button>
@@ -753,7 +836,7 @@ export default function Home() {
             />
             <input
               type="text"
-              placeholder="Search address, landmark, or GPS coords..."
+              placeholder="Search place or paste GPS coords (e.g. 14.57, 121.06)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
@@ -953,7 +1036,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Share, Ownership & Navigation */}
+      {/* 4. Spot Details Bottom Sheet with Must-Try Save & Share */}
       {viewingSpot && (
         <div
           style={{
@@ -992,6 +1075,29 @@ export default function Home() {
             </div>
 
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              {/* Must-Try Bookmark Button */}
+              <button
+                onClick={() => toggleMustTry(viewingSpot.id)}
+                disabled={savingBookmark}
+                style={{
+                  border: 'none',
+                  background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f1f5f9',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#475569',
+                  padding: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title={viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? 'Remove from Must-Try' : 'Save to Must-Try'}
+              >
+                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? (
+                  <BookmarkCheck style={{ width: '15px', height: '15px' }} />
+                ) : (
+                  <Bookmark style={{ width: '15px', height: '15px' }} />
+                )}
+              </button>
+
               <button
                 onClick={() => handleShareSpot(viewingSpot)}
                 style={{
@@ -1113,7 +1219,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Slide-Out List / Field Notes Drawer View */}
+      {/* 5. Slide-Out List / Field Notes & Must-Try Drawer */}
       {isDrawerOpen && (
         <div
           style={{
@@ -1140,10 +1246,14 @@ export default function Home() {
               boxSizing: 'border-box',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Field Notes</h2>
-                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Latest spots logged on the map</p>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                  {drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}
+                </h2>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
+                  {drawerTab === 'fieldNotes' ? 'Latest spots logged on the map' : 'Your personal places to check out'}
+                </p>
               </div>
               <button
                 onClick={() => setIsDrawerOpen(false)}
@@ -1153,13 +1263,70 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Two Tab Navigation */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                backgroundColor: '#f1f5f9',
+                borderRadius: '10px',
+                padding: '3px',
+                marginBottom: '14px',
+              }}
+            >
+              <button
+                onClick={() => setDrawerTab('fieldNotes')}
+                style={{
+                  border: 'none',
+                  padding: '7px 0',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent',
+                  color: drawerTab === 'fieldNotes' ? '#0f172a' : '#64748b',
+                  boxShadow: drawerTab === 'fieldNotes' ? '0 2px 5px rgba(0,0,0,0.06)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Field Notes
+              </button>
+              <button
+                onClick={() => {
+                  if (!currentUser) {
+                    setIsAuthModalOpen(true);
+                    return;
+                  }
+                  setDrawerTab('mustTry');
+                }}
+                style={{
+                  border: 'none',
+                  padding: '7px 0',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent',
+                  color: drawerTab === 'mustTry' ? '#0f172a' : '#64748b',
+                  boxShadow: drawerTab === 'mustTry' ? '0 2px 5px rgba(0,0,0,0.06)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Must-Try ({mustTrySpotIds.length})
+              </button>
+            </div>
+
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {spots.length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', marginTop: '40px' }}>
-                  No spots logged yet. Click the map or search to add one!
-                </p>
+              {displayedDrawerSpots.length === 0 ? (
+                <div style={{ textAlign: 'center', marginTop: '40px', padding: '0 16px' }}>
+                  <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+                    {drawerTab === 'fieldNotes'
+                      ? 'No spots logged yet. Click the map or search to add one!'
+                      : 'No Must-Try spots saved yet. Tap the bookmark icon on any spot to save it here!'}
+                  </p>
+                </div>
               ) : (
-                spots.map((spot) => (
+                displayedDrawerSpots.map((spot) => (
                   <div
                     key={spot.id || spot.name}
                     onClick={() => flyToSpot(spot)}
@@ -1490,51 +1657,56 @@ export default function Home() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                    Latitude
-                  </label>
-                  <input
-                    required
-                    type="number"
-                    step="any"
-                    value={newSpot.latitude}
-                    onChange={(e) =>
-                      setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })
-                    }
-                    style={{
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      fontSize: '13px',
-                      padding: '9px 12px',
-                      borderRadius: '10px',
-                      border: '1px solid #cbd5e1',
-                    }}
-                  />
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                      Latitude
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      step="any"
+                      value={newSpot.latitude}
+                      onChange={(e) =>
+                        setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })
+                      }
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        fontSize: '13px',
+                        padding: '9px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                      Longitude
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      step="any"
+                      value={newSpot.longitude}
+                      onChange={(e) =>
+                        setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })
+                      }
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        fontSize: '13px',
+                        padding: '9px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                    Longitude
-                  </label>
-                  <input
-                    required
-                    type="number"
-                    step="any"
-                    value={newSpot.longitude}
-                    onChange={(e) =>
-                      setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })
-                    }
-                    style={{
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      fontSize: '13px',
-                      padding: '9px 12px',
-                      borderRadius: '10px',
-                      border: '1px solid #cbd5e1',
-                    }}
-                  />
-                </div>
+                <p style={{ margin: '5px 0 0 0', fontSize: '10.5px', color: '#94a3b8', fontStyle: 'italic' }}>
+                  Tip: Right-click any location in Google Maps to copy & paste exact coordinates.
+                </p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
