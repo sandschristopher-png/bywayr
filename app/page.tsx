@@ -1007,7 +1007,7 @@ export default function Home() {
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
             <input
               type="text"
-              placeholder="Search place or paste GPS coords..."
+              placeholder="Search, paste coordinates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
@@ -1471,7 +1471,7 @@ export default function Home() {
                 <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', flexShrink: 0, display: 'flex' }}>
                   <BookmarkCheck style={{ width: '16px', height: '16px' }} />
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Save your must-try wandering wishlist</i>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Save your must-try wandering wishlist</span>
               </div>
             </div>
 
