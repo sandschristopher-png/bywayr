@@ -125,6 +125,7 @@ export default function Home() {
   const map = useRef<maplibregl.Map | null>(null);
   const previewMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
 
   // User Auth State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -395,14 +396,6 @@ export default function Home() {
       const originalTarget = e.originalEvent.target as HTMLElement;
       if (originalTarget?.closest('.maplibregl-marker')) return;
 
-      const activeLayers = ['clusters', 'unclustered-point'].filter((id) =>
-        initializedMap.getLayer(id)
-      );
-      if (activeLayers.length > 0) {
-        const features = initializedMap.queryRenderedFeatures(e.point, { layers: activeLayers });
-        if (features && features.length > 0) return;
-      }
-
       const lat = parseFloat(e.lngLat.lat.toFixed(6));
       const lng = parseFloat(e.lngLat.lng.toFixed(6));
       dropPreviewAndOpenModal(lat, lng, '');
@@ -495,168 +488,41 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Setup Marker Clustering Layers & Update Data Safely
+  // Render Direct HTML Markers for Each Spot
   useEffect(() => {
     if (!map.current) return;
 
-    const geojsonData: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: filteredSpots
-        .filter((s) => s.latitude && s.longitude)
-        .map((spot) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [spot.longitude, spot.latitude],
-          },
-          properties: {
-            id: spot.id,
-            name: spot.name,
-            category: spot.category,
-            city: spot.city,
-            color: getCategoryColor(spot.category),
-            isMustTry: spot.id ? mustTrySpotIds.includes(spot.id) : false,
-            spotData: JSON.stringify(spot),
-          },
-        })),
-    };
+    // Clear existing markers
+    spotMarkersRef.current.forEach((marker) => marker.remove());
+    spotMarkersRef.current = [];
 
-    const updateMapData = () => {
-      if (!map.current) return;
+    filteredSpots.forEach((spot) => {
+      if (!spot.latitude || !spot.longitude) return;
 
-      const source = map.current.getSource('spots-source') as maplibregl.GeoJSONSource | undefined;
+      const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
+      const color = getCategoryColor(spot.category);
 
-      if (source) {
-        source.setData(geojsonData);
-      } else if (map.current.isStyleLoaded()) {
-        try {
-          map.current.addSource('spots-source', {
-            type: 'geojson',
-            data: geojsonData,
-            cluster: true,
-            clusterMaxZoom: 14,
-            clusterRadius: 50,
-          });
+      const el = document.createElement('div');
+      el.style.width = '24px';
+      el.style.height = '24px';
+      el.style.borderRadius = '50%';
+      el.style.backgroundColor = color;
+      el.style.border = isMustTry ? '3px solid #f59e0b' : '3px solid #ffffff';
+      el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+      el.style.cursor = 'pointer';
+      el.title = spot.name;
 
-          if (!map.current.getLayer('clusters')) {
-            map.current.addLayer({
-              id: 'clusters',
-              type: 'circle',
-              source: 'spots-source',
-              filter: ['has', 'point_count'],
-              paint: {
-                'circle-color': [
-                  'step',
-                  ['get', 'point_count'],
-                  '#0f172a',
-                  5,
-                  '#2563eb',
-                  15,
-                  '#ef4444',
-                ],
-                'circle-radius': [
-                  'step',
-                  ['get', 'point_count'],
-                  18,
-                  5,
-                  22,
-                  15,
-                  28,
-                ],
-                'circle-stroke-width': 3,
-                'circle-stroke-color': '#ffffff',
-              },
-            });
-          }
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        flyToSpot(spot);
+      });
 
-          if (!map.current.getLayer('cluster-count')) {
-            map.current.addLayer({
-              id: 'cluster-count',
-              type: 'symbol',
-              source: 'spots-source',
-              filter: ['has', 'point_count'],
-              layout: {
-                'text-field': '{point_count_abbreviated}',
-                'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                'text-size': 12,
-              },
-              paint: {
-                'text-color': '#ffffff',
-              },
-            });
-          }
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([spot.longitude, spot.latitude])
+        .addTo(map.current!);
 
-          if (!map.current.getLayer('unclustered-point')) {
-            map.current.addLayer({
-              id: 'unclustered-point',
-              type: 'circle',
-              source: 'spots-source',
-              filter: ['!', ['has', 'point_count']],
-              paint: {
-                'circle-color': ['get', 'color'],
-                'circle-radius': 9,
-                'circle-stroke-width': 3,
-                'circle-stroke-color': [
-                  'case',
-                  ['get', 'isMustTry'],
-                  '#f59e0b',
-                  '#ffffff',
-                ],
-              },
-            });
-          }
-
-          map.current.on('click', 'clusters', async (e) => {
-            if (!map.current) return;
-            const features = map.current.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-            if (!features || !features[0]) return;
-            const clusterId = features[0].properties.cluster_id;
-            const src = map.current.getSource('spots-source') as maplibregl.GeoJSONSource;
-
-            try {
-              const zoom = await src.getClusterExpansionZoom(clusterId);
-              map.current.easeTo({
-                center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
-                zoom: zoom ?? 14,
-              });
-            } catch (err) {
-              console.error('Cluster zoom error:', err);
-            }
-          });
-
-          map.current.on('click', 'unclustered-point', (e) => {
-            if (!e.features || !e.features[0]) return;
-            try {
-              const spot = JSON.parse(e.features[0].properties.spotData) as Spot;
-              flyToSpot(spot);
-            } catch (err) {
-              console.error('Failed to parse spot data:', err);
-            }
-          });
-
-          map.current.on('mouseenter', 'clusters', () => {
-            if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-          });
-          map.current.on('mouseleave', 'clusters', () => {
-            if (map.current) map.current.getCanvas().style.cursor = '';
-          });
-          map.current.on('mouseenter', 'unclustered-point', () => {
-            if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-          });
-          map.current.on('mouseleave', 'unclustered-point', () => {
-            if (map.current) map.current.getCanvas().style.cursor = '';
-          });
-        } catch (e) {
-          console.error('Error adding map source/layers:', e);
-        }
-      }
-    };
-
-    if (map.current.isStyleLoaded()) {
-      updateMapData();
-    } else {
-      map.current.once('load', updateMapData);
-    }
+      spotMarkersRef.current.push(marker);
+    });
   }, [filteredSpots, mustTrySpotIds]);
 
   // Locate User GPS
