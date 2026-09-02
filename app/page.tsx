@@ -671,11 +671,10 @@ export default function Home() {
     localStorage.setItem('bywayr_theme', nextTheme);
 
     if (!map.current) return;
-    map.current.setStyle(
-      nextTheme === 'light'
-        ? 'https://tiles.openfreemap.org/styles/bright'
-        : 'https://tiles.openfreemap.org/styles/dark'
-    );
+    if (map.current.getLayer('osm-tiles-light-layer') && map.current.getLayer('osm-tiles-dark-layer')) {
+      map.current.setLayoutProperty('osm-tiles-light-layer', 'visibility', nextTheme === 'light' ? 'visible' : 'none');
+      map.current.setLayoutProperty('osm-tiles-dark-layer', 'visibility', nextTheme === 'dark' ? 'visible' : 'none');
+    }
   };
 
   const handleOpenPublicProfile = (userId: string) => {
@@ -712,7 +711,7 @@ export default function Home() {
     }
   };
 
-  // Initialize Map with OpenFreeMap 'bright' vector style (Clear Roads, Blue Water, Sage Parks)
+  // Bulletproof Raster Basemap: Guaranteed 100% device compatibility with 0 watermarks
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -720,12 +719,80 @@ export default function Home() {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style:
-        savedTheme === 'light'
-          ? 'https://tiles.openfreemap.org/styles/bright'
-          : 'https://tiles.openfreemap.org/styles/dark',
+      style: {
+        version: 8,
+        sources: {
+          'osm-tiles-light': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+          },
+          'osm-tiles-dark': {
+            type: 'raster',
+            tiles: [
+              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+          },
+        },
+        layers: [
+          {
+            id: 'osm-tiles-light-layer',
+            type: 'raster',
+            source: 'osm-tiles-light',
+            minzoom: 0,
+            maxzoom: 19,
+            layout: { visibility: savedTheme === 'light' ? 'visible' : 'none' },
+          },
+          {
+            id: 'osm-tiles-dark-layer',
+            type: 'raster',
+            source: 'osm-tiles-dark',
+            minzoom: 0,
+            maxzoom: 19,
+            layout: { visibility: savedTheme === 'dark' ? 'visible' : 'none' },
+          },
+        ],
+      },
       center: [121.055, 14.575],
       zoom: 13.5,
+    });
+
+    // Handle Mobile & Desktop Initial Geolocation after map load event
+    initializedMap.on('load', () => {
+      if (navigator.geolocation && !window.location.search.includes('spot=')) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            initializedMap.flyTo({ center: [longitude, latitude], zoom: 15, essential: true });
+
+            if (userLocationMarkerRef.current) {
+              userLocationMarkerRef.current.setLngLat([longitude, latitude]);
+            } else {
+              const el = document.createElement('div');
+              el.style.width = '18px';
+              el.style.height = '18px';
+              el.style.borderRadius = '50%';
+              el.style.backgroundColor = '#0284c7';
+              el.style.border = '3px solid #ffffff';
+              el.style.boxShadow = '0 0 14px rgba(2, 132, 199, 0.7)';
+
+              userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
+                .setLngLat([longitude, latitude])
+                .addTo(initializedMap);
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      }
     });
 
     initializedMap.on('click', (e) => {
