@@ -41,7 +41,7 @@ import {
   AtSign,
   Trees,
   Home as HomeIcon,
-  ShieldCheck,
+  ThumbsUp,
 } from 'lucide-react';
 
 interface Spot {
@@ -206,6 +206,7 @@ export default function Home() {
   const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light');
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [spots, setSpots] = useState<Spot[]>([]);
+  const [usernames, setUsernames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -278,6 +279,21 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Failed to load profile:', err);
+    }
+  };
+
+  const fetchUsernamesMap = async () => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('id, username');
+      if (!error && data) {
+        const map: Record<string, string> = {};
+        data.forEach((p: any) => {
+          if (p.id && p.username) map[p.id] = p.username;
+        });
+        setUsernames(map);
+      }
+    } catch (err) {
+      console.error('Failed to load usernames map:', err);
     }
   };
 
@@ -408,6 +424,7 @@ export default function Home() {
       setUserProfile(updated);
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
       setIsClaimUsernameModalOpen(false);
+      fetchUsernamesMap();
     }
     setIsSavingUsername(false);
   };
@@ -447,6 +464,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchSpots();
+    fetchUsernamesMap();
     fetchVouches(currentUser?.id);
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
@@ -1007,7 +1025,7 @@ export default function Home() {
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
             <input
               type="text"
-              placeholder="Search, paste coordinates..."
+              placeholder="Search place or paste GPS coords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
@@ -1063,7 +1081,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Single Clean Native Navigate Button */}
+      {/* 4. Spot Details Bottom Sheet with Single Clean Native Navigate Button & ThumbsUp Vouch */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '400px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1072,10 +1090,12 @@ export default function Home() {
                 {viewingSpot.category}
               </span>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{viewingSpot.name}</h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>{viewingSpot.city}</p>
+              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                {viewingSpot.city} {viewingSpot.user_id && usernames[viewingSpot.user_id] ? `· @${usernames[viewingSpot.user_id]}` : ''}
+              </p>
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-              {/* Vouch Button */}
+              {/* ThumbsUp Vouch Button */}
               <button
                 onClick={() => toggleVouch(viewingSpot.id)}
                 disabled={savingVouch}
@@ -1094,7 +1114,7 @@ export default function Home() {
                 }}
                 title="Vouch for this spot"
               >
-                <ShieldCheck style={{ width: '16px', height: '16px' }} />
+                <ThumbsUp style={{ width: '16px', height: '16px' }} />
                 <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
               </button>
 
@@ -1137,7 +1157,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Slide-Out Drawer */}
+      {/* 5. Slide-Out Drawer with Author Handles */}
       {isDrawerOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', padding: '22px', boxSizing: 'border-box' }}>
@@ -1152,14 +1172,23 @@ export default function Home() {
               <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '9px 0', borderRadius: '9px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#0f172a' : '#64748b' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '11px' }}>
-              {displayedDrawerSpots.map((spot) => (
-                <div key={spot.id || spot.name} style={{ padding: '13px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14.5px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>{spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span> {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}</p>
+              {displayedDrawerSpots.map((spot) => {
+                const authorHandle = spot.user_id && usernames[spot.user_id] ? `@${usernames[spot.user_id]}` : null;
+                return (
+                  <div key={spot.id || spot.name} style={{ padding: '13px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
+                    <div style={{ flex: 1, minWidth: '0' }}>
+                      <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14.5px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                        {spot.city}
+                        {authorHandle ? ` · ${authorHandle}` : ''}
+                        {' · '}
+                        <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                        {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1337,7 +1366,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Add / Edit Spot Modal Form */}
+      {/* 9. Add / Edit Spot Modal Form (Updated file input without capture attribute to allow camera or library/device browse) */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '390px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1357,10 +1386,11 @@ export default function Home() {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', color: '#64748b' }}>
                       <Camera style={{ width: '22px', height: '22px', color: '#94a3b8' }} />
-                      <span style={{ fontSize: '12px', fontWeight: 500 }}>Tap to take or choose photo</span>
+                      <span style={{ fontSize: '12px', fontWeight: 500 }}>Tap to upload or choose image</span>
                     </div>
                   )}
-                  <input type="file" accept="image/*" capture="environment" onChange={handleImageSelect} style={{ display: 'none' }} />
+                  {/* Removed capture="environment" so mobile devices give the choice of Camera or Device Files/Library */}
+                  <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
                 </label>
               </div>
 
