@@ -84,6 +84,38 @@ const getCategoryColor = (cat: string) => {
   return match ? match.color : '#ef4444';
 };
 
+const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string }> => {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+    );
+    const data = await res.json();
+    if (data && data.address) {
+      const city =
+        data.address.city ||
+        data.address.town ||
+        data.address.municipality ||
+        data.address.suburb ||
+        data.address.city_district ||
+        data.address.village ||
+        data.address.county ||
+        '';
+      const name =
+        data.name ||
+        data.address.amenity ||
+        data.address.building ||
+        data.address.shop ||
+        data.address.tourism ||
+        data.address.road ||
+        '';
+      return { name, city };
+    }
+  } catch (err) {
+    console.error('Reverse geocode error:', err);
+  }
+  return {};
+};
+
 const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
   return new Promise((resolve) => {
     if (!file.type.startsWith('image/')) return resolve(file);
@@ -144,6 +176,7 @@ export default function Home() {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
@@ -174,6 +207,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isModalLocating, setIsModalLocating] = useState(false);
   const [viewingSpot, setViewingSpot] = useState<Spot | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -197,7 +231,17 @@ export default function Home() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('bywayr_theme') as 'light' | 'dark' | null;
     if (savedTheme) setMapTheme(savedTheme);
+
+    const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+    }
   }, []);
+
+  const handleDismissWelcome = () => {
+    localStorage.setItem('bywayr_seen_welcome', 'true');
+    setShowWelcome(false);
+  };
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -441,7 +485,7 @@ export default function Home() {
       if (originalTarget?.closest('.maplibregl-marker')) return;
       const lat = parseFloat(e.lngLat.lat.toFixed(6));
       const lng = parseFloat(e.lngLat.lng.toFixed(6));
-      dropPreviewAndOpenModal(lat, lng, '');
+      dropPreviewAndOpenModal(lat, lng);
     });
 
     map.current = initializedMap;
@@ -505,6 +549,11 @@ export default function Home() {
 
     if (map.current) {
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+    }
+
+    if (currentUser) {
+      const placeName = item.name || item.display_name.split(',')[0];
+      dropPreviewAndOpenModal(lat, lon, placeName);
     }
   };
 
@@ -586,6 +635,46 @@ export default function Home() {
     );
   };
 
+  const handleModalLocate = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setIsModalLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const lat = parseFloat(latitude.toFixed(6));
+        const lon = parseFloat(longitude.toFixed(6));
+
+        if (map.current) {
+          if (previewMarkerRef.current) previewMarkerRef.current.remove();
+          previewMarkerRef.current = new maplibregl.Marker({ color: '#2563eb' })
+            .setLngLat([lon, lat])
+            .addTo(map.current);
+          map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+        }
+
+        const geo = await reverseGeocode(lat, lon);
+        setNewSpot((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lon,
+          city: geo.city || prev.city || 'Manila',
+          name: prev.name || geo.name || '',
+        }));
+
+        setIsModalLocating(false);
+      },
+      () => {
+        alert('Could not retrieve current location.');
+        setIsModalLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handleShareSpot = async (spot: Spot) => {
     if (!spot.id) return;
     const shareUrl = `${window.location.origin}${window.location.pathname}?spot=${spot.id}`;
@@ -602,7 +691,7 @@ export default function Home() {
     setTimeout(() => setCopiedSpotId(null), 2500);
   };
 
-  const dropPreviewAndOpenModal = (lat: number, lon: number, defaultName: string = '') => {
+  const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
     if (!currentUser) {
       setIsAuthModalOpen(true);
       return;
@@ -619,10 +708,12 @@ export default function Home() {
 
     map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
 
+    const geo = await reverseGeocode(lat, lon);
+
     setNewSpot({
-      name: defaultName,
+      name: defaultName || geo.name || '',
       category: 'Hidden Gem',
-      city: 'Manila',
+      city: geo.city || 'Manila',
       country: 'Philippines',
       description: '',
       latitude: parseFloat(lat.toFixed(6)),
@@ -636,6 +727,7 @@ export default function Home() {
   };
 
   const handleOpenEditModal = (spot: Spot) => {
+    if (!currentUser || spot.user_id !== currentUser.id) return;
     setIsEditing(true);
     setNewSpot(spot);
     setImagePreview(spot.image_url || null);
@@ -656,7 +748,7 @@ export default function Home() {
   };
 
   const handleDeleteSpot = async (spot: Spot) => {
-    if (!spot.id) return;
+    if (!spot.id || !currentUser || spot.user_id !== currentUser.id) return;
     if (!confirm(`Are you sure you want to delete "${spot.name}"?`)) return;
 
     setDeleting(true);
@@ -772,37 +864,44 @@ export default function Home() {
 
       {/* 2. Top Header, Search, and Category Filter Bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '420px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ backgroundColor: '#fef2f2', padding: '7px', borderRadius: '10px', display: 'flex' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+            <div style={{ backgroundColor: '#fef2f2', padding: '7px', borderRadius: '10px', display: 'flex', flexShrink: 0 }}>
               <Compass style={{ color: '#ef4444', width: '18px', height: '18px' }} />
             </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#0f172a', letterSpacing: '-0.02em' }}>Bywayr</h1>
-                <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>Found Right Here</span>
-              </div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
-                {loading ? 'Connecting...' : selectedCategory === 'All' ? `${spots.length} saved spots` : `Showing ${filteredSpots.length} of ${spots.length} spots (${selectedCategory})`}
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
+              <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {loading ? 'Connecting...' : selectedCategory === 'All' ? `${spots.length} saved spots` : `${filteredSpots.length} in ${selectedCategory}`}
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
             {currentUser ? (
-              <button onClick={() => setIsProfileModalOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#475569', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <User style={{ width: '13px', height: '13px' }} /> {userProfile?.username ? `@${userProfile.username}` : 'Account'}
+              <button onClick={() => setIsProfileModalOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#475569', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <User style={{ width: '13px', height: '13px', flexShrink: 0 }} /> {userProfile?.username ? `@${userProfile.username}` : 'Account'}
               </button>
             ) : (
-              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '7px 10px', color: '#ffffff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <LogIn style={{ width: '13px', height: '13px' }} /> Sign In
+              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#ffffff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
               </button>
             )}
 
-            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#334155', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#334155', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <List style={{ width: '15px', height: '15px' }} />
             </button>
-            <button onClick={() => { if (!currentUser) { setIsAuthModalOpen(true); return; } setViewingSpot(null); setIsEditing(false); setIsModalOpen(true); }} style={{ backgroundColor: '#ef4444', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#ffffff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <button
+              onClick={() => {
+                if (!currentUser) {
+                  setIsAuthModalOpen(true);
+                  return;
+                }
+                const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
+                dropPreviewAndOpenModal(center.lat, center.lng);
+              }}
+              style={{ backgroundColor: '#ef4444', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#ffffff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
               <Plus style={{ width: '14px', height: '14px' }} /> Add
             </button>
           </div>
@@ -1157,12 +1256,44 @@ export default function Home() {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b' }}>
                       <Camera style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
-                      <span style={{ fontSize: '11px', fontWeight: 500 }}>Tap to attach photo</span>
+                      <span style={{ fontSize: '11px', fontWeight: 500 }}>Tap to take or choose photo</span>
                     </div>
                   )}
-                  <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                  <input type="file" accept="image/*" capture="environment" onChange={handleImageSelect} style={{ display: 'none' }} />
                 </label>
               </div>
+
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={handleModalLocate}
+                  disabled={isModalLocating}
+                  style={{
+                    backgroundColor: '#eff6ff',
+                    color: '#2563eb',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '10px',
+                    padding: '8px 12px',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {isModalLocating ? (
+                    <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <Crosshair style={{ width: '14px', height: '14px' }} />
+                  )}
+                  Pin My Current Location
+                </button>
+              )}
+
               <div>
                 <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Spot Name</label>
                 <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
@@ -1201,6 +1332,63 @@ export default function Home() {
                 {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 10. First-Time Visitor Welcome Modal */}
+      {showWelcome && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)', width: '100%', maxWidth: '380px', padding: '28px 24px', position: 'relative', textAlign: 'center' }}>
+            <div style={{ width: '52px', height: '52px', backgroundColor: '#fef2f2', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+              <Compass style={{ color: '#ef4444', width: '28px', height: '28px' }} />
+            </div>
+
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              Welcome to Bywayr
+            </h2>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
+              Your personal, community-curated field guide for hidden local spots, viewpoints, and neighborhood secrets.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', marginBottom: '24px', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#eff6ff', padding: '6px', borderRadius: '8px', color: '#2563eb', marginTop: '2px', flexShrink: 0 }}>
+                  <Compass style={{ width: '16px', height: '16px' }} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Discover Hidden Gems</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Explore off-the-beaten-path cafes, lookouts, and eats.</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fef2f2', padding: '6px', borderRadius: '8px', color: '#ef4444', marginTop: '2px', flexShrink: 0 }}>
+                  <MapPin style={{ width: '16px', height: '16px' }} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Pin In Real Time</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Use GPS to record your favorite places and photos on the spot.</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', marginTop: '2px', flexShrink: 0 }}>
+                  <BookmarkCheck style={{ width: '16px', height: '16px' }} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Must-Try Wishlist</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Bookmark spots you want to visit and build custom field notes.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleDismissWelcome}
+              style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 700, fontSize: '13px', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)' }}
+            >
+              Start Exploring
+            </button>
           </div>
         </div>
       )}
