@@ -17,7 +17,6 @@ import {
   Coffee,
   Utensils,
   Mountain,
-  Moon,
   Sun,
   Sparkles,
   Navigation2,
@@ -292,7 +291,6 @@ export default function Home() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   // App & Map States
-  const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light');
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
@@ -343,9 +341,6 @@ export default function Home() {
   }, [currentUser]);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('bywayr_theme') as 'light' | 'dark' | null;
-    if (savedTheme) setMapTheme(savedTheme);
-
     const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
     if (!hasSeenWelcome) {
       setShowWelcome(true);
@@ -665,18 +660,6 @@ export default function Home() {
     setSavingVouch(false);
   };
 
-  const toggleMapTheme = () => {
-    const nextTheme = mapTheme === 'light' ? 'dark' : 'light';
-    setMapTheme(nextTheme);
-    localStorage.setItem('bywayr_theme', nextTheme);
-
-    if (!map.current) return;
-    if (map.current.getLayer('osm-tiles-light-layer') && map.current.getLayer('osm-tiles-dark-layer')) {
-      map.current.setLayoutProperty('osm-tiles-light-layer', 'visibility', nextTheme === 'light' ? 'visible' : 'none');
-      map.current.setLayoutProperty('osm-tiles-dark-layer', 'visibility', nextTheme === 'dark' ? 'visible' : 'none');
-    }
-  };
-
   const handleOpenPublicProfile = (userId: string) => {
     const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
     const userSpots = spots.filter((s) => s.user_id === userId);
@@ -711,12 +694,10 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Keyless Styled Basemap: Custom OSM Filters for Off-White Light Mode & Dark Mode
+  // Bulletproof Keyless Styled Basemap: Custom OSM Filters for Off-White Light Mode (Dark mode toggle removed)
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
-    const savedTheme = (localStorage.getItem('bywayr_theme') as 'light' | 'dark') || 'light';
-    
     let initialCenter: [number, number] = [121.055, 14.575];
     let initialZoom = 13.5;
 
@@ -742,15 +723,6 @@ export default function Home() {
             tileSize: 256,
             attribution: '© OpenStreetMap contributors',
           },
-          'osm-tiles-dark': {
-            type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors, © CARTO',
-          },
         },
         layers: [
           {
@@ -765,15 +737,6 @@ export default function Home() {
               'raster-contrast': 0.15,
               'raster-brightness-max': 0.98,
             },
-            layout: { visibility: savedTheme === 'light' ? 'visible' : 'none' },
-          },
-          {
-            id: 'osm-tiles-dark-layer',
-            type: 'raster',
-            source: 'osm-tiles-dark',
-            minzoom: 0,
-            maxzoom: 19,
-            layout: { visibility: savedTheme === 'dark' ? 'visible' : 'none' },
           },
         ],
       },
@@ -1476,11 +1439,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Floating Action Controls */}
+      {/* 3. Floating Action Controls (Dark mode toggle removed) */}
       <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <button onClick={toggleMapTheme} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#1c1917' : '#d97706' }}>
-          {mapTheme === 'light' ? <Moon style={{ width: '19px', height: '19px' }} /> : <Sun style={{ width: '19px', height: '19px' }} />}
-        </button>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
@@ -1963,8 +1923,8 @@ export default function Home() {
                     required
                     placeholder="Enter your email"
                     value={authEmail}
-                    onChange={(e) => setSearchQuery(e.target.value)} // Wait, keep authEmail here
-                    // Fixing it below properly:
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
 
