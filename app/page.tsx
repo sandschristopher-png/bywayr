@@ -196,6 +196,7 @@ export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Public Curator Profile Modal State
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
@@ -223,7 +224,7 @@ export default function Home() {
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
-  // Share Dialog State (Universal Desktop fallback)
+  // Share Dialog State
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
 
@@ -441,6 +442,48 @@ export default function Home() {
     setIsSavingUsername(false);
   };
 
+  // Avatar Upload Handler
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !e.target.files || !e.target.files[0]) return;
+
+    const file = e.target.files[0];
+    setUploadingAvatar(true);
+
+    try {
+      const compressed = await compressImageToWebP(file, 400, 0.85);
+      const filePath = `${activeUser.id}-${Date.now()}.webp`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, compressed, { contentType: 'image/webp', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const publicUrl = publicUrlData.publicUrl;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: activeUser.id,
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (profileError) throw profileError;
+
+      const updated = { ...userProfile, id: activeUser.id, avatar_url: publicUrl };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+      fetchProfiles();
+    } catch (err: any) {
+      alert(`Avatar upload failed: ${err.message || 'Error uploading file'}`);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setCurrentUser(null);
@@ -555,7 +598,6 @@ export default function Home() {
     );
   };
 
-  // Open Public Curator Profile
   const handleOpenPublicProfile = (userId: string) => {
     const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
     const userSpots = spots.filter((s) => s.user_id === userId);
@@ -1047,7 +1089,7 @@ export default function Home() {
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '9px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-            {/* Custom Clay Icon Badge */}
+            {/* Clay Icon Badge */}
             <div style={{ width: '32px', height: '32px', borderRadius: '10px', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
@@ -1067,22 +1109,26 @@ export default function Home() {
                   backgroundColor: '#f5f5f4', 
                   border: '1px solid #d6d3d1', 
                   borderRadius: '10px', 
-                  padding: '7px 9px', 
+                  padding: '5px 9px', 
                   color: '#44403c', 
                   fontSize: '12px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '4px', 
+                  gap: '6px', 
                   whiteSpace: 'nowrap', 
                   overflow: 'hidden', 
                   textOverflow: 'ellipsis', 
-                  maxWidth: '135px', 
+                  maxWidth: '140px', 
                   flexShrink: 1 
                 }}
               >
-                <User style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Avatar" style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <User style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+                )}
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Account'}
                 </span>
@@ -1199,7 +1245,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Clickable Creator Handle */}
+      {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1291,8 +1337,12 @@ export default function Home() {
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
-                <Compass style={{ width: '24px', height: '24px' }} />
+              <div style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0 }}>
+                {viewingProfile.avatar_url ? (
+                  <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Compass style={{ width: '26px', height: '26px' }} />
+                )}
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>@{viewingProfile.username || 'wanderer'}</h3>
@@ -1473,17 +1523,29 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal */}
+      {/* 8. Own Account Profile Modal with Interactive Avatar Upload */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ width: '46px', height: '46px', borderRadius: '13px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917' }}>
-                <User style={{ width: '22px', height: '22px' }} />
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+              {/* Tap-to-Upload Avatar Badge */}
+              <label style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', flexShrink: 0 }} title="Click to upload profile photo">
+                {uploadingAvatar ? (
+                  <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
+                ) : userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User style={{ width: '24px', height: '24px', color: '#78716c' }} />
+                )}
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
+                  <Camera style={{ width: '18px', height: '18px' }} />
+                </div>
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+              </label>
+
               <div>
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
