@@ -1027,7 +1027,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories (Updated with Markets & Bazaars, Nature & Trails, Stays & Hideaways) */}
+        {/* Categories */}
         <div style={{ display: 'flex', gap: '7px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
@@ -1063,7 +1063,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Vouches */}
+      {/* 4. Spot Details Bottom Sheet with Native Geo Navigation & Vouches */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '400px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1127,14 +1127,15 @@ export default function Home() {
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
           {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13.5px', color: '#334155', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
+          {/* Native Geo Navigation Trigger */}
           <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${viewingSpot.latitude},${viewingSpot.longitude}&travelmode=walking`}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#0f172a', color: '#ffffff', textDecoration: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}
           >
-            <Navigation2 style={{ width: '15px', height: '15px' }} /> Start Walking Directions
+            <Navigation2 style={{ width: '15px', height: '15px' }} /> Navigate (Opens Default Map App)
           </a>
+
+          {/* Fallback Web Links */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${viewingSpot.latitude},${viewingSpot.longitude}`}
