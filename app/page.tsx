@@ -245,13 +245,14 @@ export default function Home() {
     }
   };
 
+  // Re-fetch spots whenever auth state changes
   useEffect(() => {
     fetchSpots();
-  }, []);
-
-  useEffect(() => {
-    if (currentUser?.id) fetchMustTryBookmarks(currentUser.id);
-    else setMustTrySpotIds([]);
+    if (currentUser?.id) {
+      fetchMustTryBookmarks(currentUser.id);
+    } else {
+      setMustTrySpotIds([]);
+    }
   }, [currentUser]);
 
   const toggleMustTry = async (spotId?: string) => {
@@ -346,7 +347,7 @@ export default function Home() {
       initializedMap.remove();
       map.current = null;
     };
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => {
     if (!loading && spots.length > 0 && map.current) {
