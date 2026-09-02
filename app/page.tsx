@@ -495,7 +495,7 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Setup Marker Clustering Layers & Update Data
+  // Setup Marker Clustering Layers & Update Data (Robust Style Check)
   useEffect(() => {
     if (!map.current) return;
 
@@ -521,7 +521,7 @@ export default function Home() {
         })),
     };
 
-    const setupClustering = () => {
+    const updateOrSetupLayers = () => {
       if (!map.current) return;
 
       const source = map.current.getSource('spots-source') as maplibregl.GeoJSONSource | undefined;
@@ -529,6 +529,11 @@ export default function Home() {
       if (source) {
         source.setData(geojsonData);
       } else {
+        if (!map.current.isStyleLoaded()) {
+          map.current.once('load', updateOrSetupLayers);
+          return;
+        }
+
         map.current.addSource('spots-source', {
           type: 'geojson',
           data: geojsonData,
@@ -642,11 +647,7 @@ export default function Home() {
       }
     };
 
-    if (map.current.isStyleLoaded()) {
-      setupClustering();
-    } else {
-      map.current.once('load', setupClustering);
-    }
+    updateOrSetupLayers();
   }, [filteredSpots, mustTrySpotIds]);
 
   // Locate User GPS
@@ -1645,25 +1646,26 @@ export default function Home() {
                 displayedDrawerSpots.map((spot) => (
                   <div
                     key={spot.id || spot.name}
-                    onClick={() => flyToSpot(spot)}
                     style={{
                       padding: '12px',
                       borderRadius: '12px',
                       border: '1px solid #e2e8f0',
-                      cursor: 'pointer',
                       display: 'flex',
                       gap: '10px',
                       alignItems: 'center',
+                      backgroundColor: '#ffffff',
                     }}
                   >
                     {spot.image_url ? (
                       <img
                         src={spot.image_url}
                         alt={spot.name}
-                        style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }}
+                        onClick={() => flyToSpot(spot)}
+                        style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', cursor: 'pointer' }}
                       />
                     ) : (
                       <div
+                        onClick={() => flyToSpot(spot)}
                         style={{
                           width: '48px',
                           height: '48px',
@@ -1672,20 +1674,40 @@ export default function Home() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          cursor: 'pointer',
                         }}
                       >
                         <MapPin style={{ width: '22px', height: '22px', color: getCategoryColor(spot.category) }} />
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <h4
+                        onClick={() => flyToSpot(spot)}
+                        style={{
+                          margin: '0 0 2px 0',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#2563eb',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title="Click to fly to spot"
+                      >
                         {spot.name}
                       </h4>
                       <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
                         {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                       </p>
                     </div>
-                    <ChevronRight style={{ width: '16px', height: '16px', color: '#94a3b8' }} />
+                    <button
+                      onClick={() => flyToSpot(spot)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                      title="Fly to spot"
+                    >
+                      <ChevronRight style={{ width: '16px', height: '16px', color: '#94a3b8' }} />
+                    </button>
                   </div>
                 ))
               )}
