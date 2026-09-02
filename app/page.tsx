@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
-import { decode, isValid } from '@erikmichelson/open-location-code-ts';
+import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
   Loader2,
@@ -626,16 +626,24 @@ export default function Home() {
 
     if (isValid(query)) {
       try {
-        const decodedLocation = decode(query);
-        const lat = decodedLocation.latitudeCenter;
-        const lon = decodedLocation.longitudeCenter;
-        setSearchResults([{ 
-          lat: lat.toString(), 
-          lon: lon.toString(), 
-          display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
-        }]);
-        setShowDropdown(true);
-        return;
+        let fullCode = query;
+        if (isShort(query)) {
+          const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 121.06 };
+          fullCode = recoverNearest(query, center.lat, center.lng);
+        }
+
+        if (isFull(fullCode)) {
+          const decodedLocation = decode(fullCode);
+          const lat = decodedLocation.latitudeCenter;
+          const lon = decodedLocation.longitudeCenter;
+          setSearchResults([{ 
+            lat: lat.toString(), 
+            lon: lon.toString(), 
+            display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
+          }]);
+          setShowDropdown(true);
+          return;
+        }
       } catch (err) {
         console.error('Plus Code decode error:', err);
       }
