@@ -1451,7 +1451,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet */}
+      {/* 4. Spot Details Bottom Sheet with Agoda & Trip.com Stays Nearby Buttons */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1523,14 +1523,36 @@ export default function Home() {
           </div>
 
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
-          {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
+          {viewingSpot.description && <p style={{ margin: '8px 0 12px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
-          <a
-            href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
-          >
-            <Navigation2 style={{ width: '15px', height: '15px' }} /> Navigate
-          </a>
+          {/* Navigation & Neighborhood Accommodation Action Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <a
+              href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
+            >
+              <Navigation2 style={{ width: '14px', height: '14px' }} /> Navigate to Spot
+            </a>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <a
+                href={`https://www.agoda.com/search?city=${encodeURIComponent(viewingSpot.city)}&marker=569683`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '11px', fontSize: '11px', fontWeight: 600 }}
+              >
+                🏨 Agoda Stays Nearby
+              </a>
+              <a
+                href={`https://www.trip.com/hotels/list?keyword=${encodeURIComponent(viewingSpot.city)}&marker=569683`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '11px', fontSize: '11px', fontWeight: 600 }}
+              >
+                ✈️ Trip.com Stays Nearby
+              </a>
+            </div>
+          </div>
         </div>
       )}
 
