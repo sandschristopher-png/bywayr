@@ -617,19 +617,22 @@ export default function Home() {
   }, [loading, spots]);
 
   useEffect(() => {
-    const query = searchQuery.trim();
-    if (query.length < 3) {
+    const rawQuery = searchQuery.trim();
+    if (rawQuery.length < 3) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
     }
 
-    if (isValid(query)) {
+    const parts = rawQuery.split(/[\s,]+/);
+    const potentialCode = parts[0];
+
+    if (isValid(potentialCode)) {
       try {
-        let fullCode = query;
-        if (isShort(query)) {
-          const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 121.06 };
-          fullCode = recoverNearest(query, center.lat, center.lng);
+        let fullCode = potentialCode;
+        if (isShort(potentialCode)) {
+          const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+          fullCode = recoverNearest(potentialCode, center.lat, center.lng);
         }
 
         if (isFull(fullCode)) {
@@ -639,7 +642,7 @@ export default function Home() {
           setSearchResults([{ 
             lat: lat.toString(), 
             lon: lon.toString(), 
-            display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
+            display_name: `Plus Code (${potentialCode.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
           }]);
           setShowDropdown(true);
           return;
@@ -649,7 +652,7 @@ export default function Home() {
       }
     }
 
-    const coordMatch = query.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+    const coordMatch = rawQuery.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
     if (coordMatch) {
       const lat = parseFloat(coordMatch[1]);
       const lon = parseFloat(coordMatch[3]);
@@ -661,7 +664,7 @@ export default function Home() {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}`);
         const data = await res.json();
         setSearchResults(data || []);
         setShowDropdown(true);
@@ -1484,7 +1487,7 @@ export default function Home() {
                 <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
                 <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', resize: 'none' }} />
               </div>
-              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13.5px', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
+              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13.5px', padding: '12px', borderRadius: '12px', border: '1px solid #ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
                 {saving || uploadingImage ? <Loader2 style={{ width: '17px', height: '17px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
               </button>
             </form>
