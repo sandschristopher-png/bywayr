@@ -18,6 +18,7 @@ import {
   Utensils,
   Mountain,
   Moon,
+  Sun,
   Sparkles,
   ChevronRight,
   Navigation2,
