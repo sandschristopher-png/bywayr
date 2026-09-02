@@ -1472,7 +1472,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Agoda & Trip.com Stays Nearby Buttons */}
+      {/* 4. Spot Details Bottom Sheet with Agoda & Booking.com Stays Nearby Buttons */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1557,7 +1557,7 @@ export default function Home() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               <a
-                href={`https://www.agoda.com/search?city=${encodeURIComponent(viewingSpot.city)}&marker=569683`}
+                href={`https://www.agoda.com/search?city=${encodeURIComponent(viewingSpot.city)}&cid=569683`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '11px', fontSize: '11px', fontWeight: 600 }}
@@ -1565,12 +1565,12 @@ export default function Home() {
                 🏨 Agoda Stays Nearby
               </a>
               <a
-                href={`https://www.trip.com/hotels/list?keyword=${encodeURIComponent(viewingSpot.city)}&marker=569683`}
+                href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(viewingSpot.city)}&aid=569683`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '11px', fontSize: '11px', fontWeight: 600 }}
               >
-                ✈️ Trip.com Stays Nearby
+                🌐 Booking.com Stays
               </a>
             </div>
           </div>
@@ -2081,7 +2081,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Curate Unmapped Corners</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Pin backstreet alley eats, quiet sunset perches & hidden haunts.</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Plot backstreet food stalls, elevated viewpoints, and undiscovered neighborhood gems.</div>
                 </div>
               </div>
 
