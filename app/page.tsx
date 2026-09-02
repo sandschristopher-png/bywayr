@@ -88,7 +88,7 @@ const CATEGORIES = [
   },
   { 
     label: 'Alley Eats', 
-    desc: 'Backstreet stalls, hole-in-the-walls & plastic-stool legends', 
+    desc: 'Bistro finds, street food stalls & neighborhood bites', 
     color: '#ea580c', 
     icon: Utensils 
   },
