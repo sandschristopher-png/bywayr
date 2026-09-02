@@ -12,7 +12,6 @@ import {
   Plus,
   Minus,
   Search,
-  Compass,
   List,
   Camera,
   Coffee,
@@ -43,6 +42,9 @@ import {
   Trees,
   Home as HomeIcon,
   ThumbsUp,
+  MessageCircle,
+  Send,
+  Copy,
 } from 'lucide-react';
 
 interface Spot {
@@ -115,7 +117,7 @@ const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string
   return {};
 };
 
-const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
+const compressImageToWebP = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
   return new Promise((resolve) => {
     if (!file.type.startsWith('image/')) return resolve(file);
 
@@ -150,13 +152,13 @@ const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Pr
         canvas.toBlob(
           (blob) => {
             if (!blob) return resolve(file);
-            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
-              type: 'image/jpeg',
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+              type: 'image/webp',
               lastModified: Date.now(),
             });
             resolve(compressedFile);
           },
-          'image/jpeg',
+          'image/webp',
           quality
         );
       };
@@ -215,6 +217,10 @@ export default function Home() {
   const [copiedSpotId, setCopiedSpotId] = useState<string | null>(null);
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
+
+  // Share Dialog State (for Desktop fallback)
+  const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
+  const [shareDialogCopied, setShareDialogCopied] = useState(false);
 
   // Vouches State
   const [vouchedSpotIds, setVouchedSpotIds] = useState<string[]>([]);
@@ -543,6 +549,7 @@ export default function Home() {
     }
   };
 
+  // Map Initialization with User Geo Auto-Centering & Canvas Touch Handlers
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -555,13 +562,13 @@ export default function Home() {
         sources: {
           'osm-tiles-light': {
             type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
             tileSize: 256,
-            attribution: '© OpenStreetMap Contributors',
+            attribution: '© CartoDB, OpenStreetMap Contributors',
           },
           'osm-tiles-dark': {
             type: 'raster',
-            tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+            tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
             tileSize: 256,
             attribution: '© CartoDB, OpenStreetMap Contributors',
           },
@@ -589,12 +596,30 @@ export default function Home() {
       zoom: 14,
     });
 
+    // Auto-center on current user position if location is available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!window.location.search.includes('spot=')) {
+            initializedMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15 });
+          }
+        },
+        () => {},
+        { enableHighAccuracy: false, timeout: 5000 }
+      );
+    }
+
     initializedMap.on('click', (e) => {
+      setShowDropdown(false);
       const originalTarget = e.originalEvent.target as HTMLElement;
       if (originalTarget?.closest('.maplibregl-marker')) return;
       const lat = parseFloat(e.lngLat.lat.toFixed(6));
       const lng = parseFloat(e.lngLat.lng.toFixed(6));
       dropPreviewAndOpenModal(lat, lng);
+    });
+
+    initializedMap.on('dragstart', () => {
+      setShowDropdown(false);
     });
 
     map.current = initializedMap;
@@ -624,7 +649,6 @@ export default function Home() {
       return;
     }
 
-    // Match a Plus Code pattern anywhere in the query string
     const codeMatch = rawQuery.match(/([2-9CFGHJMPQRVWX+]{4,8}\+[2-9CFGHJMPQRVWX+]{2,})/i);
 
     if (codeMatch) {
@@ -850,17 +874,17 @@ export default function Home() {
   const handleShareSpot = async (spot: Spot) => {
     if (!spot.id) return;
     const shareUrl = `${window.location.origin}${window.location.pathname}?spot=${spot.id}`;
+    const shareText = `Check out ${spot.name} in ${spot.city} on Bywayr!`;
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Bywayr — ${spot.name}`, text: `Check out ${spot.name} in ${spot.city}!`, url: shareUrl });
+        await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
         return;
       } catch {}
     }
 
-    await navigator.clipboard.writeText(shareUrl);
-    setCopiedSpotId(spot.id);
-    setTimeout(() => setCopiedSpotId(null), 2500);
+    setShareDialogSpot(spot);
+    setShareDialogCopied(false);
   };
 
   const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
@@ -957,12 +981,11 @@ export default function Home() {
 
     if (imageFile) {
       setUploadingImage(true);
-      const fileToUpload = await compressImage(imageFile);
-      const fileExt = fileToUpload.name.split('.').pop() || 'jpg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const fileToUpload = await compressImageToWebP(imageFile);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
       const filePath = `spots/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: fileToUpload.type, upsert: true });
+      const { error: uploadError } = await supabase.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
       if (!uploadError) {
         const { data: publicUrlData } = supabase.storage.from('spot-images').getPublicUrl(filePath);
         uploadedUrl = publicUrlData.publicUrl;
@@ -1049,7 +1072,7 @@ export default function Home() {
             <div style={{ minWidth: 0 }}>
               <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {loading ? 'Connecting...' : selectedCategory === 'All' ? `${spots.length} saved spots` : `${filteredSpots.length} in ${selectedCategory}`}
+                {loading ? 'Connecting...' : selectedCategory === 'All' && !onlyMySpots ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
               </p>
             </div>
           </div>
@@ -1134,8 +1157,32 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories */}
+        {/* Categories Bar + Quick "Mine" Filter Pill */}
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+          {currentUser && (
+            <button
+              onClick={() => setOnlyMySpots(!onlyMySpots)}
+              style={{
+                backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff',
+                color: onlyMySpots ? '#e05a47' : '#57534e',
+                border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+              }}
+            >
+              <User style={{ width: '13px', height: '13px' }} />
+              My Pins ({mySpotsCount})
+            </button>
+          )}
+
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
             return (
@@ -1170,7 +1217,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Single Clean Native Navigate Button & ThumbsUp Vouch */}
+      {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1184,7 +1231,6 @@ export default function Home() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-              {/* ThumbsUp Vouch Button */}
               <button
                 onClick={() => toggleVouch(viewingSpot.id)}
                 disabled={savingVouch}
@@ -1207,14 +1253,12 @@ export default function Home() {
                 <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
               </button>
 
-              {/* Bookmark Button */}
               <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex' }} title="Save to Must-Try">
                 {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '16px', height: '16px' }} /> : <Bookmark style={{ width: '16px', height: '16px' }} />}
               </button>
 
-              {/* Share Button */}
-              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: copiedSpotId === viewingSpot.id ? '#f0fdf4' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: copiedSpotId === viewingSpot.id ? '#16a34a' : '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
-                {copiedSpotId === viewingSpot.id ? <Check style={{ width: '16px', height: '16px' }} /> : <Share2 style={{ width: '16px', height: '16px' }} />}
+              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
+                <Share2 style={{ width: '16px', height: '16px' }} />
               </button>
 
               {currentUser && viewingSpot.user_id === currentUser.id && (
@@ -1236,7 +1280,6 @@ export default function Home() {
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
           {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
-          {/* Single Clean Native Geo Navigation Button */}
           <a
             href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
@@ -1246,7 +1289,95 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Slide-Out Drawer with Author Handles */}
+      {/* 5. Desktop Universal Share Modal */}
+      {shareDialogSpot && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '22px', position: 'relative' }}>
+            <button onClick={() => setShareDialogSpot(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>Share Spot</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Send <strong>{shareDialogSpot.name}</strong> to friends:</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr: ${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                  <MessageCircle style={{ width: '22px', height: '22px' }} />
+                </div>
+                WhatsApp
+              </a>
+
+              <a
+                href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}&text=${encodeURIComponent(`Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr!`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#0088cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                  <Send style={{ width: '20px', height: '20px' }} />
+                </div>
+                Telegram
+              </a>
+
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr:`)}&url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                  <span style={{ fontSize: '18px', fontWeight: 800 }}>𝕏</span>
+                </div>
+                Post
+              </a>
+
+              <a
+                href={`mailto:?subject=${encodeURIComponent(`Bywayr Spot: ${shareDialogSpot.name}`)}&body=${encodeURIComponent(`Check out this spot in ${shareDialogSpot.city}: ${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#ea4335', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                  <Mail style={{ width: '20px', height: '20px' }} />
+                </div>
+                Email
+              </a>
+            </div>
+
+            <button
+              onClick={async () => {
+                const url = `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`;
+                await navigator.clipboard.writeText(url);
+                setShareDialogCopied(true);
+                setTimeout(() => setShareDialogCopied(false), 2500);
+              }}
+              style={{
+                width: '100%',
+                backgroundColor: shareDialogCopied ? '#ecfdf5' : '#f5f5f4',
+                color: shareDialogCopied ? '#059669' : '#1c1917',
+                border: shareDialogCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
+                padding: '10px',
+                borderRadius: '12px',
+                fontSize: '12.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+            >
+              {shareDialogCopied ? <Check style={{ width: '15px', height: '15px' }} /> : <Copy style={{ width: '15px', height: '15px' }} />}
+              {shareDialogCopied ? 'Link Copied to Clipboard!' : 'Copy Direct Link'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Slide-Out Drawer */}
       {isDrawerOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -1283,7 +1414,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 6. Profile Modal */}
+      {/* 7. Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -1332,7 +1463,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 7. Claim / Set Username Modal */}
+      {/* 8. Claim Username Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -1376,7 +1507,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Auth Modal */}
+      {/* 9. Auth Modal */}
       {isAuthModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
@@ -1384,7 +1515,7 @@ export default function Home() {
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
-              <Compass style={{ color: '#e05a47', width: '24px', height: '24px' }} />
+              <img src="/icon.svg" alt="Bywayr" style={{ width: '28px', height: '28px' }} />
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>Join Bywayr</h3>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
@@ -1455,7 +1586,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Add / Edit Spot Modal Form */}
+      {/* 10. Add / Edit Spot Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1555,12 +1686,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* 10. Clean & Punchy Welcome Screen */}
+      {/* 11. Welcome Modal */}
       {showWelcome && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '26px 20px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
             <div style={{ width: '48px', height: '48px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto' }}>
-              <Compass style={{ color: '#e05a47', width: '26px', height: '26px' }} />
+              <img src="/icon.svg" alt="Bywayr" style={{ width: '30px', height: '30px' }} />
             </div>
 
             <h2 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
