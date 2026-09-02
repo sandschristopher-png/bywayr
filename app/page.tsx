@@ -59,6 +59,7 @@ const CATEGORIES = [
   { label: 'Viewpoint', color: '#10b981', icon: Mountain },
   { label: 'Nightlife', color: '#8b5cf6', icon: Moon },
   { label: 'Chill Spot', color: '#0284c7', icon: Compass },
+  { label: 'Photo Spot', color: '#ec4899', icon: Camera },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -986,7 +987,11 @@ export default function Home() {
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
-                {loading ? 'Connecting...' : `${spots.length} saved spots`}
+                {loading
+                  ? 'Connecting...'
+                  : selectedCategory === 'All'
+                  ? `${spots.length} saved spots`
+                  : `Showing ${filteredSpots.length} of ${spots.length} spots (${selectedCategory})`}
               </p>
             </div>
           </div>
@@ -2191,6 +2196,7 @@ export default function Home() {
                     <option>Viewpoint</option>
                     <option>Nightlife</option>
                     <option>Chill Spot</option>
+                    <option>Photo Spot</option>
                   </select>
                 </div>
                 <div>
