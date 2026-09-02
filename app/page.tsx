@@ -58,17 +58,12 @@ const CATEGORIES = [
   { label: 'Cafe', color: '#d97706', icon: Coffee },
   { label: 'Viewpoint', color: '#10b981', icon: Mountain },
   { label: 'Nightlife', color: '#8b5cf6', icon: Moon },
-  { label: 'Hidden Gem', color: '#0284c7', icon: Sparkles },
+  { label: 'Chill Spot', color: '#0284c7', icon: Compass },
 ];
 
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
   return match ? match.color : '#ef4444';
-};
-
-const MAP_STYLES = {
-  light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  dark: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
 };
 
 const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
@@ -330,12 +325,17 @@ export default function Home() {
     localStorage.setItem('bywayr_theme', nextTheme);
 
     if (!map.current) return;
-    const source = map.current.getSource('osm-tiles') as maplibregl.RasterTileSource | undefined;
-    if (source) {
-      source.tiles = [MAP_STYLES[nextTheme]];
-      map.current.style.sourceCaches['osm-tiles']?.clearTiles();
-      map.current.style.sourceCaches['osm-tiles']?.update(map.current.transform);
-      map.current.triggerRepaint();
+    if (map.current.getLayer('osm-tiles-light-layer') && map.current.getLayer('osm-tiles-dark-layer')) {
+      map.current.setLayoutProperty(
+        'osm-tiles-light-layer',
+        'visibility',
+        nextTheme === 'light' ? 'visible' : 'none'
+      );
+      map.current.setLayoutProperty(
+        'osm-tiles-dark-layer',
+        'visibility',
+        nextTheme === 'dark' ? 'visible' : 'none'
+      );
     }
   };
 
@@ -343,27 +343,46 @@ export default function Home() {
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
-    const initialTile = MAP_STYLES[mapTheme];
+    const savedTheme = (localStorage.getItem('bywayr_theme') as 'light' | 'dark') || 'light';
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
       style: {
         version: 8,
         sources: {
-          'osm-tiles': {
+          'osm-tiles-light': {
             type: 'raster',
-            tiles: [initialTile],
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
             tileSize: 256,
-            attribution: '© OpenStreetMap Contributors, CartoDB',
+            attribution: '© OpenStreetMap Contributors',
+          },
+          'osm-tiles-dark': {
+            type: 'raster',
+            tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© CartoDB, OpenStreetMap Contributors',
           },
         },
         layers: [
           {
-            id: 'osm-tiles-layer',
+            id: 'osm-tiles-light-layer',
             type: 'raster',
-            source: 'osm-tiles',
+            source: 'osm-tiles-light',
             minzoom: 0,
             maxzoom: 19,
+            layout: {
+              visibility: savedTheme === 'light' ? 'visible' : 'none',
+            },
+          },
+          {
+            id: 'osm-tiles-dark-layer',
+            type: 'raster',
+            source: 'osm-tiles-dark',
+            minzoom: 0,
+            maxzoom: 19,
+            layout: {
+              visibility: savedTheme === 'dark' ? 'visible' : 'none',
+            },
           },
         ],
       },
@@ -579,20 +598,22 @@ export default function Home() {
           },
         });
 
-        map.current.on('click', 'clusters', (e) => {
+        map.current.on('click', 'clusters', async (e) => {
           if (!map.current) return;
           const features = map.current.queryRenderedFeatures(e.point, { layers: ['clusters'] });
           if (!features || !features[0]) return;
           const clusterId = features[0].properties.cluster_id;
           const src = map.current.getSource('spots-source') as maplibregl.GeoJSONSource;
 
-          src.getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err || !map.current) return;
+          try {
+            const zoom = await src.getClusterExpansionZoom(clusterId);
             map.current.easeTo({
               center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
               zoom: zoom ?? 14,
             });
-          });
+          } catch (err) {
+            console.error('Cluster zoom error:', err);
+          }
         });
 
         map.current.on('click', 'unclustered-point', (e) => {
@@ -2169,7 +2190,7 @@ export default function Home() {
                     <option>Cafe</option>
                     <option>Viewpoint</option>
                     <option>Nightlife</option>
-                    <option>Hidden Gem</option>
+                    <option>Chill Spot</option>
                   </select>
                 </div>
                 <div>
