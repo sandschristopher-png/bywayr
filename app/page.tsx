@@ -249,6 +249,12 @@ export default function Home() {
   const previewMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationMarkerRef = useRef<maplibregl.Marker | null>(null);
   const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  // Mouse Drag to Scroll State for Categories
+  const [isCategoryDragging, setIsCategoryDragging] = useState(false);
+  const [categoryStartX, setCategoryStartX] = useState(0);
+  const [categoryScrollLeft, setCategoryScrollLeft] = useState(0);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const currentUserRef = useRef<any>(null);
@@ -297,7 +303,7 @@ export default function Home() {
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
-  // Share Dialog State (Desktop fallback)
+  // Share Dialog State
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
 
@@ -572,7 +578,9 @@ export default function Home() {
   const fetchSpots = async () => {
     try {
       const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
-      if (!error && data) setSpots(data as Spot[]);
+      if (!error && data) {
+        setSpots(data as Spot[]);
+      }
     } catch (err) {
       console.error('Failed to load spots:', err);
     } finally {
@@ -665,7 +673,7 @@ export default function Home() {
     if (!map.current) return;
     map.current.setStyle(
       nextTheme === 'light'
-        ? 'https://tiles.openfreemap.org/styles/positron'
+        ? 'https://tiles.openfreemap.org/styles/bright'
         : 'https://tiles.openfreemap.org/styles/dark'
     );
   };
@@ -677,6 +685,34 @@ export default function Home() {
     setViewingProfileSpots(userSpots);
   };
 
+  // Mouse Drag-to-Scroll handlers for Category Bar
+  const handleCategoryMouseDown = (e: React.MouseEvent) => {
+    if (!categoryScrollRef.current) return;
+    setIsCategoryDragging(true);
+    setCategoryStartX(e.pageX - categoryScrollRef.current.offsetLeft);
+    setCategoryScrollLeft(categoryScrollRef.current.scrollLeft);
+  };
+
+  const handleCategoryMouseLeaveOrUp = () => {
+    setIsCategoryDragging(false);
+  };
+
+  const handleCategoryMouseMove = (e: React.MouseEvent) => {
+    if (!isCategoryDragging || !categoryScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - categoryScrollRef.current.offsetLeft;
+    const walk = (x - categoryStartX) * 1.5;
+    categoryScrollRef.current.scrollLeft = categoryScrollLeft - walk;
+  };
+
+  const handleCategoryWheel = (e: React.WheelEvent) => {
+    if (!categoryScrollRef.current) return;
+    if (e.deltaY !== 0) {
+      categoryScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  // Initialize Map with OpenFreeMap 'bright' vector style (Clear Roads, Blue Water, Sage Parks)
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -686,23 +722,11 @@ export default function Home() {
       container: mapContainer.current,
       style:
         savedTheme === 'light'
-          ? 'https://tiles.openfreemap.org/styles/positron'
+          ? 'https://tiles.openfreemap.org/styles/bright'
           : 'https://tiles.openfreemap.org/styles/dark',
-      center: [121.06, 14.57],
-      zoom: 14,
+      center: [121.055, 14.575],
+      zoom: 13.5,
     });
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (!window.location.search.includes('spot=')) {
-            initializedMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15 });
-          }
-        },
-        () => {},
-        { enableHighAccuracy: false, timeout: 5000 }
-      );
-    }
 
     initializedMap.on('click', (e) => {
       setShowDropdown(false);
@@ -1157,7 +1181,7 @@ export default function Home() {
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
-      {/* 2. Top Header, Search, Category Filter Bar & Active Descriptor Sub-bar */}
+      {/* 2. Top Header, Search, Drag-Scrollable Category Filter Bar & Active Descriptor Sub-bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -1257,8 +1281,24 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories Bar */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
+        {/* Categories Bar with Mouse Drag & Wheel Support */}
+        <div 
+          ref={categoryScrollRef}
+          onMouseDown={handleCategoryMouseDown}
+          onMouseLeave={handleCategoryMouseLeaveOrUp}
+          onMouseUp={handleCategoryMouseLeaveOrUp}
+          onMouseMove={handleCategoryMouseMove}
+          onWheel={handleCategoryWheel}
+          style={{ 
+            display: 'flex', 
+            gap: '6px', 
+            overflowX: 'auto', 
+            paddingBottom: '2px', 
+            scrollbarWidth: 'none',
+            cursor: isCategoryDragging ? 'grabbing' : 'grab',
+            userSelect: 'none'
+          }}
+        >
           {currentUser && (
             <button
               onClick={() => setOnlyMySpots(!onlyMySpots)}
@@ -1276,6 +1316,7 @@ export default function Home() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
+                flexShrink: 0
               }}
             >
               <User style={{ width: '13px', height: '13px' }} />
@@ -1290,7 +1331,22 @@ export default function Home() {
               <button
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
-                style={{ backgroundColor: isSelected ? '#1c1917' : '#ffffff', color: isSelected ? '#fafaf9' : '#57534e', border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', padding: '6px 12px', borderRadius: '20px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ 
+                  backgroundColor: isSelected ? '#1c1917' : '#ffffff', 
+                  color: isSelected ? '#fafaf9' : '#57534e', 
+                  border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
+                  padding: '6px 12px', 
+                  borderRadius: '20px', 
+                  fontSize: '11.5px', 
+                  fontWeight: 600, 
+                  cursor: 'pointer', 
+                  whiteSpace: 'nowrap', 
+                  boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  flexShrink: 0 
+                }}
               >
                 <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
                 {cat.label}
@@ -1614,7 +1670,6 @@ export default function Home() {
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
-              {/* Tap-to-Upload Avatar Badge */}
               <label style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', flexShrink: 0 }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
                   <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
@@ -1790,7 +1845,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 11. Add / Edit Spot Modal Form with Category Descriptors */}
+      {/* 11. Add / Edit Spot Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
