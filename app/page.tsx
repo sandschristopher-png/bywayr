@@ -20,7 +20,6 @@ import {
   Moon,
   Sun,
   Sparkles,
-  ChevronRight,
   Navigation2,
   Crosshair,
   Pencil,
@@ -42,6 +41,7 @@ import {
   Laptop,
   Store,
   Trees,
+  AtSign,
 } from 'lucide-react';
 
 interface Spot {
@@ -56,6 +56,13 @@ interface Spot {
   image_url?: string;
   user_id?: string;
   created_at?: string;
+}
+
+interface UserProfile {
+  id: string;
+  username?: string;
+  full_name?: string;
+  avatar_url?: string;
 }
 
 const CATEGORIES = [
@@ -136,11 +143,22 @@ export default function Home() {
   const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
+
+  // Auth & Username States
   const [authEmail, setAuthEmail] = useState('');
+  const [authUsername, setAuthUsername] = useState('');
+  const [authUsernameError, setAuthUsernameError] = useState('');
+  const [claimUsername, setClaimUsername] = useState('');
+  const [claimUsernameError, setClaimUsernameError] = useState('');
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+
+  // App & Map States
   const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light');
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [spots, setSpots] = useState<Spot[]>([]);
@@ -181,6 +199,22 @@ export default function Home() {
     if (savedTheme) setMapTheme(savedTheme);
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (!error && data) {
+        setUserProfile(data);
+        if (!data.username) {
+          setIsClaimUsernameModalOpen(true);
+        }
+      } else if (!data) {
+        setIsClaimUsernameModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCurrentUser(session?.user ?? null);
@@ -188,7 +222,11 @@ export default function Home() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(session?.user ?? null);
-      if (session?.user) setIsAuthModalOpen(false);
+      if (session?.user) {
+        setIsAuthModalOpen(false);
+      } else {
+        setUserProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -205,11 +243,33 @@ export default function Home() {
     e.preventDefault();
     if (!authEmail.trim()) return;
 
+    const cleanUsername = authUsername.trim().toLowerCase();
+    if (cleanUsername) {
+      if (cleanUsername.length < 3 || cleanUsername.length > 20 || !/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+        setAuthUsernameError('Username must be 3-20 characters (letters, numbers, underscores).');
+        return;
+      }
+
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanUsername)
+        .maybeSingle();
+
+      if (existingUser) {
+        setAuthUsernameError('This username is already taken. Please choose another.');
+        return;
+      }
+    }
+
     setIsSendingMagicLink(true);
+    setAuthUsernameError('');
+
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
         emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        data: cleanUsername ? { username: cleanUsername } : undefined,
       },
     });
 
@@ -218,11 +278,53 @@ export default function Home() {
     setIsSendingMagicLink(false);
   };
 
+  const handleClaimUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    const clean = claimUsername.trim().toLowerCase();
+    if (clean.length < 3 || clean.length > 20 || !/^[a-z0-9_]{3,20}$/.test(clean)) {
+      setClaimUsernameError('Username must be 3-20 characters (letters, numbers, underscores).');
+      return;
+    }
+
+    setIsSavingUsername(true);
+    setClaimUsernameError('');
+
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', clean)
+      .maybeSingle();
+
+    if (existing && existing.id !== currentUser.id) {
+      setClaimUsernameError('That username is already taken.');
+      setIsSavingUsername(false);
+      return;
+    }
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: currentUser.id,
+      username: clean,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      setClaimUsernameError(error.message);
+    } else {
+      setUserProfile((prev) => ({ ...prev, id: currentUser.id, username: clean }));
+      setIsClaimUsernameModalOpen(false);
+    }
+    setIsSavingUsername(false);
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setMustTrySpotIds([]);
     setOnlyMySpots(false);
+    setUserProfile(null);
     setIsProfileModalOpen(false);
+    setIsClaimUsernameModalOpen(false);
   };
 
   const fetchSpots = async () => {
@@ -245,13 +347,14 @@ export default function Home() {
     }
   };
 
-  // Re-fetch spots whenever auth state changes
   useEffect(() => {
     fetchSpots();
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
+      fetchUserProfile(currentUser.id);
     } else {
       setMustTrySpotIds([]);
+      setUserProfile(null);
     }
   }, [currentUser]);
 
@@ -688,10 +791,10 @@ export default function Home() {
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
             {currentUser ? (
               <button onClick={() => setIsProfileModalOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#475569', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <User style={{ width: '13px', height: '13px' }} /> Account
+                <User style={{ width: '13px', height: '13px' }} /> {userProfile?.username ? `@${userProfile.username}` : 'Account'}
               </button>
             ) : (
-              <button onClick={() => { setMagicLinkSent(false); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '7px 10px', color: '#ffffff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '7px 10px', color: '#ffffff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <LogIn style={{ width: '13px', height: '13px' }} /> Sign In
               </button>
             )}
@@ -862,7 +965,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Profile Modal */}
+      {/* 6. Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -874,7 +977,12 @@ export default function Home() {
                 <User style={{ width: '22px', height: '22px' }} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Field Journal</h3>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
+                  <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Change Username">
+                    <Pencil style={{ width: '12px', height: '12px' }} />
+                  </button>
+                </h3>
                 <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>{currentUser.email}</p>
               </div>
             </div>
@@ -906,7 +1014,51 @@ export default function Home() {
         </div>
       )}
 
-      {/* Auth Modal */}
+      {/* 7. Claim / Set Username Modal (Prompt for New Users or Google OAuth) */}
+      {isClaimUsernameModalOpen && currentUser && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+            <div style={{ width: '44px', height: '44px', backgroundColor: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#2563eb' }}>
+              <AtSign style={{ width: '24px', height: '24px' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Choose Your Handle</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
+
+            <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontSize: '13px', fontWeight: 600 }}>@</span>
+                  <input
+                    type="text"
+                    required
+                    maxLength={20}
+                    placeholder="traveler"
+                    value={claimUsername}
+                    onChange={(e) => {
+                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setClaimUsername(clean);
+                      if (clean.length > 0 && clean.length < 3) {
+                        setClaimUsernameError('Must be at least 3 characters');
+                      } else {
+                        setClaimUsernameError('');
+                      }
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px 10px 28px', borderRadius: '10px', border: claimUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
+                  />
+                </div>
+                {claimUsernameError && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
+              </div>
+
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Auth Modal */}
       {isAuthModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
@@ -918,6 +1070,7 @@ export default function Home() {
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Join Bywayr</h3>
             <p style={{ margin: '0 0 20px 0', fontSize: '12px', color: '#64748b' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+            
             <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: '#1e293b', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -927,11 +1080,13 @@ export default function Home() {
               </svg>
               Continue with Google
             </button>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
               <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>OR EMAIL</span>
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
             </div>
+
             {magicLinkSent ? (
               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
                 <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 6px auto' }} />
@@ -940,8 +1095,40 @@ export default function Home() {
               </div>
             ) : (
               <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <input type="email" required placeholder="Enter your email address" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none' }} />
-                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username (for new users)</label>
+                  <input
+                    type="text"
+                    maxLength={20}
+                    placeholder="e.g. explorer_ph"
+                    value={authUsername}
+                    onChange={(e) => {
+                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setAuthUsername(clean);
+                      if (clean.length > 0 && clean.length < 3) {
+                        setAuthUsernameError('Must be at least 3 characters');
+                      } else {
+                        setAuthUsernameError('');
+                      }
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '10px', border: authUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
+                  />
+                  {authUsernameError && <span style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', display: 'block' }}>{authUsernameError}</span>}
+                </div>
+
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none' }}
+                  />
+                </div>
+
+                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
                   {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
                 </button>
               </form>
@@ -950,7 +1137,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Add / Edit Spot Modal Form */}
+      {/* 9. Add / Edit Spot Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
