@@ -1,8 +1,7 @@
-const CACHE_NAME = 'bywayr-shell-v1';
+const CACHE_NAME = 'bywayr-shell-v2';
 const TILE_CACHE_NAME = 'bywayr-tiles-v1';
 
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -33,7 +32,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Cache OSM & CartoDB tiles
+  // 1. Map Tiles: Cache First (Fast & Saves Bandwidth)
   if (url.hostname.includes('tile.openstreetmap.org') || url.hostname.includes('basemaps.cartocdn.com')) {
     event.respondWith(
       caches.open(TILE_CACHE_NAME).then(async (cache) => {
@@ -53,16 +52,34 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // 2. Navigation / HTML Page Requests: Network First (Always load latest build)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // 3. Other Assets: Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request).catch(() => {
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
+          return networkResponse;
         })
-      );
+        .catch(() => cached);
+
+      return cached || fetchPromise;
     })
   );
 });
