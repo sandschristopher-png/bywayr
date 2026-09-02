@@ -694,7 +694,7 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Keyless Styled Basemap: Custom OSM Filters for Off-White Light Mode (Dark mode toggle removed)
+  // Bulletproof Keyless Styled Basemap: Custom OSM Filters with maxzoom 20 for crisp street-level detail
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -730,7 +730,7 @@ export default function Home() {
             type: 'raster',
             source: 'osm-tiles-light',
             minzoom: 0,
-            maxzoom: 19,
+            maxzoom: 20,
             paint: {
               'raster-hue-rotate': 25,
               'raster-saturation': -0.45,
@@ -1439,7 +1439,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Floating Action Controls (Dark mode toggle removed) */}
+      {/* 3. Floating Action Controls */}
       <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
