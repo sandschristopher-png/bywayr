@@ -145,7 +145,7 @@ const CATEGORIES = [
   },
   { 
     label: 'Work & Focus', 
-    desc: 'Nomad friendly work spots, quiet libraries & fast Wi-Fi cafes', 
+    desc: 'Nomad-friendly work spots, quiet libraries & fast Wi-Fi cafes', 
     color: '#2563eb', 
     icon: Laptop 
   },
@@ -296,6 +296,7 @@ export default function Home() {
   // App & Map States
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [selectedCity, setSelectedCity] = useState('All');
+  const [currentMapCity, setCurrentMapCity] = useState<string | null>(null);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
@@ -698,7 +699,7 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Keyless Styled Basemap: Custom OSM Filters with maxzoom 20 and Custom Icon-enhanced DOM Markers
+  // Bulletproof Keyless Styled Basemap: Custom OSM Filters with maxzoom 20 and Dynamic City Detection on moveend
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -748,11 +749,20 @@ export default function Home() {
       zoom: initialZoom,
     });
 
+    let timeout: NodeJS.Timeout;
     initializedMap.on('moveend', () => {
       const center = initializedMap.getCenter();
       const zoom = initializedMap.getZoom();
       localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
       localStorage.setItem('bywayr_map_zoom', zoom.toString());
+
+      clearTimeout(timeout);
+      timeout = setTimeout(async () => {
+        const geo = await reverseGeocode(center.lat, center.lng);
+        if (geo.city) {
+          setCurrentMapCity(geo.city);
+        }
+      }, 800);
     });
 
     // Handle Mobile & Desktop Initial Geolocation (instant jump if no saved position exists)
@@ -802,6 +812,7 @@ export default function Home() {
     map.current = initializedMap;
 
     return () => {
+      clearTimeout(timeout);
       initializedMap.remove();
       map.current = null;
     };
@@ -941,8 +952,13 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Extract unique cities available in spots
-  const availableCities = Array.from(new Set(spots.map((s) => s.city?.trim()).filter(Boolean)));
+  // Combine saved spot cities and current map viewing city dynamically
+  const availableCities = Array.from(
+    new Set([
+      ...spots.map((s) => s.city?.trim()).filter(Boolean),
+      ...(currentMapCity ? [currentMapCity.trim()] : []),
+    ])
+  );
 
   useEffect(() => {
     if (!map.current) return;
@@ -1257,7 +1273,7 @@ export default function Home() {
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
-      {/* 2. Top Header, Search, Separate City Filter Row, Category Filter Bar & Active Descriptor Sub-bar */}
+      {/* 2. Top Header, Search, Categories Bar (Top), City Filter Row (Bottom) & Active Descriptor Sub-bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -1373,72 +1389,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Separate Clean City Filter Row */}
-        {availableCities.length > 0 && (
-          <div 
-            style={{ 
-              display: 'flex', 
-              gap: '6px', 
-              overflowX: 'auto', 
-              paddingBottom: '2px', 
-              scrollbarWidth: 'none',
-              userSelect: 'none'
-            }}
-          >
-            <button
-              onClick={() => setSelectedCity('All')}
-              style={{
-                backgroundColor: selectedCity === 'All' ? '#1c1917' : '#ffffff',
-                color: selectedCity === 'All' ? '#fafaf9' : '#57534e',
-                border: selectedCity === 'All' ? '1px solid #1c1917' : '1px solid #e7e5e4',
-                padding: '5px 11px',
-                borderRadius: '16px',
-                fontSize: '11px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                boxShadow: '0 2px 6px rgba(28, 25, 23, 0.04)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                flexShrink: 0
-              }}
-            >
-              <Compass style={{ width: '12px', height: '12px', color: selectedCity === 'All' ? '#fafaf9' : '#0284c7' }} />
-              All Cities
-            </button>
-
-            {availableCities.map((city) => {
-              const isCitySelected = selectedCity.toLowerCase() === city.toLowerCase();
-              return (
-                <button
-                  key={city}
-                  onClick={() => setSelectedCity(city)}
-                  style={{
-                    backgroundColor: isCitySelected ? '#1c1917' : '#ffffff',
-                    color: isCitySelected ? '#fafaf9' : '#57534e',
-                    border: isCitySelected ? '1px solid #1c1917' : '1px solid #e7e5e4',
-                    padding: '5px 11px',
-                    borderRadius: '16px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 2px 6px rgba(28, 25, 23, 0.04)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    flexShrink: 0
-                  }}
-                >
-                  📍 {city}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Categories Bar with Mouse Drag & Wheel Support */}
+        {/* Categories Bar (On Top of Cities) */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -1511,6 +1462,71 @@ export default function Home() {
             );
           })}
         </div>
+
+        {/* Separate Clean City Filter Row (Underneath Categories) with Dynamic Auto-Detection */}
+        {availableCities.length > 0 && (
+          <div 
+            style={{ 
+              display: 'flex', 
+              gap: '6px', 
+              overflowX: 'auto', 
+              paddingBottom: '2px', 
+              scrollbarWidth: 'none',
+              userSelect: 'none'
+            }}
+          >
+            <button
+              onClick={() => setSelectedCity('All')}
+              style={{
+                backgroundColor: selectedCity === 'All' ? '#1c1917' : '#ffffff',
+                color: selectedCity === 'All' ? '#fafaf9' : '#57534e',
+                border: selectedCity === 'All' ? '1px solid #1c1917' : '1px solid #e7e5e4',
+                padding: '5px 11px',
+                borderRadius: '16px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(28, 25, 23, 0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                flexShrink: 0
+              }}
+            >
+              <Compass style={{ width: '12px', height: '12px', color: selectedCity === 'All' ? '#fafaf9' : '#0284c7' }} />
+              All Cities
+            </button>
+
+            {availableCities.map((city) => {
+              const isCitySelected = selectedCity.toLowerCase() === city.toLowerCase();
+              return (
+                <button
+                  key={city}
+                  onClick={() => setSelectedCity(city)}
+                  style={{
+                    backgroundColor: isCitySelected ? '#1c1917' : '#ffffff',
+                    color: isCitySelected ? '#fafaf9' : '#57534e',
+                    border: isCitySelected ? '1px solid #1c1917' : '1px solid #e7e5e4',
+                    padding: '5px 11px',
+                    borderRadius: '16px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 6px rgba(28, 25, 23, 0.04)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    flexShrink: 0
+                  }}
+                >
+                  📍 {city}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Dynamic Category Descriptor Sub-Bar */}
         {selectedCategory !== 'All' && activeCategoryObject && (
@@ -1838,7 +1854,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal with Interactive Avatar Upload */}
+      {/* 8. Own Account Profile Modal with Bywayr Plus (Coming Soon) Section */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
