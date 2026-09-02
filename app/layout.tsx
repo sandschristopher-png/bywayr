@@ -9,9 +9,32 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Bywayr',
-  description: 'Map, search, and curate secret spots, scenic viewpoints, and local gems.',
+  metadataBase: new URL('https://bywayr.com'),
+  title: 'Bywayr — Curate & Discover Hidden Spots',
+  description: 'A minimalist field guide for travelers and city wanderers to map, vouch for, and share hidden gems, alley eats, and local viewpoints.',
   manifest: '/manifest.json',
+  openGraph: {
+    title: 'Bywayr — Curate & Discover Hidden Spots',
+    description: 'A minimalist field guide for travelers and city wanderers to map, vouch for, and share hidden gems, alley eats, and local viewpoints.',
+    url: 'https://bywayr.com',
+    siteName: 'Bywayr',
+    images: [
+      {
+        url: '/icon.svg',
+        width: 512,
+        height: 512,
+        alt: 'Bywayr Field Guide',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Bywayr — Curate & Discover Hidden Spots',
+    description: 'Map, search, and curate secret spots, scenic viewpoints, and local gems.',
+    images: ['/icon.svg'],
+  },
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

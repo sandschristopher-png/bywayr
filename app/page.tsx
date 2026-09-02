@@ -45,6 +45,7 @@ import {
   MessageCircle,
   Send,
   Copy,
+  Compass,
 } from 'lucide-react';
 
 interface Spot {
@@ -66,6 +67,7 @@ interface UserProfile {
   username?: string;
   full_name?: string;
   avatar_url?: string;
+  bio?: string;
 }
 
 const CATEGORIES = [
@@ -195,6 +197,10 @@ export default function Home() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
 
+  // Public Curator Profile Modal State
+  const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
+  const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
+
   // Auth & Username States
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
@@ -209,16 +215,15 @@ export default function Home() {
   const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light');
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [spots, setSpots] = useState<Spot[]>([]);
-  const [usernames, setUsernames] = useState<Record<string, string>>({});
+  const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry'>('fieldNotes');
-  const [copiedSpotId, setCopiedSpotId] = useState<string | null>(null);
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
-  // Share Dialog State (for Desktop fallback)
+  // Share Dialog State (Universal Desktop fallback)
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
 
@@ -289,18 +294,18 @@ export default function Home() {
     }
   };
 
-  const fetchUsernamesMap = async () => {
+  const fetchProfiles = async () => {
     try {
-      const { data, error } = await supabase.from('profiles').select('id, username');
+      const { data, error } = await supabase.from('profiles').select('*');
       if (!error && data) {
-        const map: Record<string, string> = {};
-        data.forEach((p: any) => {
-          if (p.id && p.username) map[p.id] = p.username;
+        const map: Record<string, UserProfile> = {};
+        data.forEach((p: UserProfile) => {
+          if (p.id) map[p.id] = p;
         });
-        setUsernames(map);
+        setProfilesMap(map);
       }
     } catch (err) {
-      console.error('Failed to load usernames map:', err);
+      console.error('Failed to load profiles map:', err);
     }
   };
 
@@ -431,7 +436,7 @@ export default function Home() {
       setUserProfile(updated);
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
       setIsClaimUsernameModalOpen(false);
-      fetchUsernamesMap();
+      fetchProfiles();
     }
     setIsSavingUsername(false);
   };
@@ -471,7 +476,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchSpots();
-    fetchUsernamesMap();
+    fetchProfiles();
     fetchVouches(currentUser?.id);
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
@@ -543,13 +548,22 @@ export default function Home() {
     localStorage.setItem('bywayr_theme', nextTheme);
 
     if (!map.current) return;
-    if (map.current.getLayer('osm-tiles-light-layer') && map.current.getLayer('osm-tiles-dark-layer')) {
-      map.current.setLayoutProperty('osm-tiles-light-layer', 'visibility', nextTheme === 'light' ? 'visible' : 'none');
-      map.current.setLayoutProperty('osm-tiles-dark-layer', 'visibility', nextTheme === 'dark' ? 'visible' : 'none');
-    }
+    map.current.setStyle(
+      nextTheme === 'light'
+        ? 'https://tiles.openfreemap.org/styles/positron'
+        : 'https://tiles.openfreemap.org/styles/dark'
+    );
   };
 
-  // Map Initialization with User Geo Auto-Centering & Canvas Touch Handlers
+  // Open Public Curator Profile
+  const handleOpenPublicProfile = (userId: string) => {
+    const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
+    const userSpots = spots.filter((s) => s.user_id === userId);
+    setViewingProfile(profile);
+    setViewingProfileSpots(userSpots);
+  };
+
+  // Map Initialization with OpenFreeMap Vector Tiles & User Auto-Centering
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -557,46 +571,14 @@ export default function Home() {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'osm-tiles-light': {
-            type: 'raster',
-            tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
-            tileSize: 256,
-            attribution: '© CartoDB, OpenStreetMap Contributors',
-          },
-          'osm-tiles-dark': {
-            type: 'raster',
-            tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
-            tileSize: 256,
-            attribution: '© CartoDB, OpenStreetMap Contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-tiles-light-layer',
-            type: 'raster',
-            source: 'osm-tiles-light',
-            minzoom: 0,
-            maxzoom: 19,
-            layout: { visibility: savedTheme === 'light' ? 'visible' : 'none' },
-          },
-          {
-            id: 'osm-tiles-dark-layer',
-            type: 'raster',
-            source: 'osm-tiles-dark',
-            minzoom: 0,
-            maxzoom: 19,
-            layout: { visibility: savedTheme === 'dark' ? 'visible' : 'none' },
-          },
-        ],
-      },
+      style:
+        savedTheme === 'light'
+          ? 'https://tiles.openfreemap.org/styles/positron'
+          : 'https://tiles.openfreemap.org/styles/dark',
       center: [121.06, 14.57],
       zoom: 14,
     });
 
-    // Auto-center on current user position if location is available
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -1157,7 +1139,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories Bar + Quick "Mine" Filter Pill */}
+        {/* Categories Bar + Inline "My Pins" Pill */}
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {currentUser && (
             <button
@@ -1217,7 +1199,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet */}
+      {/* 4. Spot Details Bottom Sheet with Clickable Creator Handle */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1227,7 +1209,18 @@ export default function Home() {
               </span>
               <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917' }}>{viewingSpot.name}</h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#78716c' }}>
-                {viewingSpot.city} {viewingSpot.user_id && usernames[viewingSpot.user_id] ? `· @${usernames[viewingSpot.user_id]}` : ''}
+                {viewingSpot.city}{' '}
+                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
+                  <>
+                    ·{' '}
+                    <span
+                      onClick={() => handleOpenPublicProfile(viewingSpot.user_id!)}
+                      style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      @{profilesMap[viewingSpot.user_id].username}
+                    </span>
+                  </>
+                ) : ''}
               </p>
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
@@ -1289,7 +1282,66 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Desktop Universal Share Modal */}
+      {/* 5. Public Curator Profile Modal */}
+      {viewingProfile && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative' }}>
+            <button onClick={() => setViewingProfile(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
+                <Compass style={{ width: '24px', height: '24px' }} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>@{viewingProfile.username || 'wanderer'}</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c' }}>Curator on Bywayr</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
+                <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Curated Pins</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{new Set(viewingProfileSpots.map((s) => s.city)).size}</div>
+                <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#57534e', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Curated Field Notes
+            </div>
+
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {viewingProfileSpots.length === 0 ? (
+                <p style={{ margin: '12px 0', fontSize: '12.5px', color: '#a8a29e', textAlign: 'center' }}>No public pins shared yet.</p>
+              ) : (
+                viewingProfileSpots.map((s) => (
+                  <div
+                    key={s.id || s.name}
+                    onClick={() => {
+                      setViewingProfile(null);
+                      flyToSpot(s);
+                    }}
+                    style={{ padding: '10px 12px', borderRadius: '12px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#1c1917' }}>{s.name}</h4>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c' }}>{s.city} · <span style={{ color: getCategoryColor(s.category), fontWeight: 600 }}>{s.category}</span></p>
+                    </div>
+                    <Navigation2 style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Desktop Universal Share Modal */}
       {shareDialogSpot && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '22px', position: 'relative' }}>
@@ -1377,7 +1429,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 6. Slide-Out Drawer */}
+      {/* 7. Slide-Out Drawer */}
       {isDrawerOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -1393,14 +1445,21 @@ export default function Home() {
             </div>
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {displayedDrawerSpots.map((spot) => {
-                const authorHandle = spot.user_id && usernames[spot.user_id] ? `@${usernames[spot.user_id]}` : null;
+                const author = spot.user_id ? profilesMap[spot.user_id]?.username : null;
                 return (
                   <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '13px', border: '1px solid #e7e5e4', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
                     <div style={{ flex: 1, minWidth: '0' }}>
                       <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
                       <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c' }}>
                         {spot.city}
-                        {authorHandle ? ` · ${authorHandle}` : ''}
+                        {author ? (
+                          <>
+                            {' · '}
+                            <span onClick={() => { setIsDrawerOpen(false); handleOpenPublicProfile(spot.user_id!); }} style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer' }}>
+                              @{author}
+                            </span>
+                          </>
+                        ) : ''}
                         {' · '}
                         <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                         {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}
@@ -1414,7 +1473,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 7. Profile Modal */}
+      {/* 8. Own Account Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -1463,7 +1522,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Claim Username Modal */}
+      {/* 9. Claim Username Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -1507,7 +1566,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Auth Modal */}
+      {/* 10. Auth Modal */}
       {isAuthModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
@@ -1586,7 +1645,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 10. Add / Edit Spot Modal Form */}
+      {/* 11. Add / Edit Spot Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1686,7 +1745,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 11. Welcome Modal */}
+      {/* 12. Welcome Modal */}
       {showWelcome && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '26px 20px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
