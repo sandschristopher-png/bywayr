@@ -1,0 +1,56 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Clay Tile Gradient -->
+    <linearGradient id="tileGrad" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fdfbf7"/>
+      <stop offset="100%" stop-color="#dedad2"/>
+    </linearGradient>
+
+    <!-- Clay Pin Gradient (Terracotta) -->
+    <linearGradient id="pinGrad" x1="180" y1="120" x2="332" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f27461"/>
+      <stop offset="100%" stop-color="#b83a29"/>
+    </linearGradient>
+
+    <!-- Top Gloss / Inner Highlight for Clay Volume -->
+    <linearGradient id="innerHighlight" x1="256" y1="64" x2="256" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Soft Diffused Clay Shadows -->
+    <filter id="tileShadow" x="0" y="0" width="512" height="512" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#1c1917" flood-opacity="0.15"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#1c1917" flood-opacity="0.10"/>
+    </filter>
+
+    <!-- Expanded filter region so the bottom tip and drop shadow don't get cut off -->
+    <filter id="pinShadow" x="100" y="80" width="312" height="340" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#7f2316" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Main Tactile Squircle Tile -->
+  <rect x="64" y="64" width="384" height="384" rx="104" fill="url(#tileGrad)" filter="url(#tileShadow)"/>
+  
+  <!-- Outer Rim Highlight on Tile -->
+  <rect x="68" y="68" width="376" height="376" rx="100" stroke="#ffffff" stroke-width="4" stroke-opacity="0.7" fill="none"/>
+
+  <!-- Top Volumetric Highlight -->
+  <path d="M168 64H344C401.438 64 448 110.562 448 168V240C448 139.524 366.476 58 266 58H168C110.562 58 64 104.562 64 162V240C64 110.562 110.562 64 168 64Z" fill="url(#innerHighlight)"/>
+
+  <!-- Chunky 3D Clay Map Pin -->
+  <g filter="url(#pinShadow)">
+    <path d="M256 112C198.562 112 152 158.562 152 216C152 288 256 384 256 384C256 384 360 288 360 216C360 158.562 313.438 112 256 112Z" fill="url(#pinGrad)"/>
+  </g>
+
+  <!-- Pin Rim Highlight for Inflated Look -->
+  <path d="M256 120C202.981 120 160 162.981 160 216C160 219.5 160.3 223 160.8 226.4C165.6 176 206.4 136 256 136C305.6 136 346.4 176 351.2 226.4C351.7 223 352 219.5 352 216C352 162.981 309.019 120 256 120Z" fill="#ffffff" fill-opacity="0.35"/>
+
+  <!-- Center Recessed Hole / Core -->
+  <circle cx="256" cy="212" r="48" fill="#292524" fill-opacity="0.12"/>
+  <circle cx="256" cy="212" r="42" fill="#fafaf9"/>
+
+  <!-- Minimalist Core Indicator -->
+  <circle cx="256" cy="212" r="14" fill="#e05a47"/>
+</svg>
