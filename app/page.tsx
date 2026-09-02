@@ -37,11 +37,12 @@ import {
   Square,
   Gem,
   Beer,
-  Home as HomeIcon,
-  Laptop,
   Store,
-  Trees,
   AtSign,
+  Gamepad2,
+  Disc,
+  ShoppingBag,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface Spot {
@@ -67,16 +68,15 @@ interface UserProfile {
 
 const CATEGORIES = [
   { label: 'All', color: '#64748b', icon: Sparkles },
-  { label: 'Hidden Gem', color: '#8b5cf6', icon: Gem },
-  { label: 'Local Eats', color: '#f97316', icon: Utensils },
-  { label: 'Nightlife', color: '#ec4899', icon: Beer },
+  { label: 'Retro & Arcade', color: '#8b5cf6', icon: Gamepad2 },
+  { label: 'Records & Sound', color: '#0ea5e9', icon: Disc },
+  { label: 'Specialty & Hobby', color: '#06b6d4', icon: Store },
+  { label: 'Vintage & Thrift', color: '#a855f7', icon: ShoppingBag },
+  { label: 'Alley Eats', color: '#f97316', icon: Utensils },
+  { label: 'Listening & Bars', color: '#ec4899', icon: Beer },
   { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
-  { label: 'Viewpoint', color: '#10b981', icon: Mountain },
-  { label: 'Photo Spot', color: '#0284c7', icon: Camera },
-  { label: 'Hidden Stay', color: '#6366f1', icon: HomeIcon },
-  { label: 'Co-Working', color: '#0ea5e9', icon: Laptop },
-  { label: 'Night Market', color: '#f43f5e', icon: Store },
-  { label: 'Nature & Trail', color: '#14b8a6', icon: Trees },
+  { label: 'Viewpoints', color: '#10b981', icon: Mountain },
+  { label: 'Hidden Gems', color: '#ef4444', icon: Gem },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -175,7 +175,20 @@ export default function Home() {
   const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const currentUserRef = useRef<any>(null);
+
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('bywayr_user_profile');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    return null;
+  });
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -202,6 +215,12 @@ export default function Home() {
   const [copiedSpotId, setCopiedSpotId] = useState<string | null>(null);
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
+
+  // Vouches State
+  const [vouchedSpotIds, setVouchedSpotIds] = useState<string[]>([]);
+  const [vouchCounts, setVouchCounts] = useState<Record<string, number>>({});
+  const [savingVouch, setSavingVouch] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -219,7 +238,7 @@ export default function Home() {
 
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
-    category: 'Hidden Gem',
+    category: 'Hidden Gems',
     city: 'Manila',
     country: 'Philippines',
     description: '',
@@ -227,6 +246,10 @@ export default function Home() {
     longitude: 120.9842,
     image_url: '',
   });
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('bywayr_theme') as 'light' | 'dark' | null;
@@ -248,6 +271,7 @@ export default function Home() {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
       if (!error && data) {
         setUserProfile(data);
+        localStorage.setItem('bywayr_user_profile', JSON.stringify(data));
         if (!data.username) {
           setIsClaimUsernameModalOpen(true);
         }
@@ -259,17 +283,42 @@ export default function Home() {
     }
   };
 
+  const fetchVouches = async (userId?: string) => {
+    try {
+      const { data: allVouches, error } = await supabase.from('vouches').select('spot_id, user_id');
+      if (!error && allVouches) {
+        const counts: Record<string, number> = {};
+        const myVouches: string[] = [];
+        allVouches.forEach((v: { spot_id: string; user_id: string }) => {
+          counts[v.spot_id] = (counts[v.spot_id] || 0) + 1;
+          if (userId && v.user_id === userId) {
+            myVouches.push(v.spot_id);
+          }
+        });
+        setVouchCounts(counts);
+        setVouchedSpotIds(myVouches);
+      }
+    } catch (err) {
+      console.error('Failed to load vouches:', err);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUser(session?.user ?? null);
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      currentUserRef.current = user;
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user ?? null);
-      if (session?.user) {
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      currentUserRef.current = user;
+      if (user) {
         setIsAuthModalOpen(false);
       } else {
         setUserProfile(null);
+        localStorage.removeItem('bywayr_user_profile');
       }
     });
 
@@ -324,7 +373,8 @@ export default function Home() {
 
   const handleClaimUsername = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    const activeUser = currentUserRef.current;
+    if (!activeUser) return;
 
     const clean = claimUsername.trim().toLowerCase();
     if (clean.length < 3 || clean.length > 20 || !/^[a-z0-9_]{3,20}$/.test(clean)) {
@@ -341,14 +391,14 @@ export default function Home() {
       .eq('username', clean)
       .maybeSingle();
 
-    if (existing && existing.id !== currentUser.id) {
+    if (existing && existing.id !== activeUser.id) {
       setClaimUsernameError('That username is already taken.');
       setIsSavingUsername(false);
       return;
     }
 
     const { error } = await supabase.from('profiles').upsert({
-      id: currentUser.id,
+      id: activeUser.id,
       username: clean,
       updated_at: new Date().toISOString(),
     });
@@ -356,7 +406,9 @@ export default function Home() {
     if (error) {
       setClaimUsernameError(error.message);
     } else {
-      setUserProfile((prev) => ({ ...prev, id: currentUser.id, username: clean }));
+      const updated = { ...userProfile, id: activeUser.id, username: clean };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
       setIsClaimUsernameModalOpen(false);
     }
     setIsSavingUsername(false);
@@ -364,9 +416,13 @@ export default function Home() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setCurrentUser(null);
+    currentUserRef.current = null;
     setMustTrySpotIds([]);
+    setVouchedSpotIds([]);
     setOnlyMySpots(false);
     setUserProfile(null);
+    localStorage.removeItem('bywayr_user_profile');
     setIsProfileModalOpen(false);
     setIsClaimUsernameModalOpen(false);
   };
@@ -393,18 +449,21 @@ export default function Home() {
 
   useEffect(() => {
     fetchSpots();
+    fetchVouches(currentUser?.id);
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
       fetchUserProfile(currentUser.id);
     } else {
       setMustTrySpotIds([]);
+      setVouchedSpotIds([]);
       setUserProfile(null);
     }
   }, [currentUser]);
 
   const toggleMustTry = async (spotId?: string) => {
     if (!spotId) return;
-    if (!currentUser) {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
       setIsAuthModalOpen(true);
       return;
     }
@@ -413,13 +472,46 @@ export default function Home() {
     const isBookmarked = mustTrySpotIds.includes(spotId);
 
     if (isBookmarked) {
-      const { error } = await supabase.from('bookmarks').delete().eq('user_id', currentUser.id).eq('spot_id', spotId);
+      const { error } = await supabase.from('bookmarks').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
       if (!error) setMustTrySpotIds((prev) => prev.filter((id) => id !== spotId));
     } else {
-      const { error } = await supabase.from('bookmarks').insert([{ user_id: currentUser.id, spot_id: spotId }]);
+      const { error } = await supabase.from('bookmarks').insert([{ user_id: activeUser.id, spot_id: spotId }]);
       if (!error) setMustTrySpotIds((prev) => [...prev, spotId]);
     }
     setSavingBookmark(false);
+  };
+
+  const toggleVouch = async (spotId?: string) => {
+    if (!spotId) return;
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setSavingVouch(true);
+    const isVouched = vouchedSpotIds.includes(spotId);
+
+    if (isVouched) {
+      const { error } = await supabase.from('vouches').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
+      if (!error) {
+        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
+        setVouchCounts((prev) => ({
+          ...prev,
+          [spotId]: Math.max(0, (prev[spotId] || 1) - 1),
+        }));
+      }
+    } else {
+      const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
+      if (!error) {
+        setVouchedSpotIds((prev) => [...prev, spotId]);
+        setVouchCounts((prev) => ({
+          ...prev,
+          [spotId]: (prev[spotId] || 0) + 1,
+        }));
+      }
+    }
+    setSavingVouch(false);
   };
 
   const toggleMapTheme = () => {
@@ -551,7 +643,7 @@ export default function Home() {
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
     }
 
-    if (currentUser) {
+    if (currentUserRef.current) {
       const placeName = item.name || item.display_name.split(',')[0];
       dropPreviewAndOpenModal(lat, lon, placeName);
     }
@@ -574,12 +666,12 @@ export default function Home() {
       const color = getCategoryColor(spot.category);
 
       const el = document.createElement('div');
-      el.style.width = '24px';
-      el.style.height = '24px';
+      el.style.width = '28px';
+      el.style.height = '28px';
       el.style.borderRadius = '50%';
       el.style.backgroundColor = color;
-      el.style.border = isMustTry ? '3px solid #f59e0b' : '3px solid #ffffff';
-      el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+      el.style.border = isMustTry ? '3.5px solid #f59e0b' : '3.5px solid #ffffff';
+      el.style.boxShadow = '0 4px 14px rgba(0,0,0,0.35)';
       el.style.cursor = 'pointer';
       el.title = spot.name;
 
@@ -612,12 +704,12 @@ export default function Home() {
           userLocationMarkerRef.current.setLngLat([longitude, latitude]);
         } else {
           const el = document.createElement('div');
-          el.style.width = '16px';
-          el.style.height = '16px';
+          el.style.width = '18px';
+          el.style.height = '18px';
           el.style.borderRadius = '50%';
           el.style.backgroundColor = '#0284c7';
           el.style.border = '3px solid #ffffff';
-          el.style.boxShadow = '0 0 10px rgba(2, 132, 199, 0.6)';
+          el.style.boxShadow = '0 0 12px rgba(2, 132, 199, 0.7)';
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
@@ -683,7 +775,7 @@ export default function Home() {
       try {
         await navigator.share({ title: `Bywayr — ${spot.name}`, text: `Check out ${spot.name} in ${spot.city}!`, url: shareUrl });
         return;
-      } catch (err) {}
+      } catch {}
     }
 
     await navigator.clipboard.writeText(shareUrl);
@@ -692,7 +784,8 @@ export default function Home() {
   };
 
   const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
-    if (!currentUser) {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
       setIsAuthModalOpen(true);
       return;
     }
@@ -712,7 +805,7 @@ export default function Home() {
 
     setNewSpot({
       name: defaultName || geo.name || '',
-      category: 'Hidden Gem',
+      category: 'Hidden Gems',
       city: geo.city || 'Manila',
       country: 'Philippines',
       description: '',
@@ -727,7 +820,8 @@ export default function Home() {
   };
 
   const handleOpenEditModal = (spot: Spot) => {
-    if (!currentUser || spot.user_id !== currentUser.id) return;
+    const activeUser = currentUserRef.current;
+    if (!activeUser || spot.user_id !== activeUser.id) return;
     setIsEditing(true);
     setNewSpot(spot);
     setImagePreview(spot.image_url || null);
@@ -748,7 +842,8 @@ export default function Home() {
   };
 
   const handleDeleteSpot = async (spot: Spot) => {
-    if (!spot.id || !currentUser || spot.user_id !== currentUser.id) return;
+    const activeUser = currentUserRef.current;
+    if (!spot.id || !activeUser || spot.user_id !== activeUser.id) return;
     if (!confirm(`Are you sure you want to delete "${spot.name}"?`)) return;
 
     setDeleting(true);
@@ -770,7 +865,8 @@ export default function Home() {
 
   const handleSaveSpot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
       setIsAuthModalOpen(true);
       return;
     }
@@ -827,7 +923,7 @@ export default function Home() {
           latitude: newSpot.latitude,
           longitude: newSpot.longitude,
           image_url: uploadedUrl || null,
-          user_id: currentUser.id,
+          user_id: activeUser.id,
         }])
         .select();
 
@@ -858,51 +954,51 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
       {/* 2. Top Header, Search, and Category Filter Bar */}
-      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '420px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <div style={{ backgroundColor: '#fef2f2', padding: '7px', borderRadius: '10px', display: 'flex', flexShrink: 0 }}>
-              <Compass style={{ color: '#ef4444', width: '18px', height: '18px' }} />
+      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '9px', pointerEvents: 'auto' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '12px 16px', borderRadius: '18px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.22)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div style={{ backgroundColor: '#fef2f2', padding: '8px', borderRadius: '12px', display: 'flex', flexShrink: 0 }}>
+              <Compass style={{ color: '#ef4444', width: '20px', height: '20px' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
-              <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '16px', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {loading ? 'Connecting...' : selectedCategory === 'All' ? `${spots.length} saved spots` : `${filteredSpots.length} in ${selectedCategory}`}
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
             {currentUser ? (
-              <button onClick={() => setIsProfileModalOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#475569', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <User style={{ width: '13px', height: '13px', flexShrink: 0 }} /> {userProfile?.username ? `@${userProfile.username}` : 'Account'}
+              <button onClick={() => setIsProfileModalOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 10px', color: '#475569', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <User style={{ width: '14px', height: '14px', flexShrink: 0 }} /> {userProfile?.username ? `@${userProfile.username}` : 'Account'}
               </button>
             ) : (
-              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#ffffff', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
+              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '8px 12px', color: '#ffffff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <LogIn style={{ width: '14px', height: '14px', flexShrink: 0 }} /> Sign In
               </button>
             )}
 
-            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '7px 9px', color: '#334155', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <List style={{ width: '15px', height: '15px' }} />
+            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 10px', color: '#334155', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              <List style={{ width: '16px', height: '16px' }} />
             </button>
             <button
               onClick={() => {
-                if (!currentUser) {
+                if (!currentUserRef.current) {
                   setIsAuthModalOpen(true);
                   return;
                 }
                 const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
                 dropPreviewAndOpenModal(center.lat, center.lng);
               }}
-              style={{ backgroundColor: '#ef4444', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#ffffff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap', flexShrink: 0 }}
+              style={{ backgroundColor: '#ef4444', border: 'none', borderRadius: '10px', padding: '8px 13px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}
             >
-              <Plus style={{ width: '14px', height: '14px' }} /> Add
+              <Plus style={{ width: '15px', height: '15px' }} /> Add
             </button>
           </div>
         </div>
@@ -910,22 +1006,22 @@ export default function Home() {
         {/* Search Bar */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
-            <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '16px', height: '16px' }} />
+            <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
             <input
               type="text"
               placeholder="Search place or paste GPS coords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
-              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '12px 40px 12px 38px', fontSize: '13px', borderRadius: showDropdown ? '14px 14px 0 0' : '14px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)', outline: 'none', color: '#0f172a' }}
+              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '13px 44px 13px 42px', fontSize: '13.5px', borderRadius: showDropdown ? '16px 16px 0 0' : '16px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.18)', outline: 'none', color: '#0f172a' }}
             />
-            {isSearching && <Loader2 style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#ef4444', width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />}
+            {isSearching && <Loader2 style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#ef4444', width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} />}
           </form>
 
           {showDropdown && searchResults.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 14px 14px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', maxHeight: '220px', overflowY: 'auto', zIndex: 10000 }}>
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 16px 16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.map((item, idx) => (
-                <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '10px 14px', fontSize: '12px', color: '#334155', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '12px 16px', fontSize: '13px', color: '#334155', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                   {item.display_name}
                 </div>
               ))}
@@ -933,17 +1029,17 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        {/* Categories (10 Curated Subculture Categories) */}
+        <div style={{ display: 'flex', gap: '7px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
             return (
               <button
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
-                style={{ backgroundColor: isSelected ? cat.color : '#ffffff', color: isSelected ? '#ffffff' : '#475569', border: isSelected ? `1px solid ${cat.color}` : '1px solid #e2e8f0', padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '5px' }}
+                style={{ backgroundColor: isSelected ? cat.color : '#ffffff', color: isSelected ? '#ffffff' : '#334155', border: isSelected ? `1px solid ${cat.color}` : '1px solid #e2e8f0', padding: '7px 13px', borderRadius: '22px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: isSelected ? '#ffffff' : cat.color }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isSelected ? '#ffffff' : cat.color }} />
                 {cat.label}
               </button>
             );
@@ -952,83 +1048,111 @@ export default function Home() {
       </div>
 
       {/* 3. Floating Action Controls */}
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <button onClick={toggleMapTheme} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#0f172a' : '#d97706' }}>
-          {mapTheme === 'light' ? <Moon style={{ width: '19px', height: '19px' }} /> : <Sun style={{ width: '19px', height: '19px' }} />}
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '9px', pointerEvents: 'auto' }}>
+        <button onClick={toggleMapTheme} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#0f172a' : '#d97706' }}>
+          {mapTheme === 'light' ? <Moon style={{ width: '21px', height: '21px' }} /> : <Sun style={{ width: '21px', height: '21px' }} />}
         </button>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
-          {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
+          {isLocating ? <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '22px', height: '22px' }} />}
         </button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <button onClick={() => map.current?.zoomIn()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }}>
-            <Plus style={{ width: '20px', height: '20px' }} />
+          <button onClick={() => map.current?.zoomIn()} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }}>
+            <Plus style={{ width: '22px', height: '22px' }} />
           </button>
-          <button onClick={() => map.current?.zoomOut()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }}>
-            <Minus style={{ width: '20px', height: '20px' }} />
+          <button onClick={() => map.current?.zoomOut()} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }}>
+            <Minus style={{ width: '22px', height: '22px' }} />
           </button>
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Navigation Buttons */}
+      {/* 4. Spot Details Bottom Sheet with Vouches */}
       {viewingSpot && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '380px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-            <div style={{ flex: 1, paddingRight: '8px' }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}20`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '6px' }}>
+        <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '400px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+            <div style={{ flex: 1, paddingRight: '10px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}20`, color: getCategoryColor(viewingSpot.category), fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '7px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>{viewingSpot.name}</h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>{viewingSpot.city}</p>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{viewingSpot.name}</h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>{viewingSpot.city}</p>
             </div>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f1f5f9', borderRadius: '8px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#475569', padding: '6px', display: 'flex' }}>
-                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '15px', height: '15px' }} /> : <Bookmark style={{ width: '15px', height: '15px' }} />}
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              {/* Vouch Button */}
+              <button
+                onClick={() => toggleVouch(viewingSpot.id)}
+                disabled={savingVouch}
+                style={{
+                  border: 'none',
+                  background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f1f5f9',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#475569',
+                  padding: '7px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+                title="Vouch for this spot"
+              >
+                <ShieldCheck style={{ width: '16px', height: '16px' }} />
+                <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
               </button>
-              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: copiedSpotId === viewingSpot.id ? '#f0fdf4' : '#f1f5f9', borderRadius: '8px', cursor: 'pointer', color: copiedSpotId === viewingSpot.id ? '#16a34a' : '#475569', padding: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600 }}>
-                {copiedSpotId === viewingSpot.id ? <><Check style={{ width: '15px', height: '15px' }} /> Copied</> : <Share2 style={{ width: '15px', height: '15px' }} />}
+
+              {/* Bookmark Button */}
+              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f1f5f9', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#475569', padding: '7px', display: 'flex' }} title="Save to Must-Try">
+                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '17px', height: '17px' }} /> : <Bookmark style={{ width: '17px', height: '17px' }} />}
               </button>
+
+              {/* Share Button */}
+              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: copiedSpotId === viewingSpot.id ? '#f0fdf4' : '#f1f5f9', borderRadius: '10px', cursor: 'pointer', color: copiedSpotId === viewingSpot.id ? '#16a34a' : '#475569', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
+                {copiedSpotId === viewingSpot.id ? <Check style={{ width: '17px', height: '17px' }} /> : <Share2 style={{ width: '17px', height: '17px' }} />}
+              </button>
+
               {currentUser && viewingSpot.user_id === currentUser.id && (
                 <>
-                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f1f5f9', borderRadius: '8px', cursor: 'pointer', color: '#475569', padding: '6px', display: 'flex' }} title="Edit Spot">
-                    <Pencil style={{ width: '15px', height: '15px' }} />
+                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f1f5f9', borderRadius: '10px', cursor: 'pointer', color: '#475569', padding: '7px', display: 'flex' }} title="Edit Spot">
+                    <Pencil style={{ width: '16px', height: '16px' }} />
                   </button>
-                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fef2f2', borderRadius: '8px', cursor: 'pointer', color: '#ef4444', padding: '6px', display: 'flex' }} title="Delete Spot">
-                    {deleting ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '15px', height: '15px' }} />}
+                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fef2f2', borderRadius: '10px', cursor: 'pointer', color: '#ef4444', padding: '7px', display: 'flex' }} title="Delete Spot">
+                    {deleting ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '16px', height: '16px' }} />}
                   </button>
                 </>
               )}
-              <button onClick={() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-                <X style={{ width: '18px', height: '18px' }} />
+              <button onClick={() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '5px' }}>
+                <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
           </div>
-          {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', margin: '8px 0' }} />}
-          {viewingSpot.description && <p style={{ margin: '8px 0 12px 0', fontSize: '13px', color: '#334155', lineHeight: 1.4 }}>{viewingSpot.description}</p>}
+
+          {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
+          {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13.5px', color: '#334155', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${viewingSpot.latitude},${viewingSpot.longitude}&travelmode=walking`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#0f172a', color: '#ffffff', textDecoration: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#0f172a', color: '#ffffff', textDecoration: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}
           >
-            <Navigation2 style={{ width: '14px', height: '14px' }} /> Start Walking Directions
+            <Navigation2 style={{ width: '15px', height: '15px' }} /> Start Walking Directions
           </a>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${viewingSpot.latitude},${viewingSpot.longitude}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ backgroundColor: '#2563eb', color: '#ffffff', textDecoration: 'none', padding: '9px', borderRadius: '10px', fontSize: '11.5px', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+              style={{ backgroundColor: '#2563eb', color: '#ffffff', textDecoration: 'none', padding: '10px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
             >
-              <Navigation2 style={{ width: '13px', height: '13px' }} /> Google Maps
+              <Navigation2 style={{ width: '14px', height: '14px' }} /> Google Maps
             </a>
             <a
               href={`https://maps.apple.com/?daddr=${viewingSpot.latitude},${viewingSpot.longitude}&dirflg=w`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', textDecoration: 'none', padding: '9px', borderRadius: '10px', fontSize: '11.5px', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+              style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', textDecoration: 'none', padding: '10px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
             >
-              <Navigation2 style={{ width: '13px', height: '13px' }} /> Apple Maps
+              <Navigation2 style={{ width: '14px', height: '14px' }} /> Apple Maps
             </a>
           </div>
         </div>
@@ -1037,25 +1161,23 @@ export default function Home() {
       {/* 5. Slide-Out Drawer */}
       {isDrawerOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
-          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
-              </div>
+          <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', padding: '22px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-                <X style={{ width: '20px', height: '20px' }} />
+                <X style={{ width: '22px', height: '22px' }} />
               </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f1f5f9', borderRadius: '10px', padding: '3px', marginBottom: '14px' }}>
-              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 0', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#0f172a' : '#64748b' }}>Field Notes</button>
-              <button onClick={() => { if (!currentUser) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#0f172a' : '#64748b' }}>Must-Try ({mustTrySpotIds.length})</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f1f5f9', borderRadius: '12px', padding: '4px', marginBottom: '16px' }}>
+              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '9px 0', borderRadius: '9px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#0f172a' : '#64748b' }}>Field Notes</button>
+              <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '9px 0', borderRadius: '9px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#0f172a' : '#64748b' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '11px' }}>
               {displayedDrawerSpots.map((spot) => (
-                <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
+                <div key={spot.id || spot.name} style={{ padding: '13px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
-                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>{spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span></p>
+                    <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14.5px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>{spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span> {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}</p>
                   </div>
                 </div>
               ))}
@@ -1067,67 +1189,67 @@ export default function Home() {
       {/* 6. Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '370px', padding: '26px', position: 'relative' }}>
             <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
+              <X style={{ width: '22px', height: '22px' }} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
-                <User style={{ width: '22px', height: '22px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
+                <User style={{ width: '24px', height: '24px' }} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
                   <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Change Username">
-                    <Pencil style={{ width: '12px', height: '12px' }} />
+                    <Pencil style={{ width: '13px', height: '13px' }} />
                   </button>
                 </h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>{currentUser.email}</p>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>{currentUser.email}</p>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '9px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '14px', marginBottom: '18px', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{mySpotsCount}</div>
-                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Pins Placed</div>
+                <div style={{ fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>{mySpotsCount}</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Pins</div>
               </div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
-                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Must-Try</div>
+                <div style={{ fontSize: '19px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Must-Try</div>
               </div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
-                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Cities</div>
+                <div style={{ fontSize: '19px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Cities</div>
               </div>
             </div>
-            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: onlyMySpots ? '#eff6ff' : '#ffffff', border: onlyMySpots ? '1px solid #bfdbfe' : '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#2563eb' : '#64748b' }} />
-                <span style={{ fontSize: '12px', fontWeight: 600, color: onlyMySpots ? '#1e40af' : '#334155' }}>Filter map to my pins only</span>
+            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#eff6ff' : '#ffffff', border: onlyMySpots ? '1px solid #bfdbfe' : '1px solid #e2e8f0', borderRadius: '14px', cursor: 'pointer', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <MapPin style={{ width: '17px', height: '17px', color: onlyMySpots ? '#2563eb' : '#64748b' }} />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: onlyMySpots ? '#1e40af' : '#334155' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#2563eb' }} /> : <Square style={{ width: '16px', height: '16px', color: '#94a3b8' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '17px', height: '17px', color: '#2563eb' }} /> : <Square style={{ width: '17px', height: '17px', color: '#94a3b8' }} />}
             </div>
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fef2f2', color: '#ef4444', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '10px', border: '1px solid #fecaca', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fef2f2', color: '#ef4444', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '12px', border: '1px solid #fecaca', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <LogOut style={{ width: '15px', height: '15px' }} /> Sign Out
             </button>
           </div>
         </div>
       )}
 
-      {/* 7. Claim / Set Username Modal (Prompt for New Users or Google OAuth) */}
+      {/* 7. Claim / Set Username Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
-            <div style={{ width: '44px', height: '44px', backgroundColor: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#2563eb' }}>
-              <AtSign style={{ width: '24px', height: '24px' }} />
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '370px', padding: '26px', position: 'relative' }}>
+            <div style={{ width: '48px', height: '48px', backgroundColor: '#eff6ff', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto', color: '#2563eb' }}>
+              <AtSign style={{ width: '26px', height: '26px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Choose Your Handle</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '19px', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Choose Your Handle</h3>
+            <p style={{ margin: '0 0 18px 0', fontSize: '13px', color: '#64748b', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
 
-            <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '5px' }}>Username</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontSize: '13px', fontWeight: 600 }}>@</span>
+                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>@</span>
                   <input
                     type="text"
                     required
@@ -1143,14 +1265,14 @@ export default function Home() {
                         setClaimUsernameError('');
                       }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px 10px 28px', borderRadius: '10px', border: claimUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '14px', padding: '11px 12px 11px 30px', borderRadius: '11px', border: claimUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
                   />
                 </div>
-                {claimUsernameError && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
+                {claimUsernameError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
               </div>
 
-              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSavingUsername ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
               </button>
             </form>
           </div>
@@ -1160,18 +1282,18 @@ export default function Home() {
       {/* 8. Auth Modal */}
       {isAuthModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '370px', padding: '26px', position: 'relative', textAlign: 'center' }}>
             <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
+              <X style={{ width: '22px', height: '22px' }} />
             </button>
-            <div style={{ width: '44px', height: '44px', backgroundColor: '#fef2f2', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
-              <Compass style={{ color: '#ef4444', width: '24px', height: '24px' }} />
+            <div style={{ width: '48px', height: '48px', backgroundColor: '#fef2f2', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto' }}>
+              <Compass style={{ color: '#ef4444', width: '26px', height: '26px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Join Bywayr</h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: '12px', color: '#64748b' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>Join Bywayr</h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
             
-            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: '#1e293b', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24">
+            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '13px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 600, color: '#1e293b', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
+              <svg width="19" height="19" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
@@ -1182,20 +1304,20 @@ export default function Home() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>OR EMAIL</span>
+              <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600 }}>OR EMAIL</span>
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
             </div>
 
             {magicLinkSent ? (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
-                <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 6px auto' }} />
-                <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
-                <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
+                <CheckCircle2 style={{ color: '#16a34a', width: '26px', height: '26px', margin: '0 auto 6px auto' }} />
+                <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
               </div>
             ) : (
-              <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username (for new users)</label>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username (for new users)</label>
                   <input
                     type="text"
                     maxLength={20}
@@ -1210,25 +1332,25 @@ export default function Home() {
                         setAuthUsernameError('');
                       }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '10px', border: authUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '11px 13px', borderRadius: '11px', border: authUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
                   />
-                  {authUsernameError && <span style={{ color: '#ef4444', fontSize: '10px', marginTop: '2px', display: 'block' }}>{authUsernameError}</span>}
+                  {authUsernameError && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
                 </div>
 
                 <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Email Address</label>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Email Address</label>
                   <input
                     type="email"
                     required
                     placeholder="Enter your email"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '11px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', outline: 'none' }}
                   />
                 </div>
 
-                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                  {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
+                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                  {isSendingMagicLink ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '15px', height: '15px' }} /> Send Magic Link</>}
                 </button>
               </form>
             )}
@@ -1239,24 +1361,24 @@ export default function Home() {
       {/* 9. Add / Edit Spot Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '390px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={handleCloseModal} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
+              <X style={{ width: '22px', height: '22px' }} />
             </button>
-            <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin style={{ width: '18px', height: '18px', color: '#ef4444' }} />
+            <h2 style={{ margin: '0 0 16px 0', fontWeight: 700, fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin style={{ width: '20px', height: '20px', color: '#ef4444' }} />
               {isEditing ? 'Edit Spot' : 'Add to Bywayr'}
             </h2>
-            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
-                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '96px', border: '2px dashed #cbd5e1', borderRadius: '12px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#f8fafc', position: 'relative', overflow: 'hidden' }}>
                   {imagePreview ? (
                     <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b' }}>
-                      <Camera style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
-                      <span style={{ fontSize: '11px', fontWeight: 500 }}>Tap to take or choose photo</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', color: '#64748b' }}>
+                      <Camera style={{ width: '22px', height: '22px', color: '#94a3b8' }} />
+                      <span style={{ fontSize: '12px', fontWeight: 500 }}>Tap to take or choose photo</span>
                     </div>
                   )}
                   <input type="file" accept="image/*" capture="environment" onChange={handleImageSelect} style={{ display: 'none' }} />
@@ -1272,9 +1394,9 @@ export default function Home() {
                     backgroundColor: '#eff6ff',
                     color: '#2563eb',
                     border: '1px solid #bfdbfe',
-                    borderRadius: '10px',
-                    padding: '8px 12px',
-                    fontSize: '11.5px',
+                    borderRadius: '11px',
+                    padding: '9px 13px',
+                    fontSize: '12.5px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
@@ -1286,60 +1408,60 @@ export default function Home() {
                   }}
                 >
                   {isModalLocating ? (
-                    <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
+                    <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
                   ) : (
-                    <Crosshair style={{ width: '14px', height: '14px' }} />
+                    <Crosshair style={{ width: '15px', height: '15px' }} />
                   )}
                   Pin My Current Location
                 </button>
               )}
 
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Spot Name</label>
-                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Spot Name</label>
+                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
               </div>
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Latitude</label>
-                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Latitude</label>
+                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Longitude</label>
-                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Longitude</label>
+                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
                   </div>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Category</label>
-                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Category</label>
+                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}>
                     {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
                       <option key={cat.label} value={cat.label}>{cat.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>City</label>
-                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>City</label>
+                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
-                <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', resize: 'none' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
+                <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', resize: 'none' }} />
               </div>
-              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
-                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
+              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13.5px', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
+                {saving || uploadingImage ? <Loader2 style={{ width: '17px', height: '17px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* 10. First-Time Visitor Welcome Modal */}
+      {/* 10. Clean & Punchy Welcome Screen */}
       {showWelcome && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)', width: '100%', maxWidth: '380px', padding: '28px 24px', position: 'relative', textAlign: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
             <div style={{ width: '52px', height: '52px', backgroundColor: '#fef2f2', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
               <Compass style={{ color: '#ef4444', width: '28px', height: '28px' }} />
             </div>
@@ -1347,45 +1469,36 @@ export default function Home() {
             <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
               Welcome to Bywayr
             </h2>
-            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
-              Your personal, community-curated field guide for hidden local spots, viewpoints, and neighborhood secrets.
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b', lineHeight: 1.45 }}>
+              A map-based field guide built for travelers, expats, and city wanderers to discover and curate hidden local spots.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', marginBottom: '24px', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#eff6ff', padding: '6px', borderRadius: '8px', color: '#2563eb', marginTop: '2px', flexShrink: 0 }}>
-                  <Compass style={{ width: '16px', height: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#f8fafc', padding: '14px 16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ backgroundColor: '#eff6ff', padding: '6px', borderRadius: '8px', color: '#2563eb', flexShrink: 0, display: 'flex' }}>
+                  <Gem style={{ width: '16px', height: '16px' }} />
                 </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Discover Hidden Gems</h4>
-                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Explore off-the-beaten-path cafes, lookouts, and eats.</p>
-                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Discover curated hidden gems</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef2f2', padding: '6px', borderRadius: '8px', color: '#ef4444', marginTop: '2px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fef2f2', padding: '6px', borderRadius: '8px', color: '#ef4444', flexShrink: 0, display: 'flex' }}>
                   <MapPin style={{ width: '16px', height: '16px' }} />
                 </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Pin In Real Time</h4>
-                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Use GPS to record your favorite places and photos on the spot.</p>
-                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Pin spots & photos as you explore</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', marginTop: '2px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', flexShrink: 0, display: 'flex' }}>
                   <BookmarkCheck style={{ width: '16px', height: '16px' }} />
                 </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Must-Try Wishlist</h4>
-                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>Bookmark spots you want to visit and build custom field notes.</p>
-                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Save your must-try wandering wishlist</span>
               </div>
             </div>
 
             <button
               onClick={handleDismissWelcome}
-              style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 700, fontSize: '13px', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)' }}
+              style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '13px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)' }}
             >
               Start Exploring
             </button>
