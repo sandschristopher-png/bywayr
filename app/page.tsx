@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
+import { OpenLocationCode } from 'open-location-code';
 import {
   MapPin,
   Loader2,
@@ -605,6 +606,20 @@ export default function Home() {
       return;
     }
 
+    // Check if input is a Plus Code using open-location-code
+    if (OpenLocationCode.isValid(query)) {
+      try {
+        const decoded = OpenLocationCode.decode(query);
+        const lat = decoded.latitudeCenter;
+        const lon = decoded.longitudeCenter;
+        setSearchResults([{ lat: lat.toString(), lon: lon.toString(), display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` }]);
+        setShowDropdown(true);
+        return;
+      } catch (err) {
+        console.error('Plus Code decode error:', err);
+      }
+    }
+
     const coordMatch = query.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
     if (coordMatch) {
       const lat = parseFloat(coordMatch[1]);
@@ -1007,7 +1022,7 @@ export default function Home() {
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
             <input
               type="text"
-              placeholder="Search place or paste GPS coords..."
+              placeholder="Search, paste coordinates, or plus codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
