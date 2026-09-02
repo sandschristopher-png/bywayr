@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
-import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
+import { decode, isValid } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
   Loader2,
@@ -624,27 +624,18 @@ export default function Home() {
       return;
     }
 
-    // Check if input is a valid Plus Code (handles both full and short codes)
     if (isValid(query)) {
       try {
-        let fullCode = query.toUpperCase();
-        if (isShort(fullCode)) {
-          const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
-          fullCode = recoverNearest(fullCode, center.lat, center.lng);
-        }
-
-        if (isFull(fullCode)) {
-          const decodedLocation = decode(fullCode);
-          const lat = decodedLocation.latitudeCenter;
-          const lon = decodedLocation.longitudeCenter;
-          setSearchResults([{ 
-            lat: lat.toString(), 
-            lon: lon.toString(), 
-            display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
-          }]);
-          setShowDropdown(true);
-          return;
-        }
+        const decodedLocation = decode(query);
+        const lat = decodedLocation.latitudeCenter;
+        const lon = decodedLocation.longitudeCenter;
+        setSearchResults([{ 
+          lat: lat.toString(), 
+          lon: lon.toString(), 
+          display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
+        }]);
+        setShowDropdown(true);
+        return;
       } catch (err) {
         console.error('Plus Code decode error:', err);
       }
@@ -684,11 +675,11 @@ export default function Home() {
 
     if (map.current) {
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-    }
 
-    if (currentUserRef.current) {
-      const placeName = item.name || item.display_name.split(',')[0];
-      dropPreviewAndOpenModal(lat, lon, placeName);
+      if (previewMarkerRef.current) previewMarkerRef.current.remove();
+      previewMarkerRef.current = new maplibregl.Marker({ color: '#2563eb' })
+        .setLngLat([lon, lat])
+        .addTo(map.current);
     }
   };
 
