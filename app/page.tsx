@@ -42,6 +42,7 @@ import {
   Gamepad2,
   Disc,
   ShoppingBag,
+  Ticket,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -68,15 +69,16 @@ interface UserProfile {
 
 const CATEGORIES = [
   { label: 'All', color: '#64748b', icon: Sparkles },
+  { label: 'Hidden Gems', color: '#ef4444', icon: Gem },
+  { label: 'Alley Eats', color: '#f97316', icon: Utensils },
+  { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
+  { label: 'Listening & Bars', color: '#ec4899', icon: Beer },
+  { label: 'Entertainment', color: '#6366f1', icon: Ticket },
   { label: 'Retro & Arcade', color: '#8b5cf6', icon: Gamepad2 },
   { label: 'Records & Sound', color: '#0ea5e9', icon: Disc },
-  { label: 'Specialty & Hobby', color: '#06b6d4', icon: Store },
   { label: 'Vintage & Thrift', color: '#a855f7', icon: ShoppingBag },
-  { label: 'Alley Eats', color: '#f97316', icon: Utensils },
-  { label: 'Listening & Bars', color: '#ec4899', icon: Beer },
-  { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
+  { label: 'Specialty & Hobby', color: '#06b6d4', icon: Store },
   { label: 'Viewpoints', color: '#10b981', icon: Mountain },
-  { label: 'Hidden Gems', color: '#ef4444', icon: Gem },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -1029,7 +1031,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories (10 Curated Subculture Categories) */}
+        {/* Categories (Reordered with Hidden Gems first, Alley Eats second, Entertainment included) */}
         <div style={{ display: 'flex', gap: '7px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
