@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegister from './ServiceWorkerRegister';
+import Script from 'next/script';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -69,6 +70,10 @@ export default function RootLayout({
       <body style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
         <ServiceWorkerRegister />
         {children}
+        <Script
+          src="https://tpembars.com/NTY5Njgz.js?t=569683"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
