@@ -711,11 +711,21 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Raster Basemap: Guaranteed 100% device compatibility with 0 watermarks
+  // Bulletproof Raster Basemap: Guaranteed 100% device compatibility with 0 watermarks & Position Memory
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
     const savedTheme = (localStorage.getItem('bywayr_theme') as 'light' | 'dark') || 'light';
+    
+    let initialCenter: [number, number] = [121.055, 14.575];
+    let initialZoom = 13.5;
+
+    try {
+      const savedCenterStr = localStorage.getItem('bywayr_map_center');
+      const savedZoomStr = localStorage.getItem('bywayr_map_zoom');
+      if (savedCenterStr) initialCenter = JSON.parse(savedCenterStr);
+      if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
+    } catch {}
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
@@ -761,17 +771,25 @@ export default function Home() {
           },
         ],
       },
-      center: [121.055, 14.575],
-      zoom: 13.5,
+      center: initialCenter,
+      zoom: initialZoom,
     });
 
-    // Handle Mobile & Desktop Initial Geolocation after map load event
+    initializedMap.on('moveend', () => {
+      const center = initializedMap.getCenter();
+      const zoom = initializedMap.getZoom();
+      localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
+      localStorage.setItem('bywayr_map_zoom', zoom.toString());
+    });
+
+    // Handle Mobile & Desktop Initial Geolocation (instant jump if no saved position exists)
     initializedMap.on('load', () => {
-      if (navigator.geolocation && !window.location.search.includes('spot=')) {
+      const hasSavedPosition = localStorage.getItem('bywayr_map_center');
+      if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            initializedMap.flyTo({ center: [longitude, latitude], zoom: 15, essential: true });
+            initializedMap.jumpTo({ center: [longitude, latitude], zoom: 15 });
 
             if (userLocationMarkerRef.current) {
               userLocationMarkerRef.current.setLngLat([longitude, latitude]);
@@ -839,7 +857,7 @@ export default function Home() {
 
     if (codeMatch) {
       const codePart = codeMatch[1].toUpperCase();
-      const localityHint = rawQuery.replace(codeMatch[0], '').trim();
+      const localityHint = rawQuery.replace(codeMatch[0], '').replace(/plus\s*code/gi, '').replace(/[()]/g, '').trim();
 
       if (isValid(codePart)) {
         if (isFull(codePart)) {
@@ -850,7 +868,7 @@ export default function Home() {
             setSearchResults([{
               lat: lat.toString(),
               lon: lon.toString(),
-              display_name: `Plus Code (${codePart})${localityHint ? ` in ${localityHint}` : ''}`
+              display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
             }]);
             setShowDropdown(true);
             return;
@@ -858,8 +876,9 @@ export default function Home() {
             console.error('Full code decode error:', err);
           }
         } else if (isShort(codePart)) {
-          const timer = setTimeout(async () => {
-            setIsSearching(true);
+          let isCancelled = false;
+          setIsSearching(true);
+          (async () => {
             try {
               let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
               let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
@@ -867,32 +886,34 @@ export default function Home() {
               if (localityHint) {
                 const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localityHint)}&limit=1`);
                 const geoData = await geoRes.json();
-                if (geoData && geoData.length > 0) {
+                if (!isCancelled && geoData && geoData.length > 0) {
                   anchorLat = parseFloat(geoData[0].lat);
                   anchorLon = parseFloat(geoData[0].lon);
                 }
               }
 
               const fullCode = recoverNearest(codePart, anchorLat, anchorLon);
-              if (isFull(fullCode)) {
+              if (!isCancelled && isFull(fullCode)) {
                 const decoded = decode(fullCode);
                 const lat = decoded.latitudeCenter;
                 const lon = decoded.longitudeCenter;
                 setSearchResults([{
                   lat: lat.toString(),
                   lon: lon.toString(),
-                  display_name: `Plus Code (${codePart}) in ${localityHint || 'Current Area'}`
+                  display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
                 }]);
                 setShowDropdown(true);
               }
             } catch (err) {
               console.error('Short Plus Code resolution error:', err);
             } finally {
-              setIsSearching(false);
+              if (!isCancelled) setIsSearching(false);
             }
-          }, 400);
+          })();
 
-          return () => clearTimeout(timer);
+          return () => {
+            isCancelled = true;
+          };
         }
       }
     }
