@@ -711,7 +711,7 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Raster Basemap: Guaranteed 100% device compatibility with 0 watermarks & Position Memory
+  // Bulletproof Keyless Styled Basemap: Custom OSM Filters for Off-White Light Mode & Dark Mode
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -749,7 +749,7 @@ export default function Home() {
               'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
             ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
+            attribution: '© OpenStreetMap contributors, © CARTO',
           },
         },
         layers: [
@@ -759,6 +759,12 @@ export default function Home() {
             source: 'osm-tiles-light',
             minzoom: 0,
             maxzoom: 19,
+            paint: {
+              'raster-hue-rotate': 10,
+              'raster-saturation': -0.85,
+              'raster-contrast': 0.1,
+              'raster-brightness-max': 0.95,
+            },
             layout: { visibility: savedTheme === 'light' ? 'visible' : 'none' },
           },
           {
