@@ -46,6 +46,10 @@ import {
   Send,
   Copy,
   Compass,
+  Waves,
+  Disc,
+  Laptop,
+  MoonStar,
 } from 'lucide-react';
 
 interface Spot {
@@ -71,15 +75,84 @@ interface UserProfile {
 }
 
 const CATEGORIES = [
-  { label: 'All', color: '#57534e', icon: Sparkles },
-  { label: 'Hidden Gems', color: '#e05a47', icon: Gem },
-  { label: 'Alley Eats', color: '#ea580c', icon: Utensils },
-  { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
-  { label: 'Listening & Bars', color: '#db2777', icon: Beer },
-  { label: 'Markets & Bazaars', color: '#9333ea', icon: Store },
-  { label: 'Nature & Trails', color: '#0d9488', icon: Trees },
-  { label: 'Stays & Hideaways', color: '#4f46e5', icon: HomeIcon },
-  { label: 'Viewpoints', color: '#059669', icon: Mountain },
+  { 
+    label: 'All', 
+    desc: 'All curated field notes & unmapped spots', 
+    color: '#57534e', 
+    icon: Sparkles 
+  },
+  { 
+    label: 'Hidden Gems', 
+    desc: 'Unmarked spots, secret corners & quiet local treasures', 
+    color: '#e05a47', 
+    icon: Gem 
+  },
+  { 
+    label: 'Alley Eats', 
+    desc: 'Backstreet stalls, hole-in-the-walls & plastic-stool legends', 
+    color: '#ea580c', 
+    icon: Utensils 
+  },
+  { 
+    label: 'Cafe & Chill', 
+    desc: 'Quiet roasters, courtyard hideaways & relaxed spaces', 
+    color: '#d97706', 
+    icon: Coffee 
+  },
+  { 
+    label: 'Listening & Bars', 
+    desc: 'Vinyl bars, basement speakeasies & acoustic haunts', 
+    color: '#db2777', 
+    icon: Beer 
+  },
+  { 
+    label: 'Secret Coasts', 
+    desc: 'Uncrowded beaches, hidden coves & quiet shoreline walks', 
+    color: '#0284c7', 
+    icon: Waves 
+  },
+  { 
+    label: 'Street Markets', 
+    desc: 'Night bazaars, morning produce alleys & flea markets', 
+    color: '#9333ea', 
+    icon: Store 
+  },
+  { 
+    label: 'Nature & Trails', 
+    desc: 'Scenic walks, waterfalls, urban greenery & trailheads', 
+    color: '#0d9488', 
+    icon: Trees 
+  },
+  { 
+    label: 'Viewpoints', 
+    desc: 'Rooftops, hillside lookouts & panoramic sunset perches', 
+    color: '#059669', 
+    icon: Mountain 
+  },
+  { 
+    label: 'Stays & Hideaways', 
+    desc: 'Boutique guesthouses, quiet homestays & remote retreats', 
+    color: '#4f46e5', 
+    icon: HomeIcon 
+  },
+  { 
+    label: 'Vintage & Vinyl', 
+    desc: 'Retro oddity shops, thrifts & crate-digging stops', 
+    color: '#b45309', 
+    icon: Disc 
+  },
+  { 
+    label: 'Work & Focus', 
+    desc: 'Expat-friendly work spots, quiet libraries & fast Wi-Fi cafes', 
+    color: '#2563eb', 
+    icon: Laptop 
+  },
+  { 
+    label: 'Late Night', 
+    desc: '2 AM food stalls, midnight street bites & after-hours spots', 
+    color: '#7c3aed', 
+    icon: MoonStar 
+  },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -224,7 +297,7 @@ export default function Home() {
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
-  // Share Dialog State
+  // Share Dialog State (Desktop fallback)
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
 
@@ -442,7 +515,6 @@ export default function Home() {
     setIsSavingUsername(false);
   };
 
-  // Avatar Upload Handler
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const activeUser = currentUserRef.current;
     if (!activeUser || !e.target.files || !e.target.files[0]) return;
@@ -605,7 +677,6 @@ export default function Home() {
     setViewingProfileSpots(userSpots);
   };
 
-  // Map Initialization with OpenFreeMap Vector Tiles & User Auto-Centering
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1079,17 +1150,18 @@ export default function Home() {
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
   const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
+  const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: '#f5f5f4' }}>
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
-      {/* 2. Top Header, Search, and Category Filter Bar */}
-      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '9px', pointerEvents: 'auto' }}>
+      {/* 2. Top Header, Search, Category Filter Bar & Active Descriptor Sub-bar */}
+      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-            {/* Clay Icon Badge */}
+            {/* 3D Clay Icon Badge */}
             <div style={{ width: '32px', height: '32px', borderRadius: '10px', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
@@ -1185,8 +1257,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories Bar + Inline "My Pins" Pill */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        {/* Categories Bar */}
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
           {currentUser && (
             <button
               onClick={() => setOnlyMySpots(!onlyMySpots)}
@@ -1213,18 +1285,29 @@ export default function Home() {
 
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
+            const Icon = cat.icon;
             return (
               <button
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
                 style={{ backgroundColor: isSelected ? '#1c1917' : '#ffffff', color: isSelected ? '#fafaf9' : '#57534e', border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', padding: '6px 12px', borderRadius: '20px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: cat.color }} />
+                <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
                 {cat.label}
               </button>
             );
           })}
         </div>
+
+        {/* Dynamic Category Descriptor Sub-Bar */}
+        {selectedCategory !== 'All' && activeCategoryObject && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(8px)', borderRadius: '12px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 3. Floating Action Controls */}
@@ -1399,7 +1482,7 @@ export default function Home() {
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>Share Spot</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Send <strong>{shareDialogSpot.name}</strong> to friends:</p>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Send <strong>{shareDialogSpot.name}</strong> to fellow explorers:</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
               <a
@@ -1707,7 +1790,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 11. Add / Edit Spot Modal Form */}
+      {/* 11. Add / Edit Spot Modal Form with Category Descriptors */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1786,7 +1869,9 @@ export default function Home() {
                   <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
                   <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
                     {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
-                      <option key={cat.label} value={cat.label}>{cat.label}</option>
+                      <option key={cat.label} value={cat.label}>
+                        {cat.label} — {cat.desc}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1797,7 +1882,7 @@ export default function Home() {
               </div>
               <div>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
-                <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', resize: 'none' }} />
+                <textarea rows={2} placeholder="Atmosphere, tips, menu favorites, best time to visit..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', resize: 'none' }} />
               </div>
               <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '4px', width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}>
                 {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
@@ -1807,49 +1892,60 @@ export default function Home() {
         </div>
       )}
 
-      {/* 12. Welcome Modal */}
+      {/* 12. Concept 1 Field Guide Welcome Modal with Elevated 3D Clay Icon */}
       {showWelcome && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '26px 20px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
-            <div style={{ width: '48px', height: '48px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto' }}>
-              <img src="/icon.svg" alt="Bywayr" style={{ width: '30px', height: '30px' }} />
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            
+            {/* Elevated 3D Clay Map Pin Badge */}
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', overflow: 'hidden', display: 'flex', margin: '0 auto 16px auto', boxShadow: '0 10px 20px -3px rgba(224, 90, 71, 0.28)' }}>
+              <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
 
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
-              Welcome to Bywayr
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              Your Pocket Field Guide
             </h2>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
-              A map-based field guide built for travelers, expats, and city wanderers to discover and curate hidden local spots.
+              A quiet map for expats, travelers, and wanderers to curate and share the unmapped local spots guidebooks overlook.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', textAlign: 'left', marginBottom: '20px', backgroundColor: '#fafaf9', padding: '13px 15px', borderRadius: '15px', border: '1px solid #e7e5e4' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                <div style={{ backgroundColor: '#eff6ff', padding: '5px', borderRadius: '7px', color: '#2563eb', flexShrink: 0, display: 'flex' }}>
-                  <Gem style={{ width: '15px', height: '15px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#fafaf9', padding: '14px 15px', borderRadius: '16px', border: '1px solid #e7e5e4' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fff1ee', padding: '6px', borderRadius: '8px', color: '#e05a47', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <Gem style={{ width: '14px', height: '14px' }} />
                 </div>
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#44403c' }}>Discover curated hidden gems</span>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Curate Unmapped Corners</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Pin backstreet alley eats, quiet sunset perches & hidden haunts.</div>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                <div style={{ backgroundColor: '#fff1ee', padding: '5px', borderRadius: '7px', color: '#e05a47', flexShrink: 0, display: 'flex' }}>
-                  <MapPin style={{ width: '15px', height: '15px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '8px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <ThumbsUp style={{ width: '14px', height: '14px' }} />
                 </div>
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#44403c' }}>Pin spots & photos as you explore</span>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Community Vouches</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Discover real places backed by fellow explorers with zero algorithms.</div>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '5px', borderRadius: '7px', color: '#d97706', flexShrink: 0, display: 'flex' }}>
-                  <BookmarkCheck style={{ width: '15px', height: '15px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <BookmarkCheck style={{ width: '14px', height: '14px' }} />
                 </div>
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#44403c' }}>Save your must-try wandering wishlist</span>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Personal Field Journal</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Build your passport across cities and save must-try wandering wishlists.</div>
+                </div>
               </div>
             </div>
 
             <button
               onClick={handleDismissWelcome}
-              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13px', padding: '11px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.2)' }}
+              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '13px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.22)' }}
             >
-              Start Exploring
+              Open the Field Guide
             </button>
           </div>
         </div>
