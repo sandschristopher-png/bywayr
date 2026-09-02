@@ -49,6 +49,9 @@ import {
   Disc,
   Laptop,
   MoonStar,
+  Download,
+  Upload,
+  Crown,
 } from 'lucide-react';
 
 interface Spot {
@@ -88,7 +91,7 @@ const CATEGORIES = [
   },
   { 
     label: 'Alley Eats', 
-    desc: 'Bistro finds, street food stalls & neighborhood bites', 
+    desc: 'Backstreet stalls, hidden bistros & local food legends', 
     color: '#ea580c', 
     icon: Utensils 
   },
@@ -142,7 +145,7 @@ const CATEGORIES = [
   },
   { 
     label: 'Work & Focus', 
-    desc: 'Expat-friendly work spots, quiet libraries & fast Wi-Fi cafes', 
+    desc: 'Nomad friendly work spots, quiet libraries & fast Wi-Fi cafes', 
     color: '#2563eb', 
     icon: Laptop 
   },
@@ -292,6 +295,7 @@ export default function Home() {
 
   // App & Map States
   const [onlyMySpots, setOnlyMySpots] = useState(false);
+  const [selectedCity, setSelectedCity] = useState('All');
   const [spots, setSpots] = useState<Spot[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
@@ -694,7 +698,7 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Keyless Styled Basemap: Custom OSM Filters with maxzoom 20 for crisp street-level detail
+  // Bulletproof Keyless Styled Basemap: Custom OSM Filters with maxzoom 20 and Custom Icon-enhanced DOM Markers
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -929,11 +933,16 @@ export default function Home() {
     }
   };
 
+  // Filter spots by 'My Pins', selected city, and selected category
   const filteredSpots = spots.filter((spot) => {
     if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
+    if (selectedCity !== 'All' && spot.city?.trim().toLowerCase() !== selectedCity.trim().toLowerCase()) return false;
     if (selectedCategory === 'All') return true;
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
+
+  // Extract unique cities available in spots
+  const availableCities = Array.from(new Set(spots.map((s) => s.city?.trim()).filter(Boolean)));
 
   useEffect(() => {
     if (!map.current) return;
@@ -946,14 +955,24 @@ export default function Home() {
       const color = getCategoryColor(spot.category);
 
       const el = document.createElement('div');
-      el.style.width = '28px';
-      el.style.height = '28px';
+      el.style.width = '32px';
+      el.style.height = '32px';
       el.style.borderRadius = '50%';
-      el.style.backgroundColor = color;
-      el.style.border = isMustTry ? '3.5px solid #d97706' : '3.5px solid #ffffff';
+      el.style.backgroundColor = '#ffffff';
+      el.style.border = isMustTry ? '3.5px solid #d97706' : `3.5px solid ${color}`;
       el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.28)';
       el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
       el.title = spot.name;
+
+      const innerDot = document.createElement('div');
+      innerDot.style.width = '12px';
+      innerDot.style.height = '12px';
+      innerDot.style.borderRadius = '50%';
+      innerDot.style.backgroundColor = color;
+      el.appendChild(innerDot);
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1238,7 +1257,7 @@ export default function Home() {
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
-      {/* 2. Top Header, Search, Drag-Scrollable Category Filter Bar & Active Descriptor Sub-bar */}
+      {/* 2. Top Header, Search, Drag-Scrollable Category Filter Bar & City Filter Sub-Bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -1249,7 +1268,7 @@ export default function Home() {
             <div style={{ minWidth: 0 }}>
               <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {loading ? 'Connecting...' : selectedCategory === 'All' && !onlyMySpots ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
+                {loading ? 'Connecting...' : selectedCategory === 'All' && selectedCity === 'All' && !onlyMySpots ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
               </p>
             </div>
           </div>
@@ -1354,7 +1373,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories Bar with Mouse Drag & Wheel Support */}
+        {/* Categories & City Filter Bar with Mouse Drag & Wheel Support */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -1396,6 +1415,58 @@ export default function Home() {
               My Pins ({mySpotsCount})
             </button>
           )}
+
+          {/* City Filter Chips */}
+          <button
+            onClick={() => setSelectedCity('All')}
+            style={{
+              backgroundColor: selectedCity === 'All' ? '#1c1917' : '#ffffff',
+              color: selectedCity === 'All' ? '#fafaf9' : '#57534e',
+              border: selectedCity === 'All' ? '1px solid #1c1917' : '1px solid #e7e5e4',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              flexShrink: 0
+            }}
+          >
+            <Compass style={{ width: '13px', height: '13px', color: selectedCity === 'All' ? '#fafaf9' : '#0284c7' }} />
+            All Cities
+          </button>
+
+          {availableCities.map((city) => {
+            const isCitySelected = selectedCity.toLowerCase() === city.toLowerCase();
+            return (
+              <button
+                key={city}
+                onClick={() => setSelectedCity(city)}
+                style={{
+                  backgroundColor: isCitySelected ? '#1c1917' : '#ffffff',
+                  color: isCitySelected ? '#fafaf9' : '#57534e',
+                  border: isCitySelected ? '1px solid #1c1917' : '1px solid #e7e5e4',
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  flexShrink: 0
+                }}
+              >
+                📍 {city}
+              </button>
+            );
+          })}
 
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
@@ -1754,7 +1825,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal with Interactive Avatar Upload */}
+      {/* 8. Own Account Profile Modal with Bywayr Plus (Coming Soon) Section */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -1786,7 +1857,8 @@ export default function Home() {
                 <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>{currentUser.email}</p>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
@@ -1800,13 +1872,44 @@ export default function Home() {
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
               </div>
             </div>
-            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '12px', cursor: 'pointer', marginBottom: '16px' }}>
+
+            {/* Bywayr Plus (Coming Soon) Section */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
+                </span>
+                <span style={{ fontSize: '10px', backgroundColor: '#fef3c7', color: '#d97706', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>
+                  COMING SOON
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>
+                JSON field note backups and bulk spot imports.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
+                <button
+                  onClick={() => alert('Bywayr Plus data export is coming soon!')}
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '9px', padding: '7px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                >
+                  <Download style={{ width: '13px', height: '13px' }} /> Export JSON
+                </button>
+                <button
+                  onClick={() => alert('Bywayr Plus data import is coming soon!')}
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '9px', padding: '7px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                >
+                  <Upload style={{ width: '13px', height: '13px' }} /> Import JSON
+                </button>
+              </div>
+            </div>
+
+            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '12px', cursor: 'pointer', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
               {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
+
             <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '10px', borderRadius: '11px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
