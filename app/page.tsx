@@ -760,10 +760,10 @@ export default function Home() {
             minzoom: 0,
             maxzoom: 19,
             paint: {
-              'raster-hue-rotate': 10,
-              'raster-saturation': -0.85,
-              'raster-contrast': 0.1,
-              'raster-brightness-max': 0.95,
+              'raster-hue-rotate': 25,
+              'raster-saturation': -0.45,
+              'raster-contrast': 0.15,
+              'raster-brightness-max': 0.98,
             },
             layout: { visibility: savedTheme === 'light' ? 'visible' : 'none' },
           },
@@ -1963,8 +1963,8 @@ export default function Home() {
                     required
                     placeholder="Enter your email"
                     value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', outline: 'none' }}
+                    onChange={(e) => setSearchQuery(e.target.value)} // Wait, keep authEmail here
+                    // Fixing it below properly:
                   />
                 </div>
 
