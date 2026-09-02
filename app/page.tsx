@@ -39,10 +39,8 @@ import {
   Beer,
   Store,
   AtSign,
-  Gamepad2,
-  Disc,
-  ShoppingBag,
-  Ticket,
+  Trees,
+  Home as HomeIcon,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -73,11 +71,9 @@ const CATEGORIES = [
   { label: 'Alley Eats', color: '#f97316', icon: Utensils },
   { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
   { label: 'Listening & Bars', color: '#ec4899', icon: Beer },
-  { label: 'Entertainment', color: '#6366f1', icon: Ticket },
-  { label: 'Retro & Arcade', color: '#8b5cf6', icon: Gamepad2 },
-  { label: 'Records & Sound', color: '#0ea5e9', icon: Disc },
-  { label: 'Vintage & Thrift', color: '#a855f7', icon: ShoppingBag },
-  { label: 'Specialty & Hobby', color: '#06b6d4', icon: Store },
+  { label: 'Markets & Bazaars', color: '#a855f7', icon: Store },
+  { label: 'Nature & Trails', color: '#14b8a6', icon: Trees },
+  { label: 'Stays & Hideaways', color: '#6366f1', icon: HomeIcon },
   { label: 'Viewpoints', color: '#10b981', icon: Mountain },
 ];
 
@@ -1031,7 +1027,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories (Reordered with Hidden Gems first, Alley Eats second, Entertainment included) */}
+        {/* Categories (Updated with Markets & Bazaars, Nature & Trails, Stays & Hideaways) */}
         <div style={{ display: 'flex', gap: '7px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
