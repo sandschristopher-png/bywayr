@@ -1257,7 +1257,7 @@ export default function Home() {
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
-      {/* 2. Top Header, Search, Drag-Scrollable Category Filter Bar & City Filter Sub-Bar */}
+      {/* 2. Top Header, Search, Separate City Filter Row, Category Filter Bar & Active Descriptor Sub-bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -1373,7 +1373,72 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories & City Filter Bar with Mouse Drag & Wheel Support */}
+        {/* Separate Clean City Filter Row */}
+        {availableCities.length > 0 && (
+          <div 
+            style={{ 
+              display: 'flex', 
+              gap: '6px', 
+              overflowX: 'auto', 
+              paddingBottom: '2px', 
+              scrollbarWidth: 'none',
+              userSelect: 'none'
+            }}
+          >
+            <button
+              onClick={() => setSelectedCity('All')}
+              style={{
+                backgroundColor: selectedCity === 'All' ? '#1c1917' : '#ffffff',
+                color: selectedCity === 'All' ? '#fafaf9' : '#57534e',
+                border: selectedCity === 'All' ? '1px solid #1c1917' : '1px solid #e7e5e4',
+                padding: '5px 11px',
+                borderRadius: '16px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(28, 25, 23, 0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                flexShrink: 0
+              }}
+            >
+              <Compass style={{ width: '12px', height: '12px', color: selectedCity === 'All' ? '#fafaf9' : '#0284c7' }} />
+              All Cities
+            </button>
+
+            {availableCities.map((city) => {
+              const isCitySelected = selectedCity.toLowerCase() === city.toLowerCase();
+              return (
+                <button
+                  key={city}
+                  onClick={() => setSelectedCity(city)}
+                  style={{
+                    backgroundColor: isCitySelected ? '#1c1917' : '#ffffff',
+                    color: isCitySelected ? '#fafaf9' : '#57534e',
+                    border: isCitySelected ? '1px solid #1c1917' : '1px solid #e7e5e4',
+                    padding: '5px 11px',
+                    borderRadius: '16px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 6px rgba(28, 25, 23, 0.04)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    flexShrink: 0
+                  }}
+                >
+                  📍 {city}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Categories Bar with Mouse Drag & Wheel Support */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -1415,58 +1480,6 @@ export default function Home() {
               My Pins ({mySpotsCount})
             </button>
           )}
-
-          {/* City Filter Chips */}
-          <button
-            onClick={() => setSelectedCity('All')}
-            style={{
-              backgroundColor: selectedCity === 'All' ? '#1c1917' : '#ffffff',
-              color: selectedCity === 'All' ? '#fafaf9' : '#57534e',
-              border: selectedCity === 'All' ? '1px solid #1c1917' : '1px solid #e7e5e4',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              flexShrink: 0
-            }}
-          >
-            <Compass style={{ width: '13px', height: '13px', color: selectedCity === 'All' ? '#fafaf9' : '#0284c7' }} />
-            All Cities
-          </button>
-
-          {availableCities.map((city) => {
-            const isCitySelected = selectedCity.toLowerCase() === city.toLowerCase();
-            return (
-              <button
-                key={city}
-                onClick={() => setSelectedCity(city)}
-                style={{
-                  backgroundColor: isCitySelected ? '#1c1917' : '#ffffff',
-                  color: isCitySelected ? '#fafaf9' : '#57534e',
-                  border: isCitySelected ? '1px solid #1c1917' : '1px solid #e7e5e4',
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  flexShrink: 0
-                }}
-              >
-                📍 {city}
-              </button>
-            );
-          })}
 
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
@@ -1825,7 +1838,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal with Bywayr Plus (Coming Soon) Section */}
+      {/* 8. Own Account Profile Modal with Interactive Avatar Upload */}
       {isProfileModalOpen && currentUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
