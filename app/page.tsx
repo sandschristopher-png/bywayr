@@ -495,7 +495,7 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Setup Marker Clustering Layers & Update Data (Robust Style Check)
+  // Setup Marker Clustering Layers & Update Data Safely
   useEffect(() => {
     if (!map.current) return;
 
@@ -521,133 +521,142 @@ export default function Home() {
         })),
     };
 
-    const updateOrSetupLayers = () => {
+    const updateMapData = () => {
       if (!map.current) return;
 
       const source = map.current.getSource('spots-source') as maplibregl.GeoJSONSource | undefined;
 
       if (source) {
         source.setData(geojsonData);
-      } else {
-        if (!map.current.isStyleLoaded()) {
-          map.current.once('load', updateOrSetupLayers);
-          return;
-        }
+      } else if (map.current.isStyleLoaded()) {
+        try {
+          map.current.addSource('spots-source', {
+            type: 'geojson',
+            data: geojsonData,
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 50,
+          });
 
-        map.current.addSource('spots-source', {
-          type: 'geojson',
-          data: geojsonData,
-          cluster: true,
-          clusterMaxZoom: 14,
-          clusterRadius: 50,
-        });
-
-        map.current.addLayer({
-          id: 'clusters',
-          type: 'circle',
-          source: 'spots-source',
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-color': [
-              'step',
-              ['get', 'point_count'],
-              '#0f172a',
-              5,
-              '#2563eb',
-              15,
-              '#ef4444',
-            ],
-            'circle-radius': [
-              'step',
-              ['get', 'point_count'],
-              18,
-              5,
-              22,
-              15,
-              28,
-            ],
-            'circle-stroke-width': 3,
-            'circle-stroke-color': '#ffffff',
-          },
-        });
-
-        map.current.addLayer({
-          id: 'cluster-count',
-          type: 'symbol',
-          source: 'spots-source',
-          filter: ['has', 'point_count'],
-          layout: {
-            'text-field': '{point_count_abbreviated}',
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': 12,
-          },
-          paint: {
-            'text-color': '#ffffff',
-          },
-        });
-
-        map.current.addLayer({
-          id: 'unclustered-point',
-          type: 'circle',
-          source: 'spots-source',
-          filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-color': ['get', 'color'],
-            'circle-radius': 9,
-            'circle-stroke-width': 3,
-            'circle-stroke-color': [
-              'case',
-              ['get', 'isMustTry'],
-              '#f59e0b',
-              '#ffffff',
-            ],
-          },
-        });
-
-        map.current.on('click', 'clusters', async (e) => {
-          if (!map.current) return;
-          const features = map.current.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-          if (!features || !features[0]) return;
-          const clusterId = features[0].properties.cluster_id;
-          const src = map.current.getSource('spots-source') as maplibregl.GeoJSONSource;
-
-          try {
-            const zoom = await src.getClusterExpansionZoom(clusterId);
-            map.current.easeTo({
-              center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
-              zoom: zoom ?? 14,
+          if (!map.current.getLayer('clusters')) {
+            map.current.addLayer({
+              id: 'clusters',
+              type: 'circle',
+              source: 'spots-source',
+              filter: ['has', 'point_count'],
+              paint: {
+                'circle-color': [
+                  'step',
+                  ['get', 'point_count'],
+                  '#0f172a',
+                  5,
+                  '#2563eb',
+                  15,
+                  '#ef4444',
+                ],
+                'circle-radius': [
+                  'step',
+                  ['get', 'point_count'],
+                  18,
+                  5,
+                  22,
+                  15,
+                  28,
+                ],
+                'circle-stroke-width': 3,
+                'circle-stroke-color': '#ffffff',
+              },
             });
-          } catch (err) {
-            console.error('Cluster zoom error:', err);
           }
-        });
 
-        map.current.on('click', 'unclustered-point', (e) => {
-          if (!e.features || !e.features[0]) return;
-          try {
-            const spot = JSON.parse(e.features[0].properties.spotData) as Spot;
-            flyToSpot(spot);
-          } catch (err) {
-            console.error('Failed to parse spot data:', err);
+          if (!map.current.getLayer('cluster-count')) {
+            map.current.addLayer({
+              id: 'cluster-count',
+              type: 'symbol',
+              source: 'spots-source',
+              filter: ['has', 'point_count'],
+              layout: {
+                'text-field': '{point_count_abbreviated}',
+                'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                'text-size': 12,
+              },
+              paint: {
+                'text-color': '#ffffff',
+              },
+            });
           }
-        });
 
-        map.current.on('mouseenter', 'clusters', () => {
-          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-        });
-        map.current.on('mouseleave', 'clusters', () => {
-          if (map.current) map.current.getCanvas().style.cursor = '';
-        });
-        map.current.on('mouseenter', 'unclustered-point', () => {
-          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-        });
-        map.current.on('mouseleave', 'unclustered-point', () => {
-          if (map.current) map.current.getCanvas().style.cursor = '';
-        });
+          if (!map.current.getLayer('unclustered-point')) {
+            map.current.addLayer({
+              id: 'unclustered-point',
+              type: 'circle',
+              source: 'spots-source',
+              filter: ['!', ['has', 'point_count']],
+              paint: {
+                'circle-color': ['get', 'color'],
+                'circle-radius': 9,
+                'circle-stroke-width': 3,
+                'circle-stroke-color': [
+                  'case',
+                  ['get', 'isMustTry'],
+                  '#f59e0b',
+                  '#ffffff',
+                ],
+              },
+            });
+          }
+
+          map.current.on('click', 'clusters', async (e) => {
+            if (!map.current) return;
+            const features = map.current.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+            if (!features || !features[0]) return;
+            const clusterId = features[0].properties.cluster_id;
+            const src = map.current.getSource('spots-source') as maplibregl.GeoJSONSource;
+
+            try {
+              const zoom = await src.getClusterExpansionZoom(clusterId);
+              map.current.easeTo({
+                center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
+                zoom: zoom ?? 14,
+              });
+            } catch (err) {
+              console.error('Cluster zoom error:', err);
+            }
+          });
+
+          map.current.on('click', 'unclustered-point', (e) => {
+            if (!e.features || !e.features[0]) return;
+            try {
+              const spot = JSON.parse(e.features[0].properties.spotData) as Spot;
+              flyToSpot(spot);
+            } catch (err) {
+              console.error('Failed to parse spot data:', err);
+            }
+          });
+
+          map.current.on('mouseenter', 'clusters', () => {
+            if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+          });
+          map.current.on('mouseleave', 'clusters', () => {
+            if (map.current) map.current.getCanvas().style.cursor = '';
+          });
+          map.current.on('mouseenter', 'unclustered-point', () => {
+            if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+          });
+          map.current.on('mouseleave', 'unclustered-point', () => {
+            if (map.current) map.current.getCanvas().style.cursor = '';
+          });
+        } catch (e) {
+          console.error('Error adding map source/layers:', e);
+        }
       }
     };
 
-    updateOrSetupLayers();
+    if (map.current.isStyleLoaded()) {
+      updateMapData();
+    } else {
+      map.current.once('load', updateMapData);
+    }
   }, [filteredSpots, mustTrySpotIds]);
 
   // Locate User GPS
