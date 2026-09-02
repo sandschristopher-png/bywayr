@@ -38,7 +38,7 @@ import {
   Square,
   Gem,
   Beer,
-  Home,
+  Home as HomeIcon,
   Laptop,
   Store,
   Trees,
@@ -66,7 +66,7 @@ const CATEGORIES = [
   { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
   { label: 'Viewpoint', color: '#10b981', icon: Mountain },
   { label: 'Photo Spot', color: '#0284c7', icon: Camera },
-  { label: 'Hidden Stay', color: '#6366f1', icon: Home },
+  { label: 'Hidden Stay', color: '#6366f1', icon: HomeIcon },
   { label: 'Co-Working', color: '#0ea5e9', icon: Laptop },
   { label: 'Night Market', color: '#f43f5e', icon: Store },
   { label: 'Nature & Trail', color: '#14b8a6', icon: Trees },
@@ -75,59 +75,6 @@ const CATEGORIES = [
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
   return match ? match.color : '#ef4444';
-};
-
-const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
-  return new Promise((resolve) => {
-    if (!file.type.startsWith('image/')) {
-      return resolve(file);
-    }
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxDimension || height > maxDimension) {
-          if (width > height) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          } else {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(file);
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return resolve(file);
-            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
-            resolve(compressedFile);
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-      img.onerror = () => resolve(file);
-    };
-    reader.onerror = () => resolve(file);
-  });
 };
 
 export default function Home() {
@@ -195,42 +142,6 @@ export default function Home() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const handleGoogleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-      },
-    });
-  };
-
-  const handleMagicLinkSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authEmail.trim()) return;
-
-    setIsSendingMagicLink(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: authEmail.trim(),
-      options: {
-        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-      },
-    });
-
-    if (error) {
-      alert(`Error sending link: ${error.message}`);
-    } else {
-      setMagicLinkSent(true);
-    }
-    setIsSendingMagicLink(false);
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setMustTrySpotIds([]);
-    setOnlyMySpots(false);
-    setIsProfileModalOpen(false);
-  };
 
   const fetchSpots = async () => {
     try {
@@ -595,7 +506,7 @@ export default function Home() {
 
     if (imageFile) {
       setUploadingImage(true);
-      const fileToUpload = await compressImage(imageFile);
+      const fileToUpload = imageFile;
       const fileExt = fileToUpload.name.split('.').pop() || 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = `spots/${fileName}`;
