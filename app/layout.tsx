@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import ServiceWorkerRegister from './ServiceWorkerRegister';
+
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Bywayr — Found Right Here',
@@ -27,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={jakarta.className}>
       <body style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
         <ServiceWorkerRegister />
         {children}
