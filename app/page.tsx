@@ -18,7 +18,6 @@ import {
   Utensils,
   Mountain,
   Moon,
-  Sun,
   Sparkles,
   ChevronRight,
   Navigation2,
@@ -36,6 +35,12 @@ import {
   User,
   CheckSquare,
   Square,
+  Gem,
+  Beer,
+  Home,
+  Laptop,
+  Store,
+  Trees,
 } from 'lucide-react';
 
 interface Spot {
@@ -54,12 +59,16 @@ interface Spot {
 
 const CATEGORIES = [
   { label: 'All', color: '#64748b', icon: Sparkles },
-  { label: 'Food', color: '#f97316', icon: Utensils },
-  { label: 'Cafe', color: '#d97706', icon: Coffee },
+  { label: 'Hidden Gem', color: '#8b5cf6', icon: Gem },
+  { label: 'Local Eats', color: '#f97316', icon: Utensils },
+  { label: 'Nightlife', color: '#ec4899', icon: Beer },
+  { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
   { label: 'Viewpoint', color: '#10b981', icon: Mountain },
-  { label: 'Nightlife', color: '#8b5cf6', icon: Moon },
-  { label: 'Chill Spot', color: '#0284c7', icon: Compass },
-  { label: 'Photo Spot', color: '#ec4899', icon: Camera },
+  { label: 'Photo Spot', color: '#0284c7', icon: Camera },
+  { label: 'Hidden Stay', color: '#6366f1', icon: Home },
+  { label: 'Co-Working', color: '#0ea5e9', icon: Laptop },
+  { label: 'Night Market', color: '#f43f5e', icon: Store },
+  { label: 'Nature & Trail', color: '#14b8a6', icon: Trees },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -173,12 +182,12 @@ export default function Home() {
 
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
-    category: 'Food',
-    city: 'Pasig',
+    category: 'Hidden Gem',
+    city: 'Manila',
     country: 'Philippines',
     description: '',
-    latitude: 14.57,
-    longitude: 121.06,
+    latitude: 14.5995,
+    longitude: 120.9842,
     image_url: '',
   });
 
@@ -622,8 +631,8 @@ export default function Home() {
 
     setNewSpot({
       name: defaultName,
-      category: 'Food',
-      city: 'Pasig',
+      category: 'Hidden Gem',
+      city: 'Manila',
       country: 'Philippines',
       description: '',
       latitude: parseFloat(lat.toFixed(6)),
@@ -2088,12 +2097,9 @@ export default function Home() {
                       backgroundColor: '#fff',
                     }}
                   >
-                    <option>Food</option>
-                    <option>Cafe</option>
-                    <option>Viewpoint</option>
-                    <option>Nightlife</option>
-                    <option>Chill Spot</option>
-                    <option>Photo Spot</option>
+                    {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
+                      <option key={cat.label} value={cat.label}>{cat.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
