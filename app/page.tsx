@@ -196,6 +196,42 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleGoogleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
+    });
+  };
+
+  const handleMagicLinkSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail.trim()) return;
+
+    setIsSendingMagicLink(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail.trim(),
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
+    });
+
+    if (error) {
+      alert(`Error sending link: ${error.message}`);
+    } else {
+      setMagicLinkSent(true);
+    }
+    setIsSendingMagicLink(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setMustTrySpotIds([]);
+    setOnlyMySpots(false);
+    setIsProfileModalOpen(false);
+  };
+
   const fetchSpots = async () => {
     try {
       const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
