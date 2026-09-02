@@ -67,20 +67,20 @@ interface UserProfile {
 }
 
 const CATEGORIES = [
-  { label: 'All', color: '#64748b', icon: Sparkles },
-  { label: 'Hidden Gems', color: '#ef4444', icon: Gem },
-  { label: 'Alley Eats', color: '#f97316', icon: Utensils },
+  { label: 'All', color: '#57534e', icon: Sparkles },
+  { label: 'Hidden Gems', color: '#e05a47', icon: Gem },
+  { label: 'Alley Eats', color: '#ea580c', icon: Utensils },
   { label: 'Cafe & Chill', color: '#d97706', icon: Coffee },
-  { label: 'Listening & Bars', color: '#ec4899', icon: Beer },
-  { label: 'Markets & Bazaars', color: '#a855f7', icon: Store },
-  { label: 'Nature & Trails', color: '#14b8a6', icon: Trees },
-  { label: 'Stays & Hideaways', color: '#6366f1', icon: HomeIcon },
-  { label: 'Viewpoints', color: '#10b981', icon: Mountain },
+  { label: 'Listening & Bars', color: '#db2777', icon: Beer },
+  { label: 'Markets & Bazaars', color: '#9333ea', icon: Store },
+  { label: 'Nature & Trails', color: '#0d9488', icon: Trees },
+  { label: 'Stays & Hideaways', color: '#4f46e5', icon: HomeIcon },
+  { label: 'Viewpoints', color: '#059669', icon: Mountain },
 ];
 
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
-  return match ? match.color : '#ef4444';
+  return match ? match.color : '#e05a47';
 };
 
 const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string }> => {
@@ -640,7 +640,7 @@ export default function Home() {
             setSearchResults([{
               lat: lat.toString(),
               lon: lon.toString(),
-              display_name: `Plus Code (${codePart})${localityHint ? ` in ${localityHint}` : ''}: ${lat.toFixed(6)}, ${lon.toFixed(6)}`
+              display_name: `Plus Code (${codePart})${localityHint ? ` in ${localityHint}` : ''}`
             }]);
             setShowDropdown(true);
             return;
@@ -648,7 +648,6 @@ export default function Home() {
             console.error('Full code decode error:', err);
           }
         } else if (isShort(codePart)) {
-          // Short code needs a reference anchor derived from the locality hint
           const timer = setTimeout(async () => {
             setIsSearching(true);
             try {
@@ -672,7 +671,7 @@ export default function Home() {
                 setSearchResults([{
                   lat: lat.toString(),
                   lon: lon.toString(),
-                  display_name: `Plus Code (${codePart}) in ${localityHint || 'Current Area'}: ${lat.toFixed(6)}, ${lon.toFixed(6)}`
+                  display_name: `Plus Code (${codePart}) in ${localityHint || 'Current Area'}`
                 }]);
                 setShowDropdown(true);
               }
@@ -724,7 +723,7 @@ export default function Home() {
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
 
       if (previewMarkerRef.current) previewMarkerRef.current.remove();
-      previewMarkerRef.current = new maplibregl.Marker({ color: '#2563eb' })
+      previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
         .setLngLat([lon, lat])
         .addTo(map.current);
     }
@@ -751,8 +750,8 @@ export default function Home() {
       el.style.height = '28px';
       el.style.borderRadius = '50%';
       el.style.backgroundColor = color;
-      el.style.border = isMustTry ? '3.5px solid #f59e0b' : '3.5px solid #ffffff';
-      el.style.boxShadow = '0 4px 14px rgba(0,0,0,0.35)';
+      el.style.border = isMustTry ? '3.5px solid #d97706' : '3.5px solid #ffffff';
+      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.28)';
       el.style.cursor = 'pointer';
       el.title = spot.name;
 
@@ -790,7 +789,7 @@ export default function Home() {
           el.style.borderRadius = '50%';
           el.style.backgroundColor = '#0284c7';
           el.style.border = '3px solid #ffffff';
-          el.style.boxShadow = '0 0 12px rgba(2, 132, 199, 0.7)';
+          el.style.boxShadow = '0 0 14px rgba(2, 132, 199, 0.7)';
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
@@ -823,7 +822,7 @@ export default function Home() {
 
         if (map.current) {
           if (previewMarkerRef.current) previewMarkerRef.current.remove();
-          previewMarkerRef.current = new maplibregl.Marker({ color: '#2563eb' })
+          previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
             .setLngLat([lon, lat])
             .addTo(map.current);
           map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
@@ -877,7 +876,7 @@ export default function Home() {
 
     if (previewMarkerRef.current) previewMarkerRef.current.remove();
 
-    const previewPin = new maplibregl.Marker({ color: '#2563eb' }).setLngLat([lon, lat]).addTo(map.current);
+    const previewPin = new maplibregl.Marker({ color: '#e05a47' }).setLngLat([lon, lat]).addTo(map.current);
     previewMarkerRef.current = previewPin;
 
     map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
@@ -1035,20 +1034,20 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: '#f5f5f4' }}>
       {/* 1. Map Canvas */}
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
       {/* 2. Top Header, Search, and Category Filter Bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '9px', pointerEvents: 'auto' }}>
-        <div style={{ backgroundColor: '#ffffff', padding: '12px 16px', borderRadius: '18px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.22)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            <div style={{ backgroundColor: '#fef2f2', padding: '8px', borderRadius: '12px', display: 'flex', flexShrink: 0 }}>
-              <Compass style={{ color: '#ef4444', width: '20px', height: '20px' }} />
+        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+            <div style={{ backgroundColor: '#fff1ee', padding: '7px', borderRadius: '11px', display: 'flex', flexShrink: 0 }}>
+              <Compass style={{ color: '#e05a47', width: '19px', height: '19px' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '16px', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
-              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {loading ? 'Connecting...' : selectedCategory === 'All' ? `${spots.length} saved spots` : `${filteredSpots.length} in ${selectedCategory}`}
               </p>
             </div>
@@ -1056,17 +1055,40 @@ export default function Home() {
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
             {currentUser ? (
-              <button onClick={() => setIsProfileModalOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 10px', color: '#475569', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <User style={{ width: '14px', height: '14px', flexShrink: 0 }} /> {userProfile?.username ? `@${userProfile.username}` : 'Account'}
+              <button 
+                onClick={() => setIsProfileModalOpen(true)} 
+                style={{ 
+                  backgroundColor: '#f5f5f4', 
+                  border: '1px solid #d6d3d1', 
+                  borderRadius: '10px', 
+                  padding: '7px 9px', 
+                  color: '#44403c', 
+                  fontSize: '12px', 
+                  fontWeight: 600, 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px', 
+                  whiteSpace: 'nowrap', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis', 
+                  maxWidth: '135px', 
+                  flexShrink: 1 
+                }}
+              >
+                <User style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {userProfile?.username ? `@${userProfile.username}` : 'Account'}
+                </span>
               </button>
             ) : (
-              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '10px', padding: '8px 12px', color: '#ffffff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <LogIn style={{ width: '14px', height: '14px', flexShrink: 0 }} /> Sign In
+              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#fafaf9', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
               </button>
             )}
 
-            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 10px', color: '#334155', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <List style={{ width: '16px', height: '16px' }} />
+            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              <List style={{ width: '15px', height: '15px' }} />
             </button>
             <button
               onClick={() => {
@@ -1077,9 +1099,9 @@ export default function Home() {
                 const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
                 dropPreviewAndOpenModal(center.lat, center.lng);
               }}
-              style={{ backgroundColor: '#ef4444', border: 'none', borderRadius: '10px', padding: '8px 13px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}
+              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '10px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
             >
-              <Plus style={{ width: '15px', height: '15px' }} /> Add
+              <Plus style={{ width: '14px', height: '14px' }} /> Add
             </button>
           </div>
         </div>
@@ -1087,23 +1109,24 @@ export default function Home() {
         {/* Search Bar */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
-            <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
+            <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
             <input
               type="text"
               placeholder="Search, paste coordinates, or plus codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
-              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '13px 44px 13px 42px', fontSize: '13.5px', borderRadius: showDropdown ? '16px 16px 0 0' : '16px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.18)', outline: 'none', color: '#0f172a' }}
+              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '16px 16px 0 0' : '16px', border: '1px solid #e7e5e4', boxShadow: '0 8px 20px -4px rgba(28, 25, 23, 0.08)', outline: 'none', color: '#1c1917' }}
             />
-            {isSearching && <Loader2 style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#ef4444', width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} />}
+            {isSearching && <Loader2 style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#e05a47', width: '17px', height: '17px', animation: 'spin 1s linear infinite' }} />}
           </form>
 
           {showDropdown && searchResults.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 16px 16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 16px 16px', border: '1px solid #e7e5e4', boxShadow: '0 14px 28px rgba(28, 25, 23, 0.12)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.map((item, idx) => (
-                <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '12px 16px', fontSize: '13px', color: '#334155', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                  {item.display_name}
+                <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f5f5f4' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                 </div>
               ))}
             </div>
@@ -1111,16 +1134,16 @@ export default function Home() {
         </div>
 
         {/* Categories */}
-        <div style={{ display: 'flex', gap: '7px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
             return (
               <button
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
-                style={{ backgroundColor: isSelected ? cat.color : '#ffffff', color: isSelected ? '#ffffff' : '#334155', border: isSelected ? `1px solid ${cat.color}` : '1px solid #e2e8f0', padding: '7px 13px', borderRadius: '22px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ backgroundColor: isSelected ? '#1c1917' : '#ffffff', color: isSelected ? '#fafaf9' : '#57534e', border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', padding: '6px 12px', borderRadius: '20px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isSelected ? '#ffffff' : cat.color }} />
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: cat.color }} />
                 {cat.label}
               </button>
             );
@@ -1129,33 +1152,33 @@ export default function Home() {
       </div>
 
       {/* 3. Floating Action Controls */}
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '9px', pointerEvents: 'auto' }}>
-        <button onClick={toggleMapTheme} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#0f172a' : '#d97706' }}>
-          {mapTheme === 'light' ? <Moon style={{ width: '21px', height: '21px' }} /> : <Sun style={{ width: '21px', height: '21px' }} />}
+      <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+        <button onClick={toggleMapTheme} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#1c1917' : '#d97706' }}>
+          {mapTheme === 'light' ? <Moon style={{ width: '19px', height: '19px' }} /> : <Sun style={{ width: '19px', height: '19px' }} />}
         </button>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
-          {isLocating ? <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '22px', height: '22px' }} />}
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
+          {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <button onClick={() => map.current?.zoomIn()} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }}>
-            <Plus style={{ width: '22px', height: '22px' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <button onClick={() => map.current?.zoomIn()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
+            <Plus style={{ width: '20px', height: '20px' }} />
           </button>
-          <button onClick={() => map.current?.zoomOut()} style={{ width: '48px', height: '48px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', boxShadow: '0 4px 18px rgba(0,0,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }}>
-            <Minus style={{ width: '22px', height: '22px' }} />
+          <button onClick={() => map.current?.zoomOut()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
+            <Minus style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
       </div>
 
       {/* 4. Spot Details Bottom Sheet with Single Clean Native Navigate Button & ThumbsUp Vouch */}
       {viewingSpot && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '400px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '18px' }}>
+        <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}20`, color: getCategoryColor(viewingSpot.category), fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '7px', marginBottom: '6px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{viewingSpot.name}</h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+              <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917' }}>{viewingSpot.name}</h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#78716c' }}>
                 {viewingSpot.city} {viewingSpot.user_id && usernames[viewingSpot.user_id] ? `· @${usernames[viewingSpot.user_id]}` : ''}
               </p>
             </div>
@@ -1166,11 +1189,11 @@ export default function Home() {
                 disabled={savingVouch}
                 style={{
                   border: 'none',
-                  background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f1f5f9',
+                  background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f5f5f4',
                   borderRadius: '10px',
                   cursor: 'pointer',
-                  color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#475569',
-                  padding: '7px 10px',
+                  color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
+                  padding: '7px 9px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
@@ -1179,71 +1202,71 @@ export default function Home() {
                 }}
                 title="Vouch for this spot"
               >
-                <ThumbsUp style={{ width: '16px', height: '16px' }} />
+                <ThumbsUp style={{ width: '15px', height: '15px' }} />
                 <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
               </button>
 
               {/* Bookmark Button */}
-              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f1f5f9', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#475569', padding: '7px', display: 'flex' }} title="Save to Must-Try">
-                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '17px', height: '17px' }} /> : <Bookmark style={{ width: '17px', height: '17px' }} />}
+              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex' }} title="Save to Must-Try">
+                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '16px', height: '16px' }} /> : <Bookmark style={{ width: '16px', height: '16px' }} />}
               </button>
 
               {/* Share Button */}
-              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: copiedSpotId === viewingSpot.id ? '#f0fdf4' : '#f1f5f9', borderRadius: '10px', cursor: 'pointer', color: copiedSpotId === viewingSpot.id ? '#16a34a' : '#475569', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
-                {copiedSpotId === viewingSpot.id ? <Check style={{ width: '17px', height: '17px' }} /> : <Share2 style={{ width: '17px', height: '17px' }} />}
+              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: copiedSpotId === viewingSpot.id ? '#f0fdf4' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: copiedSpotId === viewingSpot.id ? '#16a34a' : '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
+                {copiedSpotId === viewingSpot.id ? <Check style={{ width: '16px', height: '16px' }} /> : <Share2 style={{ width: '16px', height: '16px' }} />}
               </button>
 
               {currentUser && viewingSpot.user_id === currentUser.id && (
                 <>
-                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f1f5f9', borderRadius: '10px', cursor: 'pointer', color: '#475569', padding: '7px', display: 'flex' }} title="Edit Spot">
-                    <Pencil style={{ width: '16px', height: '16px' }} />
+                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex' }} title="Edit Spot">
+                    <Pencil style={{ width: '15px', height: '15px' }} />
                   </button>
-                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fef2f2', borderRadius: '10px', cursor: 'pointer', color: '#ef4444', padding: '7px', display: 'flex' }} title="Delete Spot">
-                    {deleting ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '16px', height: '16px' }} />}
+                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex' }} title="Delete Spot">
+                    {deleting ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '15px', height: '15px' }} />}
                   </button>
                 </>
               )}
-              <button onClick={() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '5px' }}>
-                <X style={{ width: '20px', height: '20px' }} />
+              <button onClick={() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
+                <X style={{ width: '19px', height: '19px' }} />
               </button>
             </div>
           </div>
 
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
-          {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13.5px', color: '#334155', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
+          {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
           {/* Single Clean Native Geo Navigation Button */}
           <a
             href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#0f172a', color: '#ffffff', textDecoration: 'none', borderRadius: '12px', fontSize: '13.5px', fontWeight: 600 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
           >
-            <Navigation2 style={{ width: '16px', height: '16px' }} /> Navigate
+            <Navigation2 style={{ width: '15px', height: '15px' }} /> Navigate
           </a>
         </div>
       )}
 
       {/* 5. Slide-Out Drawer with Author Handles */}
       {isDrawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
-          <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', padding: '22px', boxSizing: 'border-box' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
+          <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
-              <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-                <X style={{ width: '22px', height: '22px' }} />
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
+              <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
+                <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f1f5f9', borderRadius: '12px', padding: '4px', marginBottom: '16px' }}>
-              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '9px 0', borderRadius: '9px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#0f172a' : '#64748b' }}>Field Notes</button>
-              <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '9px 0', borderRadius: '9px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#0f172a' : '#64748b' }}>Must-Try ({mustTrySpotIds.length})</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '12px', padding: '3px', marginBottom: '16px' }}>
+              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '8px 0', borderRadius: '9px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
+              <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '9px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '11px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {displayedDrawerSpots.map((spot) => {
                 const authorHandle = spot.user_id && usernames[spot.user_id] ? `@${usernames[spot.user_id]}` : null;
                 return (
-                  <div key={spot.id || spot.name} style={{ padding: '13px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
+                  <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '13px', border: '1px solid #e7e5e4', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
                     <div style={{ flex: 1, minWidth: '0' }}>
-                      <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14.5px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                      <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
+                      <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c' }}>
                         {spot.city}
                         {authorHandle ? ` · ${authorHandle}` : ''}
                         {' · '}
@@ -1261,48 +1284,48 @@ export default function Home() {
 
       {/* 6. Profile Modal */}
       {isProfileModalOpen && currentUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '370px', padding: '26px', position: 'relative' }}>
-            <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-              <X style={{ width: '22px', height: '22px' }} />
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+            <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
-                <User style={{ width: '24px', height: '24px' }} />
+              <div style={{ width: '46px', height: '46px', borderRadius: '13px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917' }}>
+                <User style={{ width: '22px', height: '22px' }} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
-                  <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Change Username">
-                    <Pencil style={{ width: '13px', height: '13px' }} />
+                  <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                    <Pencil style={{ width: '12px', height: '12px' }} />
                   </button>
                 </h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>{currentUser.email}</p>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>{currentUser.email}</p>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '9px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '14px', marginBottom: '18px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>{mySpotsCount}</div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Pins</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
               </div>
               <div>
-                <div style={{ fontSize: '19px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Must-Try</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
               </div>
               <div>
-                <div style={{ fontSize: '19px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Cities</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
               </div>
             </div>
-            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#eff6ff' : '#ffffff', border: onlyMySpots ? '1px solid #bfdbfe' : '1px solid #e2e8f0', borderRadius: '14px', cursor: 'pointer', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                <MapPin style={{ width: '17px', height: '17px', color: onlyMySpots ? '#2563eb' : '#64748b' }} />
-                <span style={{ fontSize: '13px', fontWeight: 600, color: onlyMySpots ? '#1e40af' : '#334155' }}>Filter map to my pins only</span>
+            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '12px', cursor: 'pointer', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '17px', height: '17px', color: '#2563eb' }} /> : <Square style={{ width: '17px', height: '17px', color: '#94a3b8' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fef2f2', color: '#ef4444', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '12px', border: '1px solid #fecaca', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <LogOut style={{ width: '15px', height: '15px' }} /> Sign Out
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '10px', borderRadius: '11px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
           </div>
         </div>
@@ -1310,19 +1333,19 @@ export default function Home() {
 
       {/* 7. Claim / Set Username Modal */}
       {isClaimUsernameModalOpen && currentUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '370px', padding: '26px', position: 'relative' }}>
-            <div style={{ width: '48px', height: '48px', backgroundColor: '#eff6ff', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto', color: '#2563eb' }}>
-              <AtSign style={{ width: '26px', height: '26px' }} />
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+              <AtSign style={{ width: '24px', height: '24px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '19px', fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Choose Your Handle</h3>
-            <p style={{ margin: '0 0 18px 0', fontSize: '13px', color: '#64748b', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', textAlign: 'center' }}>Choose Your Handle</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
 
             <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '5px' }}>Username</label>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>@</span>
+                  <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
                   <input
                     type="text"
                     required
@@ -1338,14 +1361,14 @@ export default function Home() {
                         setClaimUsernameError('');
                       }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '14px', padding: '11px 12px 11px 30px', borderRadius: '11px', border: claimUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '11px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
-                {claimUsernameError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
+                {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
               </div>
 
-              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                {isSavingUsername ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
               </button>
             </form>
           </div>
@@ -1354,19 +1377,19 @@ export default function Home() {
 
       {/* 8. Auth Modal */}
       {isAuthModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '370px', padding: '26px', position: 'relative', textAlign: 'center' }}>
-            <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-              <X style={{ width: '22px', height: '22px' }} />
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
+            <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ width: '48px', height: '48px', backgroundColor: '#fef2f2', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto' }}>
-              <Compass style={{ color: '#ef4444', width: '26px', height: '26px' }} />
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+              <Compass style={{ color: '#e05a47', width: '24px', height: '24px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>Join Bywayr</h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>Join Bywayr</h3>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
             
-            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '13px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 600, color: '#1e293b', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
-              <svg width="19" height="19" viewBox="0 0 24 24">
+            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
@@ -1376,21 +1399,21 @@ export default function Home() {
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
-              <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600 }}>OR EMAIL</span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+              <span style={{ fontSize: '11px', color: '#a8a29e', fontWeight: 600 }}>OR EMAIL</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
             </div>
 
             {magicLinkSent ? (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
-                <CheckCircle2 style={{ color: '#16a34a', width: '26px', height: '26px', margin: '0 auto 6px auto' }} />
-                <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
-                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '13px', padding: '14px', textAlign: 'center' }}>
+                <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 5px auto' }} />
+                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
+                <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
               </div>
             ) : (
               <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username (for new users)</label>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
                   <input
                     type="text"
                     maxLength={20}
@@ -1405,25 +1428,25 @@ export default function Home() {
                         setAuthUsernameError('');
                       }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '11px 13px', borderRadius: '11px', border: authUsernameError ? '1px solid #ef4444' : '1px solid #cbd5e1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '11px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
                   />
-                  {authUsernameError && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
+                  {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
                 </div>
 
                 <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Email Address</label>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
                   <input
                     type="email"
                     required
                     placeholder="Enter your email"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '11px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
 
-                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                  {isSendingMagicLink ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '15px', height: '15px' }} /> Send Magic Link</>}
+                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                  {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
                 </button>
               </form>
             )}
@@ -1433,25 +1456,25 @@ export default function Home() {
 
       {/* 9. Add / Edit Spot Modal Form */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '390px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button onClick={handleCloseModal} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-              <X style={{ width: '22px', height: '22px' }} />
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button onClick={handleCloseModal} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <h2 style={{ margin: '0 0 16px 0', fontWeight: 700, fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin style={{ width: '20px', height: '20px', color: '#ef4444' }} />
+            <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <MapPin style={{ width: '19px', height: '19px', color: '#e05a47' }} />
               {isEditing ? 'Edit Spot' : 'Add to Bywayr'}
             </h2>
-            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
+            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
-                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '96px', border: '2px dashed #cbd5e1', borderRadius: '12px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#fafaf9', position: 'relative', overflow: 'hidden' }}>
                   {imagePreview ? (
                     <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', color: '#64748b' }}>
-                      <Camera style={{ width: '22px', height: '22px', color: '#94a3b8' }} />
-                      <span style={{ fontSize: '12px', fontWeight: 500 }}>Tap to upload or choose image</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#78716c' }}>
+                      <Camera style={{ width: '20px', height: '20px', color: '#a8a29e' }} />
+                      <span style={{ fontSize: '11.5px', fontWeight: 500 }}>Tap to upload image</span>
                     </div>
                   )}
                   <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
@@ -1464,12 +1487,12 @@ export default function Home() {
                   onClick={handleModalLocate}
                   disabled={isModalLocating}
                   style={{
-                    backgroundColor: '#eff6ff',
-                    color: '#2563eb',
-                    border: '1px solid #bfdbfe',
+                    backgroundColor: '#f5f5f4',
+                    color: '#1c1917',
+                    border: '1px solid #d6d3d1',
                     borderRadius: '11px',
-                    padding: '9px 13px',
-                    fontSize: '12.5px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
@@ -1481,50 +1504,50 @@ export default function Home() {
                   }}
                 >
                   {isModalLocating ? (
-                    <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                    <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
                   ) : (
-                    <Crosshair style={{ width: '15px', height: '15px' }} />
+                    <Crosshair style={{ width: '14px', height: '14px' }} />
                   )}
                   Pin My Current Location
                 </button>
               )}
 
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Spot Name</label>
-                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
+                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
               </div>
               <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
                   <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Latitude</label>
-                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
+                    <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Latitude</label>
+                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Longitude</label>
-                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
+                    <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Longitude</label>
+                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Category</label>
-                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
+                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
                     {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
                       <option key={cat.label} value={cat.label}>{cat.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>City</label>
-                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1' }} />
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
+                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
-                <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', resize: 'none' }} />
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
+                <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', resize: 'none' }} />
               </div>
-              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13.5px', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
-                {saving || uploadingImage ? <Loader2 style={{ width: '17px', height: '17px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
+              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '4px', width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}>
+                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
               </button>
             </form>
           </div>
@@ -1533,45 +1556,45 @@ export default function Home() {
 
       {/* 10. Clean & Punchy Welcome Screen */}
       {showWelcome && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
-            <div style={{ width: '52px', height: '52px', backgroundColor: '#fef2f2', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-              <Compass style={{ color: '#ef4444', width: '28px', height: '28px' }} />
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '26px 20px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <div style={{ width: '48px', height: '48px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto' }}>
+              <Compass style={{ color: '#e05a47', width: '26px', height: '26px' }} />
             </div>
 
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
               Welcome to Bywayr
             </h2>
-            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b', lineHeight: 1.45 }}>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
               A map-based field guide built for travelers, expats, and city wanderers to discover and curate hidden local spots.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#f8fafc', padding: '14px 16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ backgroundColor: '#eff6ff', padding: '6px', borderRadius: '8px', color: '#2563eb', flexShrink: 0, display: 'flex' }}>
-                  <Gem style={{ width: '16px', height: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', textAlign: 'left', marginBottom: '20px', backgroundColor: '#fafaf9', padding: '13px 15px', borderRadius: '15px', border: '1px solid #e7e5e4' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <div style={{ backgroundColor: '#eff6ff', padding: '5px', borderRadius: '7px', color: '#2563eb', flexShrink: 0, display: 'flex' }}>
+                  <Gem style={{ width: '15px', height: '15px' }} />
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Discover curated hidden gems</span>
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#44403c' }}>Discover curated hidden gems</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef2f2', padding: '6px', borderRadius: '8px', color: '#ef4444', flexShrink: 0, display: 'flex' }}>
-                  <MapPin style={{ width: '16px', height: '16px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <div style={{ backgroundColor: '#fff1ee', padding: '5px', borderRadius: '7px', color: '#e05a47', flexShrink: 0, display: 'flex' }}>
+                  <MapPin style={{ width: '15px', height: '15px' }} />
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Pin spots & photos as you explore</span>
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#44403c' }}>Pin spots & photos as you explore</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', flexShrink: 0, display: 'flex' }}>
-                  <BookmarkCheck style={{ width: '16px', height: '16px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '5px', borderRadius: '7px', color: '#d97706', flexShrink: 0, display: 'flex' }}>
+                  <BookmarkCheck style={{ width: '15px', height: '15px' }} />
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Save your must-try wandering wishlist</span>
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#44403c' }}>Save your must-try wandering wishlist</span>
               </div>
             </div>
 
             <button
               onClick={handleDismissWelcome}
-              style={{ width: '100%', backgroundColor: '#0f172a', color: '#ffffff', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '13px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)' }}
+              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13px', padding: '11px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.2)' }}
             >
               Start Exploring
             </button>
