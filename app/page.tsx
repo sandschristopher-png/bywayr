@@ -18,6 +18,7 @@ import {
   Utensils,
   Mountain,
   Moon,
+  Sun,
   Sparkles,
   ChevronRight,
   Navigation2,
@@ -32,6 +33,9 @@ import {
   Check,
   Bookmark,
   BookmarkCheck,
+  User,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 
 interface Spot {
@@ -62,19 +66,83 @@ const getCategoryColor = (cat: string) => {
   return match ? match.color : '#ef4444';
 };
 
+const MAP_STYLES = {
+  light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  dark: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+};
+
+const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      return resolve(file);
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(file);
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file);
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
   const previewMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationMarkerRef = useRef<maplibregl.Marker | null>(null);
 
   // User Auth State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [authEmail, setAuthEmail] = useState('');
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+
+  // Map Theme State
+  const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light');
+
+  // Filter My Spots Only
+  const [onlyMySpots, setOnlyMySpots] = useState(false);
 
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +184,14 @@ export default function Home() {
     longitude: 121.06,
     image_url: '',
   });
+
+  // Load Saved Theme
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('bywayr_theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setMapTheme(savedTheme);
+    }
+  }, []);
 
   // Auth Listener
   useEffect(() => {
@@ -167,6 +243,8 @@ export default function Home() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setMustTrySpotIds([]);
+    setOnlyMySpots(false);
+    setIsProfileModalOpen(false);
   };
 
   const fetchSpots = async () => {
@@ -245,9 +323,27 @@ export default function Home() {
     setSavingBookmark(false);
   };
 
+  // Toggle Map Theme
+  const toggleMapTheme = () => {
+    const nextTheme = mapTheme === 'light' ? 'dark' : 'light';
+    setMapTheme(nextTheme);
+    localStorage.setItem('bywayr_theme', nextTheme);
+
+    if (!map.current) return;
+    const source = map.current.getSource('osm-tiles') as maplibregl.RasterTileSource | undefined;
+    if (source) {
+      source.tiles = [MAP_STYLES[nextTheme]];
+      map.current.style.sourceCaches['osm-tiles']?.clearTiles();
+      map.current.style.sourceCaches['osm-tiles']?.update(map.current.transform);
+      map.current.triggerRepaint();
+    }
+  };
+
   // Initialize Map
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
+
+    const initialTile = MAP_STYLES[mapTheme];
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
@@ -256,9 +352,9 @@ export default function Home() {
         sources: {
           'osm-tiles': {
             type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tiles: [initialTile],
             tileSize: 256,
-            attribution: '© OpenStreetMap Contributors',
+            attribution: '© OpenStreetMap Contributors, CartoDB',
           },
         },
         layers: [
@@ -278,6 +374,14 @@ export default function Home() {
     initializedMap.on('click', (e) => {
       const originalTarget = e.originalEvent.target as HTMLElement;
       if (originalTarget?.closest('.maplibregl-marker')) return;
+
+      const activeLayers = ['clusters', 'unclustered-point'].filter((id) =>
+        initializedMap.getLayer(id)
+      );
+      if (activeLayers.length > 0) {
+        const features = initializedMap.queryRenderedFeatures(e.point, { layers: activeLayers });
+        if (features && features.length > 0) return;
+      }
 
       const lat = parseFloat(e.lngLat.lat.toFixed(6));
       const lng = parseFloat(e.lngLat.lng.toFixed(6));
@@ -364,36 +468,164 @@ export default function Home() {
     }
   };
 
-  // Filter spots by category
+  // Filter spots by category & ownership
   const filteredSpots = spots.filter((spot) => {
+    if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
     if (selectedCategory === 'All') return true;
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Render Saved Spot Markers
+  // Setup Marker Clustering Layers & Update Data
   useEffect(() => {
     if (!map.current) return;
 
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
+    const geojsonData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: filteredSpots
+        .filter((s) => s.latitude && s.longitude)
+        .map((spot) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [spot.longitude, spot.latitude],
+          },
+          properties: {
+            id: spot.id,
+            name: spot.name,
+            category: spot.category,
+            city: spot.city,
+            color: getCategoryColor(spot.category),
+            isMustTry: spot.id ? mustTrySpotIds.includes(spot.id) : false,
+            spotData: JSON.stringify(spot),
+          },
+        })),
+    };
 
-    filteredSpots.forEach((spot) => {
-      if (!spot.latitude || !spot.longitude) return;
+    const setupClustering = () => {
+      if (!map.current) return;
 
-      const pinColor = getCategoryColor(spot.category);
+      const source = map.current.getSource('spots-source') as maplibregl.GeoJSONSource | undefined;
 
-      const marker = new maplibregl.Marker({ color: pinColor })
-        .setLngLat([spot.longitude, spot.latitude])
-        .addTo(map.current!);
+      if (source) {
+        source.setData(geojsonData);
+      } else {
+        map.current.addSource('spots-source', {
+          type: 'geojson',
+          data: geojsonData,
+          cluster: true,
+          clusterMaxZoom: 14,
+          clusterRadius: 50,
+        });
 
-      marker.getElement().addEventListener('click', (e) => {
-        e.stopPropagation();
-        flyToSpot(spot);
-      });
+        map.current.addLayer({
+          id: 'clusters',
+          type: 'circle',
+          source: 'spots-source',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': [
+              'step',
+              ['get', 'point_count'],
+              '#0f172a',
+              5,
+              '#2563eb',
+              15,
+              '#ef4444',
+            ],
+            'circle-radius': [
+              'step',
+              ['get', 'point_count'],
+              18,
+              5,
+              22,
+              15,
+              28,
+            ],
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#ffffff',
+          },
+        });
 
-      markersRef.current.push(marker);
-    });
-  }, [filteredSpots]);
+        map.current.addLayer({
+          id: 'cluster-count',
+          type: 'symbol',
+          source: 'spots-source',
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': '{point_count_abbreviated}',
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+          },
+          paint: {
+            'text-color': '#ffffff',
+          },
+        });
+
+        map.current.addLayer({
+          id: 'unclustered-point',
+          type: 'circle',
+          source: 'spots-source',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-color': ['get', 'color'],
+            'circle-radius': 9,
+            'circle-stroke-width': 3,
+            'circle-stroke-color': [
+              'case',
+              ['get', 'isMustTry'],
+              '#f59e0b',
+              '#ffffff',
+            ],
+          },
+        });
+
+        map.current.on('click', 'clusters', (e) => {
+          if (!map.current) return;
+          const features = map.current.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+          if (!features || !features[0]) return;
+          const clusterId = features[0].properties.cluster_id;
+          const src = map.current.getSource('spots-source') as maplibregl.GeoJSONSource;
+
+          src.getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err || !map.current) return;
+            map.current.easeTo({
+              center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
+              zoom: zoom ?? 14,
+            });
+          });
+        });
+
+        map.current.on('click', 'unclustered-point', (e) => {
+          if (!e.features || !e.features[0]) return;
+          try {
+            const spot = JSON.parse(e.features[0].properties.spotData) as Spot;
+            flyToSpot(spot);
+          } catch (err) {
+            console.error('Failed to parse spot data:', err);
+          }
+        });
+
+        map.current.on('mouseenter', 'clusters', () => {
+          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+        });
+        map.current.on('mouseleave', 'clusters', () => {
+          if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+        map.current.on('mouseenter', 'unclustered-point', () => {
+          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+        });
+        map.current.on('mouseleave', 'unclustered-point', () => {
+          if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+      }
+    };
+
+    if (map.current.isStyleLoaded()) {
+      setupClustering();
+    } else {
+      map.current.once('load', setupClustering);
+    }
+  }, [filteredSpots, mustTrySpotIds]);
 
   // Locate User GPS
   const handleLocateMe = () => {
@@ -563,13 +795,17 @@ export default function Home() {
 
     if (imageFile) {
       setUploadingImage(true);
-      const fileExt = imageFile.name.split('.').pop();
+      const fileToUpload = await compressImage(imageFile);
+      const fileExt = fileToUpload.name.split('.').pop() || 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = `spots/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('spot-images')
-        .upload(filePath, imageFile);
+        .upload(filePath, fileToUpload, {
+          contentType: fileToUpload.type,
+          upsert: true,
+        });
 
       if (!uploadError) {
         const { data: publicUrlData } = supabase.storage
@@ -662,8 +898,14 @@ export default function Home() {
 
   const displayedDrawerSpots =
     drawerTab === 'fieldNotes'
-      ? spots
+      ? filteredSpots
       : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
+
+  // User Stats
+  const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
+  const myCitiesCount = currentUser
+    ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size
+    : 0;
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
@@ -731,7 +973,7 @@ export default function Home() {
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
             {currentUser ? (
               <button
-                onClick={handleSignOut}
+                onClick={() => setIsProfileModalOpen(true)}
                 style={{
                   backgroundColor: '#f1f5f9',
                   border: '1px solid #cbd5e1',
@@ -745,9 +987,9 @@ export default function Home() {
                   alignItems: 'center',
                   gap: '4px',
                 }}
-                title={`Signed in as ${currentUser.email}`}
+                title="View Profile & Stats"
               >
-                <LogOut style={{ width: '13px', height: '13px' }} /> Sign Out
+                <User style={{ width: '13px', height: '13px' }} /> Account
               </button>
             ) : (
               <button
@@ -956,7 +1198,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 3. Floating Action Controls (Locate Me & Zoom) */}
+      {/* 3. Floating Action Controls (Theme, Locate Me & Zoom) */}
       <div
         style={{
           position: 'fixed',
@@ -969,6 +1211,30 @@ export default function Home() {
           pointerEvents: 'auto',
         }}
       >
+        <button
+          onClick={toggleMapTheme}
+          style={{
+            width: '44px',
+            height: '44px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: mapTheme === 'light' ? '#0f172a' : '#d97706',
+          }}
+          title={mapTheme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
+        >
+          {mapTheme === 'light' ? (
+            <Moon style={{ width: '19px', height: '19px' }} />
+          ) : (
+            <Sun style={{ width: '19px', height: '19px' }} />
+          )}
+        </button>
+
         <button
           onClick={handleLocateMe}
           disabled={isLocating}
@@ -1036,7 +1302,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Must-Try Save & Share */}
+      {/* 4. Spot Details Bottom Sheet with Walking Directions, Must-Try & Share */}
       {viewingSpot && (
         <div
           style={{
@@ -1075,7 +1341,6 @@ export default function Home() {
             </div>
 
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              {/* Must-Try Bookmark Button */}
               <button
                 onClick={() => toggleMustTry(viewingSpot.id)}
                 disabled={savingBookmark}
@@ -1172,7 +1437,31 @@ export default function Home() {
             </p>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${viewingSpot.latitude},${viewingSpot.longitude}&travelmode=walking`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '10px',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
+              textDecoration: 'none',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: 600,
+              marginBottom: '8px',
+            }}
+          >
+            <Navigation2 style={{ width: '14px', height: '14px' }} /> Start Walking Directions
+          </a>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${viewingSpot.latitude},${viewingSpot.longitude}`}
               target="_blank"
@@ -1181,39 +1470,40 @@ export default function Home() {
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
                 textDecoration: 'none',
-                padding: '10px',
+                padding: '9px',
                 borderRadius: '10px',
-                fontSize: '12px',
+                fontSize: '11.5px',
                 fontWeight: 600,
                 textAlign: 'center',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '5px',
               }}
             >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Google Maps
+              <Navigation2 style={{ width: '13px', height: '13px' }} /> Google Maps
             </a>
             <a
-              href={`https://maps.apple.com/?daddr=${viewingSpot.latitude},${viewingSpot.longitude}`}
+              href={`https://maps.apple.com/?daddr=${viewingSpot.latitude},${viewingSpot.longitude}&dirflg=w`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                backgroundColor: '#0f172a',
-                color: '#ffffff',
+                backgroundColor: '#f1f5f9',
+                color: '#334155',
+                border: '1px solid #cbd5e1',
                 textDecoration: 'none',
-                padding: '10px',
+                padding: '9px',
                 borderRadius: '10px',
-                fontSize: '12px',
+                fontSize: '11.5px',
                 fontWeight: 600,
                 textAlign: 'center',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '5px',
               }}
             >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Apple Maps
+              <Navigation2 style={{ width: '13px', height: '13px' }} /> Apple Maps
             </a>
           </div>
         </div>
@@ -1378,7 +1668,155 @@ export default function Home() {
         </div>
       )}
 
-      {/* 6. Sign In / Auth Modal */}
+      {/* 6. User Profile & Personal Activity Modal */}
+      {isProfileModalOpen && currentUser && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100001,
+            padding: '16px',
+            fontFamily: 'sans-serif',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              width: '100%',
+              maxWidth: '360px',
+              padding: '24px',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => setIsProfileModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: '#94a3b8',
+                padding: '4px',
+              }}
+            >
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#f1f5f9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#0f172a',
+                }}
+              >
+                <User style={{ width: '22px', height: '22px' }} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                  Field Journal
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>
+                  {currentUser.email}
+                </p>
+              </div>
+            </div>
+
+            {/* User Stats Grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: '8px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '12px',
+                marginBottom: '16px',
+                textAlign: 'center',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{mySpotsCount}</div>
+                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Pins Placed</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
+                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Must-Try</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
+                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Cities</div>
+              </div>
+            </div>
+
+            {/* Filter Map to My Spots */}
+            <div
+              onClick={() => setOnlyMySpots(!onlyMySpots)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 12px',
+                backgroundColor: onlyMySpots ? '#eff6ff' : '#ffffff',
+                border: onlyMySpots ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                marginBottom: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#2563eb' : '#64748b' }} />
+                <span style={{ fontSize: '12px', fontWeight: 600, color: onlyMySpots ? '#1e40af' : '#334155' }}>
+                  Filter map to my pins only
+                </span>
+              </div>
+              {onlyMySpots ? (
+                <CheckSquare style={{ width: '16px', height: '16px', color: '#2563eb' }} />
+              ) : (
+                <Square style={{ width: '16px', height: '16px', color: '#94a3b8' }} />
+              )}
+            </div>
+
+            <button
+              onClick={handleSignOut}
+              style={{
+                width: '100%',
+                backgroundColor: '#fef2f2',
+                color: '#ef4444',
+                fontWeight: 600,
+                fontSize: '12px',
+                padding: '10px',
+                borderRadius: '10px',
+                border: '1px solid #fecaca',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+            >
+              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Sign In / Auth Modal */}
       {isAuthModalOpen && (
         <div
           style={{
@@ -1539,7 +1977,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 7. Add / Edit Spot Modal */}
+      {/* 8. Add / Edit Spot Modal */}
       {isModalOpen && (
         <div
           style={{

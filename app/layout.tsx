@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import ServiceWorkerRegister from './ServiceWorkerRegister';
 
 export const metadata: Metadata = {
   title: 'Bywayr — Found Right Here',
@@ -27,7 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0, overflow: 'hidden' }}>{children}</body>
+      <body style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }
