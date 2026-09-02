@@ -208,7 +208,9 @@ export default function Home() {
     setIsSendingMagicLink(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
-      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
     });
 
     if (error) alert(`Error sending link: ${error.message}`);
@@ -800,7 +802,6 @@ export default function Home() {
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', margin: '8px 0' }} />}
           {viewingSpot.description && <p style={{ margin: '8px 0 12px 0', fontSize: '13px', color: '#334155', lineHeight: 1.4 }}>{viewingSpot.description}</p>}
           
-          {/* Navigation Buttons Restored */}
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${viewingSpot.latitude},${viewingSpot.longitude}&travelmode=walking`}
             target="_blank"
