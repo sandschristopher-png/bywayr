@@ -52,6 +52,7 @@ import {
   Download,
   Upload,
   Crown,
+  Globe,
 } from 'lucide-react';
 
 interface Spot {
@@ -279,7 +280,7 @@ export default function Home() {
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Public Curator Profile Modal State
+  // Public Curator Profile Modal State & Full Curator View
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
@@ -349,6 +350,15 @@ export default function Home() {
     const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
     if (!hasSeenWelcome) {
       setShowWelcome(true);
+    }
+  }, []);
+
+  // Register Service Worker for Offline PWA Caching
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('Service worker registration failed:', err);
+      });
     }
   }, []);
 
@@ -655,7 +665,7 @@ export default function Home() {
     } else {
       const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
       if (!error) {
-        setVouchedSpotIds((prev) => [...prev, spotId]);
+        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
         setVouchCounts((prev) => ({
           ...prev,
           [spotId]: (prev[spotId] || 0) + 1,
