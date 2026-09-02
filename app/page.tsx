@@ -624,31 +624,67 @@ export default function Home() {
       return;
     }
 
-    const parts = rawQuery.split(/[\s,]+/);
-    const potentialCode = parts[0];
+    // Match a Plus Code pattern anywhere in the query string
+    const codeMatch = rawQuery.match(/([2-9CFGHJMPQRVWX+]{4,8}\+[2-9CFGHJMPQRVWX+]{2,})/i);
 
-    if (isValid(potentialCode)) {
-      try {
-        let fullCode = potentialCode;
-        if (isShort(potentialCode)) {
-          const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-          fullCode = recoverNearest(potentialCode, center.lat, center.lng);
-        }
+    if (codeMatch) {
+      const codePart = codeMatch[1].toUpperCase();
+      const localityHint = rawQuery.replace(codeMatch[0], '').trim();
 
-        if (isFull(fullCode)) {
-          const decodedLocation = decode(fullCode);
-          const lat = decodedLocation.latitudeCenter;
-          const lon = decodedLocation.longitudeCenter;
-          setSearchResults([{ 
-            lat: lat.toString(), 
-            lon: lon.toString(), 
-            display_name: `Plus Code (${potentialCode.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
-          }]);
-          setShowDropdown(true);
-          return;
+      if (isValid(codePart)) {
+        if (isFull(codePart)) {
+          try {
+            const decoded = decode(codePart);
+            const lat = decoded.latitudeCenter;
+            const lon = decoded.longitudeCenter;
+            setSearchResults([{
+              lat: lat.toString(),
+              lon: lon.toString(),
+              display_name: `Plus Code (${codePart})${localityHint ? ` in ${localityHint}` : ''}: ${lat.toFixed(6)}, ${lon.toFixed(6)}`
+            }]);
+            setShowDropdown(true);
+            return;
+          } catch (err) {
+            console.error('Full code decode error:', err);
+          }
+        } else if (isShort(codePart)) {
+          // Short code needs a reference anchor derived from the locality hint
+          const timer = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+              let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
+              let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
+
+              if (localityHint) {
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localityHint)}&limit=1`);
+                const geoData = await geoRes.json();
+                if (geoData && geoData.length > 0) {
+                  anchorLat = parseFloat(geoData[0].lat);
+                  anchorLon = parseFloat(geoData[0].lon);
+                }
+              }
+
+              const fullCode = recoverNearest(codePart, anchorLat, anchorLon);
+              if (isFull(fullCode)) {
+                const decoded = decode(fullCode);
+                const lat = decoded.latitudeCenter;
+                const lon = decoded.longitudeCenter;
+                setSearchResults([{
+                  lat: lat.toString(),
+                  lon: lon.toString(),
+                  display_name: `Plus Code (${codePart}) in ${localityHint || 'Current Area'}: ${lat.toFixed(6)}, ${lon.toFixed(6)}`
+                }]);
+                setShowDropdown(true);
+              }
+            } catch (err) {
+              console.error('Short Plus Code resolution error:', err);
+            } finally {
+              setIsSearching(false);
+            }
+          }, 400);
+
+          return () => clearTimeout(timer);
         }
-      } catch (err) {
-        console.error('Plus Code decode error:', err);
       }
     }
 
@@ -1487,7 +1523,7 @@ export default function Home() {
                 <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
                 <textarea rows={2} placeholder="Atmosphere, tips, recommendations..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #cbd5e1', resize: 'none' }} />
               </div>
-              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13.5px', padding: '12px', borderRadius: '12px', border: '1px solid #ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
+              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '6px', width: '100%', backgroundColor: '#ef4444', color: '#ffffff', fontWeight: 600, fontSize: '13.5px', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)' }}>
                 {saving || uploadingImage ? <Loader2 style={{ width: '17px', height: '17px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
               </button>
             </form>
