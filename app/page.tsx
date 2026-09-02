@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
+import { decode, isValid } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
   Loader2,
@@ -623,6 +624,24 @@ export default function Home() {
       return;
     }
 
+    // Check if input is a valid Google Plus Code
+    if (isValid(query)) {
+      try {
+        const decodedLocation = decode(query);
+        const lat = decodedLocation.latitudeCenter;
+        const lon = decodedLocation.longitudeCenter;
+        setSearchResults([{ 
+          lat: lat.toString(), 
+          lon: lon.toString(), 
+          display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` 
+        }]);
+        setShowDropdown(true);
+        return;
+      } catch (err) {
+        console.error('Plus Code decode error:', err);
+      }
+    }
+
     const coordMatch = query.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
     if (coordMatch) {
       const lat = parseFloat(coordMatch[1]);
@@ -1025,7 +1044,7 @@ export default function Home() {
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
             <input
               type="text"
-              placeholder="Search place or paste GPS coords..."
+              placeholder="Search, paste coordinates, or plus codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
@@ -1366,7 +1385,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Add / Edit Spot Modal Form (Updated file input without capture attribute to allow camera or library/device browse) */}
+      {/* 9. Add / Edit Spot Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '390px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1389,7 +1408,6 @@ export default function Home() {
                       <span style={{ fontSize: '12px', fontWeight: 500 }}>Tap to upload or choose image</span>
                     </div>
                   )}
-                  {/* Removed capture="environment" so mobile devices give the choice of Camera or Device Files/Library */}
                   <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
                 </label>
               </div>
