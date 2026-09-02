@@ -1360,7 +1360,23 @@ export default function Home() {
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
               style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '16px 16px 0 0' : '16px', border: '1px solid #e7e5e4', boxShadow: '0 8px 20px -4px rgba(28, 25, 23, 0.08)', outline: 'none', color: '#1c1917' }}
             />
-            {isSearching && <Loader2 style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#e05a47', width: '17px', height: '17px', animation: 'spin 1s linear infinite' }} />}
+            <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {isSearching && <Loader2 style={{ color: '#e05a47', width: '17px', height: '17px', animation: 'spin 1s linear infinite' }} />}
+              {searchQuery && !isSearching && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                    setShowDropdown(false);
+                  }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
+                  title="Clear search"
+                >
+                  <X style={{ width: '16px', height: '16px' }} />
+                </button>
+              )}
+            </div>
           </form>
 
           {showDropdown && searchResults.length > 0 && (
