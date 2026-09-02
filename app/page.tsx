@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
-import { OpenLocationCode } from 'open-location-code';
 import {
   MapPin,
   Loader2,
@@ -606,20 +605,6 @@ export default function Home() {
       return;
     }
 
-    // Check if input is a Plus Code using open-location-code
-    if (OpenLocationCode.isValid(query)) {
-      try {
-        const decoded = OpenLocationCode.decode(query);
-        const lat = decoded.latitudeCenter;
-        const lon = decoded.longitudeCenter;
-        setSearchResults([{ lat: lat.toString(), lon: lon.toString(), display_name: `Plus Code (${query.toUpperCase()}): ${lat.toFixed(6)}, ${lon.toFixed(6)}` }]);
-        setShowDropdown(true);
-        return;
-      } catch (err) {
-        console.error('Plus Code decode error:', err);
-      }
-    }
-
     const coordMatch = query.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
     if (coordMatch) {
       const lat = parseFloat(coordMatch[1]);
@@ -1022,7 +1007,7 @@ export default function Home() {
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', width: '18px', height: '18px' }} />
             <input
               type="text"
-              placeholder="Search, paste coordinates, or plus codes..."
+              placeholder="Search place or paste GPS coords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
@@ -1486,7 +1471,7 @@ export default function Home() {
                 <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', flexShrink: 0, display: 'flex' }}>
                   <BookmarkCheck style={{ width: '16px', height: '16px' }} />
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Save your must-try wandering wishlist</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Save your must-try wandering wishlist</i>
               </div>
             </div>
 
