@@ -1063,7 +1063,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Native Geo Navigation & Vouches */}
+      {/* 4. Spot Details Bottom Sheet with Single Clean Native Navigate Button */}
       {viewingSpot && (
         <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '400px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1127,33 +1127,13 @@ export default function Home() {
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
           {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13.5px', color: '#334155', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
-          {/* Native Geo Navigation Trigger */}
+          {/* Single Clean Native Geo Navigation Button */}
           <a
             href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#0f172a', color: '#ffffff', textDecoration: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#0f172a', color: '#ffffff', textDecoration: 'none', borderRadius: '12px', fontSize: '13.5px', fontWeight: 600 }}
           >
-            <Navigation2 style={{ width: '15px', height: '15px' }} /> Navigate (Opens Default Map App)
+            <Navigation2 style={{ width: '16px', height: '16px' }} /> Navigate
           </a>
-
-          {/* Fallback Web Links */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${viewingSpot.latitude},${viewingSpot.longitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ backgroundColor: '#2563eb', color: '#ffffff', textDecoration: 'none', padding: '10px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-            >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Google Maps
-            </a>
-            <a
-              href={`https://maps.apple.com/?daddr=${viewingSpot.latitude},${viewingSpot.longitude}&dirflg=w`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', textDecoration: 'none', padding: '10px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-            >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Apple Maps
-            </a>
-          </div>
         </div>
       )}
 
