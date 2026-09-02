@@ -79,9 +79,7 @@ const getCategoryColor = (cat: string) => {
 
 const compressImage = async (file: File, maxDimension = 1200, quality = 0.8): Promise<File> => {
   return new Promise((resolve) => {
-    if (!file.type.startsWith('image/')) {
-      return resolve(file);
-    }
+    if (!file.type.startsWith('image/')) return resolve(file);
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -199,9 +197,7 @@ export default function Home() {
   const handleGoogleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-      },
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
     });
   };
 
@@ -212,16 +208,11 @@ export default function Home() {
     setIsSendingMagicLink(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
-      options: {
-        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-      },
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
     });
 
-    if (error) {
-      alert(`Error sending link: ${error.message}`);
-    } else {
-      setMagicLinkSent(true);
-    }
+    if (error) alert(`Error sending link: ${error.message}`);
+    else setMagicLinkSent(true);
     setIsSendingMagicLink(false);
   };
 
@@ -257,11 +248,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (currentUser?.id) {
-      fetchMustTryBookmarks(currentUser.id);
-    } else {
-      setMustTrySpotIds([]);
-    }
+    if (currentUser?.id) fetchMustTryBookmarks(currentUser.id);
+    else setMustTrySpotIds([]);
   }, [currentUser]);
 
   const toggleMustTry = async (spotId?: string) => {
@@ -672,10 +660,10 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
 
-      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '420px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: 'sans-serif', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '420px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ backgroundColor: '#fef2f2', padding: '7px', borderRadius: '10px', display: 'flex' }}>
@@ -754,17 +742,26 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Floating Action Controls (Theme, Locate & Zoom Buttons) */}
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <button onClick={toggleMapTheme} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#0f172a' : '#d97706' }}>
+        <button onClick={toggleMapTheme} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: mapTheme === 'light' ? '#0f172a' : '#d97706' }} title="Toggle Map Theme">
           {mapTheme === 'light' ? <Moon style={{ width: '19px', height: '19px' }} /> : <Sun style={{ width: '19px', height: '19px' }} />}
         </button>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <button onClick={() => map.current?.zoomIn()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }} title="Zoom In">
+            <Plus style={{ width: '20px', height: '20px' }} />
+          </button>
+          <button onClick={() => map.current?.zoomOut()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0f172a' }} title="Zoom Out">
+            <Minus style={{ width: '20px', height: '20px' }} />
+          </button>
+        </div>
       </div>
 
       {viewingSpot && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '380px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '16px', fontFamily: 'sans-serif' }}>
+        <div style={{ position: 'fixed', bottom: '24px', left: '16px', right: '16px', maxWidth: '380px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)', border: '1px solid #e2e8f0', padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
             <div style={{ flex: 1, paddingRight: '8px' }}>
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}20`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '6px' }}>
@@ -791,7 +788,7 @@ export default function Home() {
       )}
 
       {isDrawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start', fontFamily: 'sans-serif' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 30px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
@@ -821,7 +818,7 @@ export default function Home() {
 
       {/* Profile Modal */}
       {isProfileModalOpen && currentUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px', fontFamily: 'sans-serif' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
@@ -865,7 +862,7 @@ export default function Home() {
 
       {/* Auth Modal (Google & Magic Link) */}
       {isAuthModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px', fontFamily: 'sans-serif' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
             <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
@@ -907,9 +904,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* Add / Edit Spot Modal Form (Complete with Image Upload & Details) */}
+      {/* Add / Edit Spot Modal Form */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px', fontFamily: 'sans-serif' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={handleCloseModal} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
