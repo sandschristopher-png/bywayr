@@ -330,7 +330,7 @@ export default function Home() {
 
   const [isTrailActive, setIsTrailActive] = useState(false);
   
-  // Keyless Dark Slate Map Mode state
+  // Keyless Lighter Dark Slate Map Mode state
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_dark_mode') === 'true';
@@ -1414,7 +1414,7 @@ export default function Home() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#1c1917' : '#f5f5f4' }}>
-      {/* Smooth Animation Styles */}
+      {/* Smooth Spring Micro-Interactions & Animation Styles */}
       <style jsx global>{`
         @keyframes slideUp {
           from { transform: translateY(30px); opacity: 0; }
@@ -1445,14 +1445,14 @@ export default function Home() {
           animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         button, a {
-          transition: transform 0.15s ease, background-color 0.15s ease;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease, box-shadow 0.15s ease;
         }
         button:active, a:active {
-          transform: scale(0.97);
+          transform: scale(0.94);
         }
       `}</style>
 
-      {/* 1. Map Canvas with Keyless Dark Slate Filter Support */}
+      {/* 1. Map Canvas with Lighter Keyless Dark Slate Filter Support */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -1462,21 +1462,21 @@ export default function Home() {
           right: 0, 
           bottom: 0, 
           zIndex: 1,
-          backgroundColor: isDarkMode ? '#1c1917' : '#f5f5f4',
-          filter: isDarkMode ? 'invert(92%) hue-rotate(200deg) saturate(35%) brightness(85%) contrast(110%)' : 'none',
-          transition: 'filter 0.3s ease'
+          backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
+          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
+          transition: 'filter 0.3s ease, background-color 0.3s ease'
         }} 
       />
 
-      {/* 2. Top Header, Search, Categories Bar & Active Descriptor Sub-bar */}
+      {/* 2. Top Header, Search, Categories Bar & Active Descriptor Sub-bar with Frosted Glass & Multi-Layered Shadows */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 12px 30px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Bywayr</h1>
+              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.03em', lineHeight: 1.2 }}>Bywayr</h1>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {loading ? 'Connecting...' : selectedCategory === 'All' && !onlyMySpots ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
               </p>
@@ -1484,28 +1484,6 @@ export default function Home() {
           </div>
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-            {/* Keyless Dark Slate Map Mode Toggle Button */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              style={{
-                backgroundColor: isDarkMode ? '#1c1917' : '#f5f5f4',
-                color: isDarkMode ? '#fafaf9' : '#44403c',
-                border: isDarkMode ? '1px solid #1c1917' : '1px solid #d6d3d1',
-                borderRadius: '12px',
-                padding: '7px 9px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                flexShrink: 0,
-              }}
-              title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Slate Mode'}
-            >
-              {isDarkMode ? <MoonStar style={{ width: '15px', height: '15px', color: '#e05a47' }} /> : <Sun style={{ width: '15px', height: '15px' }} />}
-            </button>
-
             {/* Walking Trail Toggle Button */}
             <button
               onClick={() => setIsTrailActive(!isTrailActive)}
@@ -1594,7 +1572,7 @@ export default function Home() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
-              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '20px 20px 0 0' : '20px', border: '1px solid #e7e5e4', boxShadow: '0 8px 20px -4px rgba(28, 25, 23, 0.08)', outline: 'none', color: '#1c1917' }}
+              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '20px 20px 0 0' : '20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', outline: 'none', color: '#1c1917' }}
             />
             <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {isSearching && <Loader2 style={{ color: '#e05a47', width: '17px', height: '17px', animation: 'spin 1s linear infinite' }} />}
@@ -1616,7 +1594,7 @@ export default function Home() {
           </form>
 
           {showDropdown && searchResults.length > 0 && (
-            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 14px 28px rgba(28, 25, 23, 0.12)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.map((item, idx) => (
                 <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f5f5f4' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
@@ -1649,7 +1627,9 @@ export default function Home() {
             <button
               onClick={() => setOnlyMySpots(!onlyMySpots)}
               style={{
-                backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff',
+                backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.88)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 color: onlyMySpots ? '#e05a47' : '#57534e',
                 border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4',
                 padding: '6px 12px',
@@ -1658,7 +1638,7 @@ export default function Home() {
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)',
+                boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -1678,7 +1658,9 @@ export default function Home() {
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
                 style={{ 
-                  backgroundColor: isSelected ? '#1c1917' : '#ffffff', 
+                  backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.88)', 
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
                   color: isSelected ? '#fafaf9' : '#57534e', 
                   border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
                   padding: '6px 12px', 
@@ -1687,7 +1669,7 @@ export default function Home() {
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   whiteSpace: 'nowrap', 
-                  boxShadow: '0 2px 6px rgba(28, 25, 23, 0.05)', 
+                  boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '6px',
@@ -1703,7 +1685,7 @@ export default function Home() {
 
         {/* Dynamic Category Descriptor Sub-Bar */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(8px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
@@ -1713,7 +1695,7 @@ export default function Home() {
 
         {/* Active Walking Route HUD Pill */}
         {isTrailActive && trailCoordinates.length > 1 && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 6px 16px rgba(28, 25, 23, 0.25)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Footprints style={{ width: '15px', height: '15px', color: '#e05a47' }} />
               <span>{trailCoordinates.length} stops ({totalTrailDistanceKm.toFixed(1)} km)</span>
@@ -1723,30 +1705,54 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Floating Action Controls */}
+      {/* 3. Floating Action Controls (Includes Locate, Dark Mode Toggle, Zoom In/Out) */}
       <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
+
+        {/* Dark Mode Toggle Button Moved Here */}
+        <button
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          style={{
+            width: '46px',
+            height: '46px',
+            backgroundColor: isDarkMode ? '#1c1917' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            color: isDarkMode ? '#fafaf9' : '#44403c',
+            border: isDarkMode ? '1px solid #1c1917' : '1px solid #e7e5e4',
+            borderRadius: '16px',
+            boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+          title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Slate Mode'}
+        >
+          {isDarkMode ? <MoonStar style={{ width: '20px', height: '20px', color: '#e05a47' }} /> : <Sun style={{ width: '20px', height: '20px' }} />}
+        </button>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <button onClick={() => map.current?.zoomIn()} style={{ width: '46px', height: '46px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
+          <button onClick={() => map.current?.zoomIn()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom In">
             <Plus style={{ width: '20px', height: '20px' }} />
           </button>
-          <button onClick={() => map.current?.zoomOut()} style={{ width: '46px', height: '46px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
+          <button onClick={() => map.current?.zoomOut()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom Out">
             <Minus style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Smooth Slide-Up Animation */}
+      {/* 4. Spot Details Bottom Sheet with Frosted Glass & Multi-layered Shadows */}
       {viewingSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '20px' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
-              <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917' }}>{viewingSpot.name}</h3>
+              <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{viewingSpot.name}</h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#78716c' }}>
                 {viewingSpot.city}{' '}
                 {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
@@ -1815,7 +1821,7 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <a
               href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
             >
               <Navigation2 style={{ width: '14px', height: '14px' }} /> Navigate to Spot
             </a>
@@ -1859,7 +1865,7 @@ export default function Home() {
                 )}
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>@{viewingProfile.username || 'wanderer'}</h3>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>@{viewingProfile.username || 'wanderer'}</h3>
                 <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c' }}>Curator on Bywayr</p>
               </div>
             </div>
@@ -1934,7 +1940,7 @@ export default function Home() {
             <button onClick={() => setShareDialogSpot(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>Share Spot</h3>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Share Spot</h3>
             <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Send <strong>{shareDialogSpot.name}</strong> to fellow explorers:</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
@@ -2020,7 +2026,7 @@ export default function Home() {
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
@@ -2082,7 +2088,7 @@ export default function Home() {
               </label>
 
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px', letterSpacing: '-0.02em' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
                   <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                     <Pencil style={{ width: '12px', height: '12px' }} />
@@ -2158,7 +2164,7 @@ export default function Home() {
             <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
               <AtSign style={{ width: '24px', height: '24px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', textAlign: 'center' }}>Choose Your Handle</h3>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', textAlign: 'center', letterSpacing: '-0.02em' }}>Choose Your Handle</h3>
             <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
 
             <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -2205,7 +2211,7 @@ export default function Home() {
             <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '28px', height: '28px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>Join Bywayr</h3>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
             
             <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
@@ -2281,7 +2287,7 @@ export default function Home() {
             <button onClick={handleCloseModal} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px', letterSpacing: '-0.02em' }}>
               <MapPin style={{ width: '19px', height: '19px', color: '#e05a47' }} />
               {isEditing ? 'Edit Spot' : 'Add to Bywayr'}
             </h2>
@@ -2384,7 +2390,7 @@ export default function Home() {
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
 
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.03em' }}>
               Your Pocket Field Guide
             </h2>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
