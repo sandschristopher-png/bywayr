@@ -86,84 +86,19 @@ interface UserProfile {
 }
 
 const CATEGORIES = [
-  { 
-    label: 'All', 
-    desc: 'All curated field notes & unmapped spots', 
-    color: '#57534e', 
-    icon: Sparkles 
-  },
-  { 
-    label: 'Hidden Gems', 
-    desc: 'Unmarked spots, secret corners & quiet local treasures', 
-    color: '#e05a47', 
-    icon: Gem 
-  },
-  { 
-    label: 'Alley Eats', 
-    desc: 'Backstreet stalls, hidden bistros & local food legends', 
-    color: '#ea580c', 
-    icon: Utensils 
-  },
-  { 
-    label: 'Cafe & Chill', 
-    desc: 'Quiet roasters, courtyard hideaways & relaxed spaces', 
-    color: '#d97706', 
-    icon: Coffee 
-  },
-  { 
-    label: 'Listening & Bars', 
-    desc: 'Vinyl bars, basement speakeasies & acoustic haunts', 
-    color: '#db2777', 
-    icon: Beer 
-  },
-  { 
-    label: 'Secret Coasts', 
-    desc: 'Uncrowded beaches, hidden coves & quiet shoreline walks', 
-    color: '#0284c7', 
-    icon: Waves 
-  },
-  { 
-    label: 'Street Markets', 
-    desc: 'Night bazaars, morning produce alleys & flea markets', 
-    color: '#9333ea', 
-    icon: Store 
-  },
-  { 
-    label: 'Nature & Trails', 
-    desc: 'Scenic walks, waterfalls, urban greenery & trailheads', 
-    color: '#0d9488', 
-    icon: Trees 
-  },
-  { 
-    label: 'Viewpoints', 
-    desc: 'Rooftops, hillside lookouts & panoramic sunset perches', 
-    color: '#059669', 
-    icon: Mountain 
-  },
-  { 
-    label: 'Stays & Hideaways', 
-    desc: 'Boutique guesthouses, quiet homestays & remote retreats', 
-    color: '#4f46e5', 
-    icon: HomeIcon 
-  },
-  { 
-    label: 'Vintage & Vinyl', 
-    desc: 'Retro oddity shops, thrifts & crate-digging stops', 
-    color: '#b45309', 
-    icon: Disc 
-  },
-  { 
-    label: 'Work & Focus', 
-    desc: 'Nomad-friendly work spots, quiet libraries & fast Wi-Fi cafes', 
-    color: '#2563eb', 
-    icon: Laptop 
-  },
-  { 
-    label: 'Late Night', 
-    desc: '2 AM food stalls, midnight street bites & after-hours spots', 
-    color: '#7c3aed', 
-    icon: MoonStar 
-  },
+  { label: 'All', desc: 'All curated field notes & unmapped spots', color: '#57534e', icon: Sparkles },
+  { label: 'Hidden Gems', desc: 'Unmarked spots, secret corners & quiet local treasures', color: '#e05a47', icon: Gem },
+  { label: 'Alley Eats', desc: 'Backstreet stalls, hidden bistros & local food legends', color: '#ea580c', icon: Utensils },
+  { label: 'Cafe & Chill', desc: 'Quiet roasters, courtyard hideaways & relaxed spaces', color: '#d97706', icon: Coffee },
+  { label: 'Listening & Bars', desc: 'Vinyl bars, basement speakeasies & acoustic haunts', color: '#db2777', icon: Beer },
+  { label: 'Secret Coasts', desc: 'Uncrowded beaches, hidden coves & quiet shoreline walks', color: '#0284c7', icon: Waves },
+  { label: 'Street Markets', desc: 'Night bazaars, morning produce alleys & flea markets', color: '#9333ea', icon: Store },
+  { label: 'Nature & Trails', desc: 'Scenic walks, waterfalls, urban greenery & trailheads', color: '#0d9488', icon: Trees },
+  { label: 'Viewpoints', desc: 'Rooftops, hillside lookouts & panoramic sunset perches', color: '#059669', icon: Mountain },
+  { label: 'Stays & Hideaways', desc: 'Boutique guesthouses, quiet homestays & remote retreats', color: '#4f46e5', icon: HomeIcon },
+  { label: 'Vintage & Vinyl', desc: 'Retro oddity shops, thrifts & crate-digging stops', color: '#b45309', icon: Disc },
+  { label: 'Work & Focus', desc: 'Nomad-friendly work spots, quiet libraries & fast Wi-Fi cafes', color: '#2563eb', icon: Laptop },
+  { label: 'Late Night', desc: '2 AM food stalls, midnight street bites & after-hours spots', color: '#7c3aed', icon: MoonStar },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -221,6 +156,15 @@ const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: num
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+};
+
+const openNativeWalkNavigation = (lat: number, lng: number, name?: string) => {
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    window.location.href = `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=w&q=${encodeURIComponent(name || 'Spot')}`;
+  } else {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`, '_blank');
+  }
 };
 
 const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string }> => {
@@ -1031,85 +975,9 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Dynamic Walking Route Distance Calculations
   const centerCoord = map.current ? [map.current.getCenter().lng, map.current.getCenter().lat] : [121.055, 14.575];
   const walkDistanceKm = walkTargetSpot ? calculateDistanceKm(centerCoord[1], centerCoord[0], walkTargetSpot.latitude, walkTargetSpot.longitude) : 0;
   const walkMinutes = Math.round((walkDistanceKm / 4.8) * 60);
-
-  // Proximity Walking Line Layer
-  useEffect(() => {
-    if (!map.current) return;
-    const mapInstance = map.current;
-
-    const sourceId = 'proximity-walk-source';
-    const layerId = 'proximity-walk-line';
-    const casingId = 'proximity-walk-casing';
-
-    if (!mapInstance.isStyleLoaded()) {
-      mapInstance.once('styledata', () => {
-        updateWalkLayer();
-      });
-      return;
-    }
-
-    updateWalkLayer();
-
-    function updateWalkLayer() {
-      if (!walkTargetSpot || !walkTargetSpot.latitude || !walkTargetSpot.longitude) {
-        if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
-        if (mapInstance.getLayer(casingId)) mapInstance.removeLayer(casingId);
-        if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
-        return;
-      }
-
-      const currentCenter = mapInstance.getCenter();
-      const geojsonData: GeoJSON.Feature<GeoJSON.LineString> = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [currentCenter.lng, currentCenter.lat],
-            [walkTargetSpot.longitude, walkTargetSpot.latitude]
-          ],
-        },
-      };
-
-      if (mapInstance.getSource(sourceId)) {
-        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).setData(geojsonData);
-      } else {
-        mapInstance.addSource(sourceId, {
-          type: 'geojson',
-          data: geojsonData,
-        });
-
-        mapInstance.addLayer({
-          id: casingId,
-          type: 'line',
-          source: sourceId,
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#ffffff',
-            'line-width': 6,
-            'line-opacity': 0.9,
-          },
-        });
-
-        mapInstance.addLayer({
-          id: layerId,
-          type: 'line',
-          source: sourceId,
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#e05a47',
-            'line-width': 3.5,
-            'line-dasharray': [1.5, 1.5],
-            'line-opacity': 0.95,
-          },
-        });
-      }
-    }
-  }, [walkTargetSpot]);
 
   // Marker Rendering
   useEffect(() => {
@@ -1430,7 +1298,6 @@ export default function Home() {
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
-  // JSON Export Handler
   const handleExportJson = () => {
     const userSpots = spots.filter((s) => s.user_id === currentUser?.id);
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userSpots, null, 2));
@@ -1442,7 +1309,6 @@ export default function Home() {
     downloadAnchor.remove();
   };
 
-  // JSON Import Handler
   const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileReader = new FileReader();
     if (e.target.files && e.target.files[0]) {
@@ -1494,7 +1360,6 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  // Proximity Sorted Spots for the Walk Selector Modal
   const proximitySortedSpots: Spot[] = [...spots]
     .filter((s) => s.latitude && s.longitude)
     .map((s) => ({
@@ -1503,7 +1368,6 @@ export default function Home() {
     }))
     .sort((a, b) => (a.dist || 0) - (b.dist || 0));
 
-  // Live OSM Proximity Search for Walking Modal
   useEffect(() => {
     const query = walkSearchQuery.trim();
     if (query.length < 2) {
@@ -1841,17 +1705,23 @@ export default function Home() {
           </div>
         )}
 
-        {/* Active Walk Polyline Pill */}
+        {/* Active Walk Proximity HUD Pill (No Map Canvas Line) */}
         {walkTargetSpot && (
           <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
               <Footprints style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                Walking to <strong>{walkTargetSpot.name}</strong> ({walkDistanceKm.toFixed(1)} km)
+                <strong>{walkTargetSpot.name}</strong> ({walkDistanceKm < 1 ? `${Math.round(walkDistanceKm * 1000)} m` : `${walkDistanceKm.toFixed(1)} km`})
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>~{walkMinutes} min</span>
+              <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>About {walkMinutes} mins</span>
+              <button 
+                onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
+                style={{ backgroundColor: '#e05a47', color: '#fff', border: 'none', borderRadius: '8px', padding: '3px 7px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+              >
+                Start <Navigation2 style={{ width: '10px', height: '10px' }} />
+              </button>
               <button 
                 onClick={() => setWalkTargetSpot(null)} 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
@@ -2056,7 +1926,7 @@ export default function Home() {
                               </span>
                               {isWalkable ? (
                                 <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
-                                  ~{walkMin} min
+                                  About {walkMin} mins
                                 </span>
                               ) : (
                                 <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
@@ -2124,7 +1994,7 @@ export default function Home() {
                             </span>
                             {isWalkable ? (
                               <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
-                                ~{walkMin} min
+                                About {walkMin} mins
                               </span>
                             ) : (
                               <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
@@ -2241,12 +2111,12 @@ export default function Home() {
           {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <a
-              href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
+            <button
+              onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
             >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Navigate to Spot
-            </a>
+              <Navigation2 style={{ width: '14px', height: '14px' }} /> Open Walking Directions
+            </button>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               <a
