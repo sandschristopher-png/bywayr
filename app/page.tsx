@@ -55,6 +55,9 @@ import {
   Footprints,
   ExternalLink,
   ArrowRight,
+  Ticket,
+  Wifi,
+  Plane,
 } from 'lucide-react';
 
 interface Spot {
@@ -1614,7 +1617,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar with Aviasales Flight Search Integration */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
@@ -1623,7 +1626,7 @@ export default function Home() {
               placeholder="Search, paste coordinates, or plus codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
+              onFocus={() => { if (searchResults.length > 0 || searchQuery.trim().length >= 3) setShowDropdown(true); }}
               style={{ width: '100%', boxSizing: 'border-box', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '20px 20px 0 0' : '20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', outline: 'none', color: '#1c1917' }}
             />
             <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1645,14 +1648,29 @@ export default function Home() {
             </div>
           </form>
 
-          {showDropdown && searchResults.length > 0 && (
-            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
-              {searchResults.map((item, idx) => (
-                <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f5f5f4' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
+          {showDropdown && searchQuery.trim().length >= 3 && (
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
+              {searchResults.length === 0 ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: '#78716c', fontSize: '12.5px' }}>
+                  <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#1c1917' }}>No local field notes found yet.</p>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '11.5px' }}>Be the first explorer to drop a pin here, or plan your journey.</p>
+                  <a
+                    href="https://aviasales.tpk.lv/sZHsJIxR"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#e05a47', fontWeight: 600, textDecoration: 'none', fontSize: '11.5px' }}
+                  >
+                    <Plane style={{ width: '13px', height: '13px' }} /> Compare flights via Aviasales →
+                  </a>
                 </div>
-              ))}
+              ) : (
+                searchResults.map((item, idx) => (
+                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f5f5f4' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
@@ -1911,7 +1929,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet with Frosted Glass & Multi-layered Shadows */}
+      {/* 4. Spot Details Bottom Sheet with Klook & Yesim Integration */}
       {viewingSpot && (
         <div className="animate-slide-up" style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1995,20 +2013,20 @@ export default function Home() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               <a
-                href={`https://www.agoda.com/search?city=${encodeURIComponent(viewingSpot.city)}&cid=569683`}
+                href="https://klook.tpk.lv/sZHsJIxR"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '10px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '14px', fontSize: '11px', fontWeight: 600 }}
               >
-                🏨 Agoda Stays Nearby
+                <Ticket style={{ width: '13px', height: '13px', color: '#e05a47' }} /> Book Tours & Tickets
               </a>
               <a
-                href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(viewingSpot.city)}&aid=569683`}
+                href="https://yesim.tpk.lv/o2T5nWaw"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '10px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '14px', fontSize: '11px', fontWeight: 600 }}
               >
-                🌐 Booking.com Stays
+                <Wifi style={{ width: '13px', height: '13px', color: '#0284c7' }} /> Get eSIM Data
               </a>
             </div>
           </div>
