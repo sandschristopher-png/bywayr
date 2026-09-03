@@ -54,6 +54,7 @@ import {
   Crown,
   Footprints,
   ExternalLink,
+  ArrowRight,
 } from 'lucide-react';
 
 interface Spot {
@@ -338,8 +339,10 @@ export default function Home() {
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
-  const [isTrailActive, setIsTrailActive] = useState(false);
-  
+  // Proximity Walking Target State
+  const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
+  const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
+
   // Keyless Lighter Dark Slate Map Mode state
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -1011,88 +1014,47 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Smart Local Nearest-Neighbor Trail Sorter (prevents global zigzags across continents)
-  const getOptimizedTrailSpots = (spotsList: Spot[]) => {
-    const validSpots = spotsList.filter((s) => s.latitude && s.longitude);
-    if (validSpots.length <= 1) return validSpots;
+  // Calculate proximity walking route if walkTargetSpot is selected
+  const centerCoord = map.current ? [map.current.getCenter().lng, map.current.getCenter().lat] : [121.055, 14.575];
+  const walkDistanceKm = walkTargetSpot ? calculateDistanceKm(centerCoord[1], centerCoord[0], walkTargetSpot.latitude, walkTargetSpot.longitude) : 0;
+  const walkMinutes = Math.round((walkDistanceKm / 4.8) * 60);
 
-    const sorted: Spot[] = [];
-    const remaining = [...validSpots];
-
-    let current = remaining.shift()!;
-    sorted.push(current);
-
-    while (remaining.length > 0) {
-      let nearestIdx = 0;
-      let minDistance = Infinity;
-
-      for (let i = 0; i < remaining.length; i++) {
-        const dist = calculateDistanceKm(
-          current.latitude, current.longitude,
-          remaining[i].latitude, remaining[i].longitude
-        );
-        if (dist < minDistance) {
-          minDistance = dist;
-          nearestIdx = i;
-        }
-      }
-
-      // If the closest spot is more than 50km away, stop the local trail loop there
-      if (minDistance > 50) break;
-
-      current = remaining.splice(nearestIdx, 1)[0];
-      sorted.push(current);
-    }
-
-    return sorted;
-  };
-
-  const optimizedTrailSpots = getOptimizedTrailSpots(filteredSpots);
-  const trailCoordinates = optimizedTrailSpots.map((s) => [s.longitude, s.latitude]);
-
-  let totalTrailDistanceKm = 0;
-  for (let i = 0; i < trailCoordinates.length - 1; i++) {
-    totalTrailDistanceKm += calculateDistanceKm(
-      trailCoordinates[i][1],
-      trailCoordinates[i][0],
-      trailCoordinates[i + 1][1],
-      trailCoordinates[i + 1][0]
-    );
-  }
-  const estimatedWalkingMinutes = Math.round((totalTrailDistanceKm / 4.8) * 60);
-
-  // Render & Update Walking Trail Polyline Layer
+  // Render & Update Proximity Walking Polyline Layer
   useEffect(() => {
     if (!map.current) return;
     const mapInstance = map.current;
 
-    const sourceId = 'walking-trail-source';
-    const layerId = 'walking-trail-line';
-    const casingId = 'walking-trail-casing';
+    const sourceId = 'proximity-walk-source';
+    const layerId = 'proximity-walk-line';
+    const casingId = 'proximity-walk-casing';
 
     if (!mapInstance.isStyleLoaded()) {
       mapInstance.once('styledata', () => {
-        updateTrailLayer();
+        updateWalkLayer();
       });
       return;
     }
 
-    updateTrailLayer();
+    updateWalkLayer();
 
-    function updateTrailLayer() {
-      if (!isTrailActive || trailCoordinates.length < 2) {
+    function updateWalkLayer() {
+      if (!walkTargetSpot || !walkTargetSpot.latitude || !walkTargetSpot.longitude) {
         if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
         if (mapInstance.getLayer(casingId)) mapInstance.removeLayer(casingId);
         if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
         return;
       }
 
+      const currentCenter = mapInstance.getCenter();
       const geojsonData: GeoJSON.Feature<GeoJSON.LineString> = {
         type: 'Feature',
         properties: {},
         geometry: {
           type: 'LineString',
-          coordinates: trailCoordinates,
+          coordinates: [
+            [currentCenter.lng, currentCenter.lat],
+            [walkTargetSpot.longitude, walkTargetSpot.latitude]
+          ],
         },
       };
 
@@ -1130,9 +1092,9 @@ export default function Home() {
         });
       }
     }
-  }, [isTrailActive, filteredSpots]);
+  }, [walkTargetSpot]);
 
-  // Marker Rendering: Category SVG Icons or Sequential Numbers during Trail Mode
+  // Marker Rendering: Category SVG Icons
   useEffect(() => {
     if (!map.current) return;
     spotMarkersRef.current.forEach((marker) => marker.remove());
@@ -1141,21 +1103,19 @@ export default function Home() {
     filteredSpots.forEach((spot) => {
       if (!spot.latitude || !spot.longitude) return;
       const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
+      const isWalkTarget = walkTargetSpot?.id === spot.id;
       const catObj = CATEGORIES.find((c) => c.label.toLowerCase() === spot.category?.toLowerCase());
       const color = catObj ? catObj.color : '#e05a47';
-
-      const trailIndex = optimizedTrailSpots.findIndex((s) => s.id === spot.id);
-      const isInTrail = isTrailActive && trailIndex !== -1;
 
       const el = document.createElement('div');
       el.style.width = '32px';
       el.style.height = '32px';
       el.style.borderRadius = '50%';
-      el.style.backgroundColor = isInTrail ? color : '#ffffff';
+      el.style.backgroundColor = isWalkTarget ? '#e05a47' : '#ffffff';
       el.style.border = isMustTry
         ? '3px solid #d97706'
-        : isInTrail
-        ? '2.5px solid #ffffff'
+        : isWalkTarget
+        ? '3px solid #ffffff'
         : `2.5px solid ${color}`;
       el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
       el.style.cursor = 'pointer';
@@ -1164,14 +1124,12 @@ export default function Home() {
       el.style.justifyContent = 'center';
       el.title = spot.name;
 
-      if (isInTrail) {
-        const num = document.createElement('span');
-        num.innerText = (trailIndex + 1).toString();
-        num.style.color = '#ffffff';
-        num.style.fontSize = '12px';
-        num.style.fontWeight = '800';
-        num.style.lineHeight = '1';
-        el.appendChild(num);
+      if (isWalkTarget) {
+        const iconDiv = document.createElement('div');
+        iconDiv.style.display = 'flex';
+        iconDiv.style.color = '#ffffff';
+        iconDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+        el.appendChild(iconDiv);
       } else {
         const svgIcon = document.createElement('div');
         svgIcon.style.display = 'flex';
@@ -1193,7 +1151,7 @@ export default function Home() {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, mustTrySpotIds, isTrailActive, optimizedTrailSpots]);
+  }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -1519,6 +1477,15 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
+  // Proximity sorted spots for the walk selector modal
+  const proximitySortedSpots = [...spots]
+    .filter((s) => s.latitude && s.longitude)
+    .map((s) => ({
+      ...s,
+      dist: calculateDistanceKm(centerCoord[1], centerCoord[0], s.latitude, s.longitude)
+    }))
+    .sort((a, b) => a.dist - b.dist);
+
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       {/* Smooth Spring Micro-Interactions & Animation Styles */}
@@ -1778,35 +1745,46 @@ export default function Home() {
           </div>
         )}
 
-        {/* Active Walking Route HUD Pill */}
-        {isTrailActive && trailCoordinates.length > 1 && (
+        {/* Active Proximity Walk HUD Pill */}
+        {walkTargetSpot && (
           <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Footprints style={{ width: '15px', height: '15px', color: '#e05a47' }} />
-              <span>{trailCoordinates.length} stops ({totalTrailDistanceKm.toFixed(1)} km)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <Footprints style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Walking to <strong>{walkTargetSpot.name}</strong> ({walkDistanceKm.toFixed(1)} km)
+              </span>
             </div>
-            <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>~{estimatedWalkingMinutes} min walk</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>~{walkMinutes} min</span>
+              <button 
+                onClick={() => setWalkTargetSpot(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
+                title="End Walk"
+              >
+                <X style={{ width: '15px', height: '15px' }} />
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* 3. Floating Action Controls (Includes Locate, Trail Toggle, Dark Mode Toggle, Zoom In/Out) */}
+      {/* 3. Floating Action Controls (Includes Locate, Walk Proximity Target, Dark Mode Toggle, Zoom In/Out) */}
       <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
 
-        {/* Walking Trail Toggle Button */}
+        {/* Proximity Walk Selector Trigger Button */}
         <button
-          onClick={() => setIsTrailActive(!isTrailActive)}
+          onClick={() => setIsWalkModalOpen(true)}
           style={{
             width: '46px',
             height: '46px',
-            backgroundColor: isTrailActive ? '#e05a47' : 'rgba(255, 255, 255, 0.92)',
+            backgroundColor: walkTargetSpot ? '#e05a47' : 'rgba(255, 255, 255, 0.92)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            color: isTrailActive ? '#ffffff' : '#44403c',
-            border: isTrailActive ? '1px solid #e05a47' : '1px solid #e7e5e4',
+            color: walkTargetSpot ? '#ffffff' : '#44403c',
+            border: walkTargetSpot ? '1px solid #e05a47' : '1px solid #e7e5e4',
             borderRadius: '16px',
             boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
             display: 'flex',
@@ -1814,7 +1792,7 @@ export default function Home() {
             justifyContent: 'center',
             cursor: 'pointer',
           }}
-          title={isTrailActive ? 'Hide Walking Route' : 'Show Walking Route'}
+          title="Choose a place to walk to"
         >
           <Footprints style={{ width: '20px', height: '20px' }} />
         </button>
@@ -1851,6 +1829,87 @@ export default function Home() {
           </button>
         </div>
       </div>
+
+      {/* Proximity Walk Selector Modal */}
+      {isWalkModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: '22px', position: 'relative' }}>
+            <button onClick={() => setIsWalkModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
+                <Footprints style={{ width: '20px', height: '20px' }} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Where to Walk?</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Select a nearby spot for walking directions</p>
+              </div>
+            </div>
+
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '50vh' }}>
+              {proximitySortedSpots.length === 0 ? (
+                <p style={{ margin: '20px 0', fontSize: '12.5px', color: '#a8a29e', textAlign: 'center' }}>No saved spots available nearby.</p>
+              ) : (
+                proximitySortedSpots.map((spot) => (
+                  <div
+                    key={spot.id || spot.name}
+                    onClick={() => {
+                      setWalkTargetSpot(spot);
+                      setIsWalkModalOpen(false);
+                      flyToSpot(spot);
+                    }}
+                    style={{
+                      padding: '11px 14px',
+                      borderRadius: '14px',
+                      border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
+                      backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div style={{ minWidth: 0, paddingRight: '10px' }}>
+                      <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c' }}>
+                        {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#e05a47' }}>{spot.dist.toFixed(1)} km</span>
+                      <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {walkTargetSpot && (
+              <button
+                onClick={() => {
+                  setWalkTargetSpot(null);
+                  setIsWalkModalOpen(false);
+                }}
+                style={{
+                  marginTop: '12px',
+                  width: '100%',
+                  backgroundColor: '#f5f5f4',
+                  color: '#e05a47',
+                  border: '1px solid #fed7aa',
+                  padding: '10px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Clear Active Walk
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 4. Spot Details Bottom Sheet with Frosted Glass & Multi-layered Shadows */}
       {viewingSpot && (
@@ -2514,7 +2573,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex': marginTop: '1px' }}>
                   <ThumbsUp style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
