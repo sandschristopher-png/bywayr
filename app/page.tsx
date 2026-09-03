@@ -1705,33 +1705,48 @@ export default function Home() {
           </div>
         )}
 
-        {/* Active Walk Proximity HUD Pill (No Map Canvas Line) */}
-        {walkTargetSpot && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-              <Footprints style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                <strong>{walkTargetSpot.name}</strong> ({walkDistanceKm < 1 ? `${Math.round(walkDistanceKm * 1000)} m` : `${walkDistanceKm.toFixed(1)} km`})
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>About {walkMinutes} mins</span>
-              <button 
-                onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
-                style={{ backgroundColor: '#e05a47', color: '#fff', border: 'none', borderRadius: '8px', padding: '3px 7px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
-              >
-                Start <Navigation2 style={{ width: '10px', height: '10px' }} />
-              </button>
-              <button 
-                onClick={() => setWalkTargetSpot(null)} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
-                title="End Walk"
-              >
-                <X style={{ width: '15px', height: '15px' }} />
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Active Walk Proximity HUD Pill with Direct Navigation */}
+{walkTargetSpot && (
+  <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+      <Footprints style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
+      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <strong>{walkTargetSpot.name}</strong> ({walkDistanceKm < 1 ? `${Math.round(walkDistanceKm * 1000)} m` : `${walkDistanceKm.toFixed(1)} km`})
+      </span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>
+        {walkDistanceKm <= 10 ? `About ${walkMinutes} mins` : 'Far'}
+      </span>
+      <button 
+        onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
+        style={{ 
+          backgroundColor: '#e05a47', 
+          color: '#ffffff', 
+          border: 'none', 
+          borderRadius: '8px', 
+          padding: '4px 8px', 
+          fontSize: '11px', 
+          fontWeight: 600,
+          cursor: 'pointer', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '3px' 
+        }}
+        title="Open in Google Maps / Apple Maps"
+      >
+        Navigate <Navigation2 style={{ width: '11px', height: '11px' }} />
+      </button>
+      <button 
+        onClick={() => setWalkTargetSpot(null)} 
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
+        title="End Walk"
+      >
+        <X style={{ width: '15px', height: '15px' }} />
+      </button>
+    </div>
+  </div>
+)}
       </div>
 
       {/* Empty State Overlay */}
