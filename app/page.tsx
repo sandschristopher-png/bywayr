@@ -52,6 +52,8 @@ import {
   Download,
   Upload,
   Crown,
+  Route,
+  Footprints,
 } from 'lucide-react';
 
 interface Spot {
@@ -160,6 +162,21 @@ const CATEGORIES = [
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
   return match ? match.color : '#e05a47';
+};
+
+// Calculate Haversine distance in kilometers
+const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 };
 
 const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string }> => {
@@ -282,6 +299,9 @@ export default function Home() {
   // Public Curator Profile Modal State
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
+
+  // Walking Route Trail State
+  const [isTrailActive, setIsTrailActive] = useState(false);
 
   // Auth & Username States
   const [authEmail, setAuthEmail] = useState('');
@@ -706,7 +726,7 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Keyless Styled Basemap: Custom OSM Filters with maxzoom 20
+  // Bulletproof Keyless Styled Basemap
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -763,7 +783,7 @@ export default function Home() {
       localStorage.setItem('bywayr_map_zoom', zoom.toString());
     });
 
-    // Handle Mobile & Desktop Initial Geolocation (instant jump if no saved position exists)
+    // Handle Mobile & Desktop Initial Geolocation
     initializedMap.on('load', () => {
       const hasSavedPosition = localStorage.getItem('bywayr_map_center');
       if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
@@ -948,22 +968,110 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
+  // Calculate Walking Route Distance & Time
+  const trailCoordinates = filteredSpots
+    .filter((s) => s.latitude && s.longitude)
+    .map((s) => [s.longitude, s.latitude]);
+
+  let totalTrailDistanceKm = 0;
+  for (let i = 0; i < trailCoordinates.length - 1; i++) {
+    totalTrailDistanceKm += calculateDistanceKm(
+      trailCoordinates[i][1],
+      trailCoordinates[i][0],
+      trailCoordinates[i + 1][1],
+      trailCoordinates[i + 1][0]
+    );
+  }
+  const estimatedWalkingMinutes = Math.round((totalTrailDistanceKm / 4.8) * 60);
+
+  // Render & Update Walking Trail Polyline Layer
+  useEffect(() => {
+    if (!map.current) return;
+    const mapInstance = map.current;
+
+    const sourceId = 'walking-trail-source';
+    const layerId = 'walking-trail-line';
+    const casingId = 'walking-trail-casing';
+
+    if (!mapInstance.isStyleLoaded()) {
+      mapInstance.once('styledata', () => {
+        updateTrailLayer();
+      });
+      return;
+    }
+
+    updateTrailLayer();
+
+    function updateTrailLayer() {
+      if (!isTrailActive || trailCoordinates.length < 2) {
+        if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
+        if (mapInstance.getLayer(casingId)) mapInstance.removeLayer(casingId);
+        if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+        return;
+      }
+
+      const geojsonData: GeoJSON.Feature<GeoJSON.LineString> = {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: trailCoordinates,
+        },
+      };
+
+      if (mapInstance.getSource(sourceId)) {
+        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).setData(geojsonData);
+      } else {
+        mapInstance.addSource(sourceId, {
+          type: 'geojson',
+          data: geojsonData,
+        });
+
+        mapInstance.addLayer({
+          id: casingId,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': 6,
+            'line-opacity': 0.9,
+          },
+        });
+
+        mapInstance.addLayer({
+          id: layerId,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#e05a47',
+            'line-width': 3.5,
+            'line-dasharray': [1.5, 1.5],
+            'line-opacity': 0.95,
+          },
+        });
+      }
+    }
+  }, [isTrailActive, filteredSpots]);
+
+  // Marker Rendering: Displays Sequential Numbers when Walking Trail is Active
   useEffect(() => {
     if (!map.current) return;
     spotMarkersRef.current.forEach((marker) => marker.remove());
     spotMarkersRef.current = [];
 
-    filteredSpots.forEach((spot) => {
+    filteredSpots.forEach((spot, index) => {
       if (!spot.latitude || !spot.longitude) return;
       const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
       const color = getCategoryColor(spot.category);
 
       const el = document.createElement('div');
-      el.style.width = '32px';
-      el.style.height = '32px';
+      el.style.width = isTrailActive ? '30px' : '32px';
+      el.style.height = isTrailActive ? '30px' : '32px';
       el.style.borderRadius = '50%';
-      el.style.backgroundColor = '#ffffff';
-      el.style.border = isMustTry ? '3.5px solid #d97706' : `3.5px solid ${color}`;
+      el.style.backgroundColor = isTrailActive ? color : '#ffffff';
+      el.style.border = isMustTry ? '3.5px solid #d97706' : isTrailActive ? '2.5px solid #ffffff' : `3.5px solid ${color}`;
       el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.28)';
       el.style.cursor = 'pointer';
       el.style.display = 'flex';
@@ -971,12 +1079,22 @@ export default function Home() {
       el.style.justifyContent = 'center';
       el.title = spot.name;
 
-      const innerDot = document.createElement('div');
-      innerDot.style.width = '12px';
-      innerDot.style.height = '12px';
-      innerDot.style.borderRadius = '50%';
-      innerDot.style.backgroundColor = color;
-      el.appendChild(innerDot);
+      if (isTrailActive) {
+        const num = document.createElement('span');
+        num.innerText = (index + 1).toString();
+        num.style.color = '#ffffff';
+        num.style.fontSize = '12px';
+        num.style.fontWeight = '800';
+        num.style.lineHeight = '1';
+        el.appendChild(num);
+      } else {
+        const innerDot = document.createElement('div');
+        innerDot.style.width = '12px';
+        innerDot.style.height = '12px';
+        innerDot.style.borderRadius = '50%';
+        innerDot.style.backgroundColor = color;
+        el.appendChild(innerDot);
+      }
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -989,7 +1107,7 @@ export default function Home() {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, mustTrySpotIds]);
+  }, [filteredSpots, mustTrySpotIds, isTrailActive]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -1278,6 +1396,28 @@ export default function Home() {
           </div>
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+            {/* Walking Trail Toggle Button */}
+            <button
+              onClick={() => setIsTrailActive(!isTrailActive)}
+              style={{
+                backgroundColor: isTrailActive ? '#e05a47' : '#f5f5f4',
+                color: isTrailActive ? '#ffffff' : '#44403c',
+                border: isTrailActive ? '1px solid #e05a47' : '1px solid #d6d3d1',
+                borderRadius: '10px',
+                padding: '7px 9px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                flexShrink: 0,
+              }}
+              title={isTrailActive ? 'Hide Walking Route' : 'Show Walking Route'}
+            >
+              <Footprints style={{ width: '15px', height: '15px' }} />
+            </button>
+
             {currentUser ? (
               <button 
                 onClick={() => setIsProfileModalOpen(true)} 
@@ -1296,7 +1436,7 @@ export default function Home() {
                   whiteSpace: 'nowrap', 
                   overflow: 'hidden', 
                   textOverflow: 'ellipsis', 
-                  maxWidth: '140px', 
+                  maxWidth: '120px', 
                   flexShrink: 1 
                 }}
               >
@@ -1458,6 +1598,17 @@ export default function Home() {
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
             </span>
+          </div>
+        )}
+
+        {/* Active Walking Route HUD Pill */}
+        {isTrailActive && trailCoordinates.length > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '14px', fontSize: '12px', fontWeight: 600, boxShadow: '0 6px 16px rgba(28, 25, 23, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Footprints style={{ width: '15px', height: '15px', color: '#e05a47' }} />
+              <span>{trailCoordinates.length} stops ({totalTrailDistanceKm.toFixed(1)} km)</span>
+            </div>
+            <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>~{estimatedWalkingMinutes} min walk</span>
           </div>
         )}
       </div>
