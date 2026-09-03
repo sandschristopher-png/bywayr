@@ -2594,7 +2594,7 @@ export default function Home() {
               Your Pocket Field Guide
             </h2>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
-              A quiet map for expats, travelers, and wanderers to curate and share the unmapped local spots guidebooks overlook.
+              A quiet map for travelers, wanderers, and expats to curate and share the unmapped local spots guidebooks overlook.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#fafaf9', padding: '14px 15px', borderRadius: '16px', border: '1px solid #e7e5e4' }}>
@@ -2604,7 +2604,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Curate Unmapped Corners</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Plot backstreet food stalls, elevated viewpoints, and undiscovered neighborhood gems.</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Plot backstreet food stalls, hidden night views, and unlisted local gems.</div>
                 </div>
               </div>
 
@@ -2614,7 +2614,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Community Vouches</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Discover real places backed by fellow explorers with zero algorithms.</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Tap into genuine community finds and tag your own favorites as you go.</div>
                 </div>
               </div>
 
