@@ -344,6 +344,7 @@ export default function Home() {
 
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
+  const [coordsCopied, setCoordsCopied] = useState(false);
 
   const [vouchedSpotIds, setVouchedSpotIds] = useState<string[]>([]);
   const [vouchCounts, setVouchCounts] = useState<Record<string, number>>({});
@@ -1147,6 +1148,12 @@ export default function Home() {
 
     setShareDialogSpot(spot);
     setShareDialogCopied(false);
+  };
+
+  const handleCopyCoordinates = async (lat: number, lon: number) => {
+    await navigator.clipboard.writeText(`${lat}, ${lon}`);
+    setCoordsCopied(true);
+    setTimeout(() => setCoordsCopied(false), 2000);
   };
 
   const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
@@ -2179,6 +2186,14 @@ export default function Home() {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
             >
               <Navigation2 style={{ width: '14px', height: '14px' }} /> Open Walking Directions
+            </button>
+
+            <button
+              onClick={() => handleCopyCoordinates(viewingSpot.latitude, viewingSpot.longitude)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: coordsCopied ? '#ecfdf5' : '#f5f5f4', color: coordsCopied ? '#059669' : '#1c1917', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              {coordsCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
+              {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
             </button>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
