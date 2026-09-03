@@ -329,6 +329,20 @@ export default function Home() {
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
   const [isTrailActive, setIsTrailActive] = useState(false);
+  
+  // Keyless Dark Slate Map Mode state
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bywayr_dark_mode') === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bywayr_dark_mode', isDarkMode.toString());
+    }
+  }, [isDarkMode]);
 
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
@@ -1399,15 +1413,66 @@ export default function Home() {
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: '#f5f5f4' }}>
-      {/* 1. Map Canvas */}
-      <div ref={mapContainer} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#1c1917' : '#f5f5f4' }}>
+      {/* Smooth Animation Styles */}
+      <style jsx global>{`
+        @keyframes slideUp {
+          from { transform: translateY(30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideInLeft {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleUp {
+          from { transform: scale(0.94); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-slide-up {
+          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-slide-left {
+          animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+        .animate-scale-up {
+          animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        button, a {
+          transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        button:active, a:active {
+          transform: scale(0.97);
+        }
+      `}</style>
+
+      {/* 1. Map Canvas with Keyless Dark Slate Filter Support */}
+      <div 
+        ref={mapContainer} 
+        style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          zIndex: 1,
+          backgroundColor: isDarkMode ? '#1c1917' : '#f5f5f4',
+          filter: isDarkMode ? 'invert(92%) hue-rotate(200deg) saturate(35%) brightness(85%) contrast(110%)' : 'none',
+          transition: 'filter 0.3s ease'
+        }} 
+      />
 
       {/* 2. Top Header, Search, Categories Bar & Active Descriptor Sub-bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 12px 30px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '10px', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ minWidth: 0 }}>
@@ -1419,6 +1484,28 @@ export default function Home() {
           </div>
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+            {/* Keyless Dark Slate Map Mode Toggle Button */}
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              style={{
+                backgroundColor: isDarkMode ? '#1c1917' : '#f5f5f4',
+                color: isDarkMode ? '#fafaf9' : '#44403c',
+                border: isDarkMode ? '1px solid #1c1917' : '1px solid #d6d3d1',
+                borderRadius: '12px',
+                padding: '7px 9px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                flexShrink: 0,
+              }}
+              title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Slate Mode'}
+            >
+              {isDarkMode ? <MoonStar style={{ width: '15px', height: '15px', color: '#e05a47' }} /> : <Sun style={{ width: '15px', height: '15px' }} />}
+            </button>
+
             {/* Walking Trail Toggle Button */}
             <button
               onClick={() => setIsTrailActive(!isTrailActive)}
@@ -1426,7 +1513,7 @@ export default function Home() {
                 backgroundColor: isTrailActive ? '#e05a47' : '#f5f5f4',
                 color: isTrailActive ? '#ffffff' : '#44403c',
                 border: isTrailActive ? '1px solid #e05a47' : '1px solid #d6d3d1',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 padding: '7px 9px',
                 fontSize: '12px',
                 fontWeight: 600,
@@ -1447,7 +1534,7 @@ export default function Home() {
                 style={{ 
                   backgroundColor: '#f5f5f4', 
                   border: '1px solid #d6d3d1', 
-                  borderRadius: '10px', 
+                  borderRadius: '12px', 
                   padding: '5px 9px', 
                   color: '#44403c', 
                   fontSize: '12px', 
@@ -1473,12 +1560,12 @@ export default function Home() {
                 </span>
               </button>
             ) : (
-              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '10px', padding: '7px 11px', color: '#fafaf9', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '12px', padding: '7px 11px', color: '#fafaf9', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
               </button>
             )}
 
-            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <List style={{ width: '15px', height: '15px' }} />
             </button>
             <button
@@ -1490,7 +1577,7 @@ export default function Home() {
                 const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
                 dropPreviewAndOpenModal(center.lat, center.lng);
               }}
-              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '10px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
+              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '12px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
             >
               <Plus style={{ width: '14px', height: '14px' }} /> Add
             </button>
@@ -1507,7 +1594,7 @@ export default function Home() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
-              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '16px 16px 0 0' : '16px', border: '1px solid #e7e5e4', boxShadow: '0 8px 20px -4px rgba(28, 25, 23, 0.08)', outline: 'none', color: '#1c1917' }}
+              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: '#ffffff', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '20px 20px 0 0' : '20px', border: '1px solid #e7e5e4', boxShadow: '0 8px 20px -4px rgba(28, 25, 23, 0.08)', outline: 'none', color: '#1c1917' }}
             />
             <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {isSearching && <Loader2 style={{ color: '#e05a47', width: '17px', height: '17px', animation: 'spin 1s linear infinite' }} />}
@@ -1529,7 +1616,7 @@ export default function Home() {
           </form>
 
           {showDropdown && searchResults.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 16px 16px', border: '1px solid #e7e5e4', boxShadow: '0 14px 28px rgba(28, 25, 23, 0.12)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 14px 28px rgba(28, 25, 23, 0.12)', maxHeight: '240px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.map((item, idx) => (
                 <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f5f5f4' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
@@ -1616,7 +1703,7 @@ export default function Home() {
 
         {/* Dynamic Category Descriptor Sub-Bar */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(8px)', borderRadius: '12px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(8px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
@@ -1626,7 +1713,7 @@ export default function Home() {
 
         {/* Active Walking Route HUD Pill */}
         {isTrailActive && trailCoordinates.length > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '14px', fontSize: '12px', fontWeight: 600, boxShadow: '0 6px 16px rgba(28, 25, 23, 0.25)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 6px 16px rgba(28, 25, 23, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Footprints style={{ width: '15px', height: '15px', color: '#e05a47' }} />
               <span>{trailCoordinates.length} stops ({totalTrailDistanceKm.toFixed(1)} km)</span>
@@ -1638,25 +1725,25 @@ export default function Home() {
 
       {/* 3. Floating Action Controls */}
       <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }}>
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <button onClick={() => map.current?.zoomIn()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
+          <button onClick={() => map.current?.zoomIn()} style={{ width: '46px', height: '46px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
             <Plus style={{ width: '20px', height: '20px' }} />
           </button>
-          <button onClick={() => map.current?.zoomOut()} style={{ width: '44px', height: '44px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '13px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
+          <button onClick={() => map.current?.zoomOut()} style={{ width: '46px', height: '46px', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }}>
             <Minus style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
       </div>
 
-      {/* 4. Spot Details Bottom Sheet with Agoda & Booking.com Stays Nearby Buttons */}
+      {/* 4. Spot Details Bottom Sheet with Smooth Slide-Up Animation */}
       {viewingSpot && (
-        <div style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '18px' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 20px 40px -8px rgba(28, 25, 23, 0.22)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', marginBottom: '6px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
               <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917' }}>{viewingSpot.name}</h3>
@@ -1682,7 +1769,7 @@ export default function Home() {
                 style={{
                   border: 'none',
                   background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f5f5f4',
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   cursor: 'pointer',
                   color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
                   padding: '7px 9px',
@@ -1698,20 +1785,20 @@ export default function Home() {
                 <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
               </button>
 
-              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex' }} title="Save to Must-Try">
+              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex' }} title="Save to Must-Try">
                 {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '16px', height: '16px' }} /> : <Bookmark style={{ width: '16px', height: '16px' }} />}
               </button>
 
-              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
+              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
                 <Share2 style={{ width: '16px', height: '16px' }} />
               </button>
 
               {currentUser && viewingSpot.user_id === currentUser.id && (
                 <>
-                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex' }} title="Edit Spot">
+                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex' }} title="Edit Spot">
                     <Pencil style={{ width: '15px', height: '15px' }} />
                   </button>
-                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex' }} title="Delete Spot">
+                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '12px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex' }} title="Delete Spot">
                     {deleting ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '15px', height: '15px' }} />}
                   </button>
                 </>
@@ -1722,13 +1809,13 @@ export default function Home() {
             </div>
           </div>
 
-          {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
-          {viewingSpot.description && <p style={{ margin: '8px 0 12px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
+          {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '16px', margin: '8px 0' }} />}
+          {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <a
               href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', textDecoration: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}
             >
               <Navigation2 style={{ width: '14px', height: '14px' }} /> Navigate to Spot
             </a>
@@ -1738,7 +1825,7 @@ export default function Home() {
                 href={`https://www.agoda.com/search?city=${encodeURIComponent(viewingSpot.city)}&cid=569683`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '11px', fontSize: '11px', fontWeight: 600 }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '10px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '14px', fontSize: '11px', fontWeight: 600 }}
               >
                 🏨 Agoda Stays Nearby
               </a>
@@ -1746,7 +1833,7 @@ export default function Home() {
                 href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(viewingSpot.city)}&aid=569683`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '11px', fontSize: '11px', fontWeight: 600 }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '10px 8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', color: '#44403c', textDecoration: 'none', borderRadius: '14px', fontSize: '11px', fontWeight: 600 }}
               >
                 🌐 Booking.com Stays
               </a>
@@ -1757,14 +1844,14 @@ export default function Home() {
 
       {/* 5. Public Curator Profile Modal */}
       {viewingProfile && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative' }}>
             <button onClick={() => setViewingProfile(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0 }}>
                 {viewingProfile.avatar_url ? (
                   <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -1787,8 +1874,8 @@ export default function Home() {
                   gap: '6px',
                   backgroundColor: '#1c1917',
                   color: '#fafaf9',
-                  padding: '8px 12px',
-                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  borderRadius: '14px',
                   fontSize: '12px',
                   fontWeight: 600,
                   textDecoration: 'none',
@@ -1799,7 +1886,7 @@ export default function Home() {
               </a>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
                 <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Curated Pins</div>
@@ -1825,7 +1912,7 @@ export default function Home() {
                       setViewingProfile(null);
                       flyToSpot(s);
                     }}
-                    style={{ padding: '10px 12px', borderRadius: '12px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    style={{ padding: '11px 14px', borderRadius: '14px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                   >
                     <div>
                       <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#1c1917' }}>{s.name}</h4>
@@ -1842,8 +1929,8 @@ export default function Home() {
 
       {/* 6. Desktop Universal Share Modal */}
       {shareDialogSpot && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '22px', position: 'relative' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <button onClick={() => setShareDialogSpot(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
@@ -1857,7 +1944,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
-                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
                   <MessageCircle style={{ width: '22px', height: '22px' }} />
                 </div>
                 WhatsApp
@@ -1869,7 +1956,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
-                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#0088cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#0088cc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
                   <Send style={{ width: '20px', height: '20px' }} />
                 </div>
                 Telegram
@@ -1881,7 +1968,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
-                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
                   <span style={{ fontSize: '18px', fontWeight: 800 }}>𝕏</span>
                 </div>
                 Post
@@ -1891,7 +1978,7 @@ export default function Home() {
                 href={`mailto:?subject=${encodeURIComponent(`Bywayr Spot: ${shareDialogSpot.name}`)}&body=${encodeURIComponent(`Check out this spot in ${shareDialogSpot.city}: ${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
-                <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#ea4335', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#ea4335', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
                   <Mail style={{ width: '20px', height: '20px' }} />
                 </div>
                 Email
@@ -1910,8 +1997,8 @@ export default function Home() {
                 backgroundColor: shareDialogCopied ? '#ecfdf5' : '#f5f5f4',
                 color: shareDialogCopied ? '#059669' : '#1c1917',
                 border: shareDialogCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
-                padding: '10px',
-                borderRadius: '12px',
+                padding: '11px',
+                borderRadius: '14px',
                 fontSize: '12.5px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1928,25 +2015,25 @@ export default function Home() {
         </div>
       )}
 
-      {/* 7. Slide-Out Drawer */}
+      {/* 7. Slide-Out Drawer with Smooth Slide-In */}
       {isDrawerOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
-          <div style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
+          <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '12px', padding: '3px', marginBottom: '16px' }}>
-              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '8px 0', borderRadius: '9px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
-              <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '9px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', marginBottom: '16px' }}>
+              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
+              <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {displayedDrawerSpots.map((spot) => {
                 const author = spot.user_id ? profilesMap[spot.user_id]?.username : null;
                 return (
-                  <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '13px', border: '1px solid #e7e5e4', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
+                  <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e7e5e4', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
                     <div style={{ flex: 1, minWidth: '0' }}>
                       <h4 onClick={() => flyToSpot(spot)} style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
                       <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c' }}>
@@ -1972,15 +2059,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal with Bywayr Plus (Coming Soon) Section */}
+      {/* 8. Own Account Profile Modal */}
       {isProfileModalOpen && currentUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
-              <label style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', flexShrink: 0 }} title="Click to upload profile photo">
+              <label style={{ width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', flexShrink: 0 }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
                   <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
                 ) : userProfile?.avatar_url ? (
@@ -2005,7 +2092,7 @@ export default function Home() {
               </div>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
@@ -2021,7 +2108,7 @@ export default function Home() {
             </div>
 
             {/* Bywayr Plus (Coming Soon) Section */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
@@ -2036,20 +2123,20 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
                 <button
                   onClick={() => alert('Bywayr Plus data export is coming soon!')}
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '9px', padding: '7px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                 >
                   <Download style={{ width: '13px', height: '13px' }} /> Export JSON
                 </button>
                 <button
                   onClick={() => alert('Bywayr Plus data import is coming soon!')}
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '9px', padding: '7px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                 >
                   <Upload style={{ width: '13px', height: '13px' }} /> Import JSON
                 </button>
               </div>
             </div>
 
-            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '12px', cursor: 'pointer', marginBottom: '14px' }}>
+            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
@@ -2057,7 +2144,7 @@ export default function Home() {
               {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
 
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '10px', borderRadius: '11px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
           </div>
@@ -2066,9 +2153,9 @@ export default function Home() {
 
       {/* 9. Claim Username Modal */}
       {isClaimUsernameModalOpen && currentUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
-            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
               <AtSign style={{ width: '24px', height: '24px' }} />
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', textAlign: 'center' }}>Choose Your Handle</h3>
@@ -2094,13 +2181,13 @@ export default function Home() {
                         setClaimUsernameError('');
                       }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '11px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
                 {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
               </div>
 
-              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
                 {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
               </button>
             </form>
@@ -2110,18 +2197,18 @@ export default function Home() {
 
       {/* 10. Auth Modal */}
       {isAuthModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
             <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '28px', height: '28px' }} />
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>Join Bywayr</h3>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
             
-            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
+            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -2138,7 +2225,7 @@ export default function Home() {
             </div>
 
             {magicLinkSent ? (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '13px', padding: '14px', textAlign: 'center' }}>
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
                 <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 5px auto' }} />
                 <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
                 <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
@@ -2161,7 +2248,7 @@ export default function Home() {
                         setAuthUsernameError('');
                       }
                     }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '11px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
                   />
                   {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
                 </div>
@@ -2174,11 +2261,11 @@ export default function Home() {
                     placeholder="Enter your email"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
 
-                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
                   {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
                 </button>
               </form>
@@ -2189,8 +2276,8 @@ export default function Home() {
 
       {/* 11. Add / Edit Spot Modal Form */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '22px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '22px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={handleCloseModal} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
@@ -2201,7 +2288,7 @@ export default function Home() {
             <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
-                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#fafaf9', position: 'relative', overflow: 'hidden' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #d6d3d1', borderRadius: '14px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#fafaf9', position: 'relative', overflow: 'hidden' }}>
                   {imagePreview ? (
                     <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
@@ -2223,8 +2310,8 @@ export default function Home() {
                     backgroundColor: '#f5f5f4',
                     color: '#1c1917',
                     border: '1px solid #d6d3d1',
-                    borderRadius: '11px',
-                    padding: '8px 12px',
+                    borderRadius: '14px',
+                    padding: '9px 12px',
                     fontSize: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -2247,24 +2334,24 @@ export default function Home() {
 
               <div>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
-                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
+                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
               </div>
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
                   <div>
                     <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Latitude</label>
-                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
+                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
                   </div>
                   <div>
                     <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Longitude</label>
-                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
+                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
                   </div>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
                 <div>
                   <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
-                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
+                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
                     {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
                       <option key={cat.label} value={cat.label}>
                         {cat.label} — {cat.desc}
@@ -2274,14 +2361,14 @@ export default function Home() {
                 </div>
                 <div>
                   <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
-                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1' }} />
+                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
                 </div>
               </div>
               <div>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
-                <textarea rows={2} placeholder="Atmosphere, tips, menu favorites, best time to visit..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '9px 12px', borderRadius: '11px', border: '1px solid #d6d3d1', resize: 'none' }} />
+                <textarea rows={2} placeholder="Atmosphere, tips, menu favorites, best time to visit..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', resize: 'none' }} />
               </div>
-              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '4px', width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '11px', borderRadius: '11px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}>
+              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '4px', width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}>
                 {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
               </button>
             </form>
@@ -2289,10 +2376,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* 12. Concept 1 Field Guide Welcome Modal with Elevated 3D Clay Icon */}
+      {/* 12. Concept 1 Field Guide Welcome Modal with Smooth Scale Animation */}
       {showWelcome && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', overflow: 'hidden', display: 'flex', margin: '0 auto 16px auto', boxShadow: '0 10px 20px -3px rgba(224, 90, 71, 0.28)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
@@ -2306,7 +2393,7 @@ export default function Home() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#fafaf9', padding: '14px 15px', borderRadius: '16px', border: '1px solid #e7e5e4' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fff1ee', padding: '6px', borderRadius: '8px', color: '#e05a47', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#fff1ee', padding: '6px', borderRadius: '10px', color: '#e05a47', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
                   <Gem style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
@@ -2316,7 +2403,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '8px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
                   <ThumbsUp style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
@@ -2326,7 +2413,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '8px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
                   <BookmarkCheck style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
@@ -2338,7 +2425,7 @@ export default function Home() {
 
             <button
               onClick={handleDismissWelcome}
-              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '13px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.22)' }}
+              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.22)' }}
             >
               Open the Field Guide
             </button>
