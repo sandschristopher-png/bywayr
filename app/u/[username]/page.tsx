@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import {
   Compass,
   MapPin,
@@ -154,7 +154,6 @@ export default function CuratorProfilePage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f4', fontFamily: "'Inter', sans-serif", color: '#1c1917', paddingBottom: '60px' }}>
-      {/* Top Floating Action Header */}
       <header style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #e7e5e4', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '720px', margin: '0 auto' }}>
         <button
           onClick={() => router.push('/')}
@@ -185,7 +184,6 @@ export default function CuratorProfilePage() {
       </header>
 
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '24px 16px' }}>
-        {/* Profile Card */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', padding: '24px', border: '1px solid #e7e5e4', boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.05)', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, border: '1px solid #fed7aa' }}>
@@ -219,7 +217,6 @@ export default function CuratorProfilePage() {
           </div>
         </div>
 
-        {/* City Filter Pills */}
         {uniqueCities.length > 1 && (
           <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '16px', scrollbarWidth: 'none' }}>
             <button
@@ -260,7 +257,6 @@ export default function CuratorProfilePage() {
           </div>
         )}
 
-        {/* Curated Field Notes Spot Feed */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredSpots.length === 0 ? (
             <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '30px', textAlign: 'center', border: '1px solid #e7e5e4' }}>
