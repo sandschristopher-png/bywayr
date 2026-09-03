@@ -1617,7 +1617,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Bar with Aviasales Flight Search Integration */}
+        {/* Search Bar with Aviasales Integration */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
@@ -1655,7 +1655,7 @@ export default function Home() {
                   <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#1c1917' }}>No local field notes found yet.</p>
                   <p style={{ margin: '0 0 10px 0', fontSize: '11.5px' }}>Be the first explorer to drop a pin here, or plan your journey.</p>
                   <a
-                    href="https://aviasales.tpk.lv/sZHsJIxR"
+                    href="https://aviasales.tpk.lv/Y7mdLlKw"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#e05a47', fontWeight: 600, textDecoration: 'none', fontSize: '11.5px' }}
