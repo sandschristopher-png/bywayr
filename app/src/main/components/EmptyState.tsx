@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Compass, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface EmptyStateProps {
   category?: string;
@@ -16,10 +16,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm rounded-2xl bg-white/95 p-5 shadow-lg backdrop-blur-sm border border-neutral-100 text-center transition-all animate-in fade-in zoom-in-95">
-      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
-        <Compass className="h-6 w-6 stroke-[1.75]" />
-      </div>
-
       <h3 className="text-base font-semibold text-neutral-900">
         No unmapped spots here yet
       </h3>
