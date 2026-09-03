@@ -73,7 +73,6 @@ interface Spot {
   image_url?: string;
   user_id?: string;
   created_at?: string;
-  dist?: number;
   isLiveOsm?: boolean;
 }
 
@@ -142,20 +141,6 @@ const getCategorySvg = (category: string, color: string): string => {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
   }
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
-};
-
-const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
 };
 
 const openNativeWalkNavigation = (lat: number, lng: number, name?: string) => {
@@ -286,12 +271,20 @@ export default function Home() {
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
-  // Proximity Walking Target & Search State
+  // Proximity Walking & Active Search Selection State
   const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
   const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
   const [walkSearchQuery, setWalkSearchQuery] = useState('');
   const [liveOsmResults, setLiveOsmResults] = useState<Spot[]>([]);
   const [isSearchingOsm, setIsSearchingOsm] = useState(false);
+
+  // Quick Active Preview Spot (For search results & dropped pins)
+  const [activeSearchedSpot, setActiveSearchedSpot] = useState<{
+    name: string;
+    city: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   // Dark Slate Map Mode State
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -739,7 +732,7 @@ export default function Home() {
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
-    let initialCenter: [number, number] = [121.055, 14.575];
+    let initialCenter: [number, number] = [-115.1398, 36.1699];
     let initialZoom = 13.5;
 
     try {
@@ -854,6 +847,7 @@ export default function Home() {
     }
   }, [loading, spots]);
 
+  // Main Live Search
   useEffect(() => {
     const rawQuery = searchQuery.trim();
     if (rawQuery.length < 3) {
@@ -939,7 +933,8 @@ export default function Home() {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}`);
+        const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}&lat=${center.lat}&lon=${center.lng}&limit=6`);
         const data = await res.json();
         setSearchResults(data || []);
         setShowDropdown(true);
@@ -959,6 +954,17 @@ export default function Home() {
     setShowDropdown(false);
     setSearchQuery(item.display_name);
 
+    const placeName = item.name || item.display_name.split(',')[0];
+    const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
+
+    setActiveSearchedSpot({
+      name: placeName,
+      city: placeCity,
+      latitude: lat,
+      longitude: lon,
+    });
+    setViewingSpot(null);
+
     if (map.current) {
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
 
@@ -974,10 +980,6 @@ export default function Home() {
     if (selectedCategory === 'All') return true;
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
-
-  const centerCoord = map.current ? [map.current.getCenter().lng, map.current.getCenter().lat] : [121.055, 14.575];
-  const walkDistanceKm = walkTargetSpot ? calculateDistanceKm(centerCoord[1], centerCoord[0], walkTargetSpot.latitude, walkTargetSpot.longitude) : 0;
-  const walkMinutes = Math.round((walkDistanceKm / 4.8) * 60);
 
   // Marker Rendering
   useEffect(() => {
@@ -1027,6 +1029,7 @@ export default function Home() {
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        setActiveSearchedSpot(null);
         flyToSpot(spot);
       });
 
@@ -1103,7 +1106,7 @@ export default function Home() {
           ...prev,
           latitude: lat,
           longitude: lon,
-          city: geo.city || prev.city || 'Manila',
+          city: geo.city || prev.city || 'Las Vegas',
           name: prev.name || geo.name || '',
         }));
 
@@ -1142,6 +1145,7 @@ export default function Home() {
 
     if (!map.current) return;
     setViewingSpot(null);
+    setActiveSearchedSpot(null);
     setIsEditing(false);
 
     if (previewMarkerRef.current) previewMarkerRef.current.remove();
@@ -1156,8 +1160,8 @@ export default function Home() {
     setNewSpot({
       name: defaultName || geo.name || '',
       category: 'Hidden Gems',
-      city: geo.city || 'Manila',
-      country: 'Philippines',
+      city: geo.city || 'Las Vegas',
+      country: 'United States',
       description: '',
       latitude: parseFloat(lat.toFixed(6)),
       longitude: parseFloat(lon.toFixed(6)),
@@ -1177,11 +1181,12 @@ export default function Home() {
     setImagePreview(spot.image_url || null);
     setImageFile(null);
     setViewingSpot(null);
+    setActiveSearchedSpot(null);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    if (previewMarkerRef.current) {
+    if (previewMarkerRef.current && !activeSearchedSpot) {
       previewMarkerRef.current.remove();
       previewMarkerRef.current = null;
     }
@@ -1246,7 +1251,7 @@ export default function Home() {
           name: newSpot.name,
           category: newSpot.category,
           city: newSpot.city,
-          country: newSpot.country || 'Philippines',
+          country: newSpot.country || 'United States',
           description: newSpot.description,
           latitude: newSpot.latitude,
           longitude: newSpot.longitude,
@@ -1258,6 +1263,7 @@ export default function Home() {
       if (!error && data && data.length > 0) {
         setSpots((prev) => prev.map((s) => (s.id === newSpot.id ? (data[0] as Spot) : s)));
         setViewingSpot(data[0] as Spot);
+        setActiveSearchedSpot(null);
         setIsModalOpen(false);
       }
     } else {
@@ -1267,7 +1273,7 @@ export default function Home() {
           name: newSpot.name,
           category: newSpot.category,
           city: newSpot.city,
-          country: newSpot.country || 'Philippines',
+          country: newSpot.country || 'United States',
           description: newSpot.description,
           latitude: newSpot.latitude,
           longitude: newSpot.longitude,
@@ -1284,6 +1290,7 @@ export default function Home() {
         setSpots((prev) => [data[0] as Spot, ...prev]);
         setIsModalOpen(false);
         setSearchQuery('');
+        setActiveSearchedSpot(null);
         if (map.current) map.current.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 16 });
       }
     }
@@ -1294,6 +1301,7 @@ export default function Home() {
     if (!map.current || !spot.latitude || !spot.longitude) return;
     map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
     setViewingSpot(spot);
+    setActiveSearchedSpot(null);
     setIsDrawerOpen(false);
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
@@ -1332,7 +1340,7 @@ export default function Home() {
               name: spot.name,
               category: spot.category || 'Hidden Gems',
               city: spot.city || 'Unknown City',
-              country: spot.country || 'Philippines',
+              country: spot.country || 'United States',
               description: spot.description || '',
               latitude: spot.latitude,
               longitude: spot.longitude,
@@ -1360,13 +1368,8 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  const proximitySortedSpots: Spot[] = [...spots]
-    .filter((s) => s.latitude && s.longitude)
-    .map((s) => ({
-      ...s,
-      dist: calculateDistanceKm(centerCoord[1], centerCoord[0], s.latitude, s.longitude)
-    }))
-    .sort((a, b) => (a.dist || 0) - (b.dist || 0));
+  // Proximity sorted spots for walking modal
+  const proximitySortedSpots: Spot[] = [...spots].filter((s) => s.latitude && s.longitude);
 
   useEffect(() => {
     const query = walkSearchQuery.trim();
@@ -1379,9 +1382,9 @@ export default function Home() {
     const timer = setTimeout(async () => {
       setIsSearchingOsm(true);
       try {
-        const center = map.current ? map.current.getCenter() : { lng: 121.055, lat: 14.575 };
+        const center = map.current ? map.current.getCenter() : { lng: -115.1398, lat: 36.1699 };
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=4`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=5`
         );
         const data = await res.json();
 
@@ -1396,10 +1399,9 @@ export default function Home() {
               description: item.display_name,
               latitude: lat,
               longitude: lon,
-              dist: calculateDistanceKm(center.lat, center.lng, lat, lon),
               isLiveOsm: true,
             };
-          }).sort((a: Spot, b: Spot) => (a.dist || 0) - (b.dist || 0));
+          });
 
           setLiveOsmResults(mapped);
         } else {
@@ -1532,7 +1534,7 @@ export default function Home() {
                   setIsAuthModalOpen(true);
                   return;
                 }
-                const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
+                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
                 dropPreviewAndOpenModal(center.lat, center.lng);
               }}
               style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '12px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
@@ -1542,7 +1544,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Input Bar */}
+        {/* Primary Search Input Bar */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
@@ -1577,7 +1579,7 @@ export default function Home() {
             <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
                 <div style={{ padding: '14px 15px', textAlign: 'center', color: '#78716c', fontSize: '12.5px' }}>
-                  No local field notes found for this location.
+                  No local places found.
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
@@ -1705,48 +1707,45 @@ export default function Home() {
           </div>
         )}
 
-        {/* Active Walk Proximity HUD Pill with Direct Navigation */}
-{walkTargetSpot && (
-  <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-      <Footprints style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
-      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        <strong>{walkTargetSpot.name}</strong> ({walkDistanceKm < 1 ? `${Math.round(walkDistanceKm * 1000)} m` : `${walkDistanceKm.toFixed(1)} km`})
-      </span>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-      <span style={{ color: '#fed7aa', fontSize: '11.5px' }}>
-        {walkDistanceKm <= 10 ? `About ${walkMinutes} mins` : 'Far'}
-      </span>
-      <button 
-        onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
-        style={{ 
-          backgroundColor: '#e05a47', 
-          color: '#ffffff', 
-          border: 'none', 
-          borderRadius: '8px', 
-          padding: '4px 8px', 
-          fontSize: '11px', 
-          fontWeight: 600,
-          cursor: 'pointer', 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '3px' 
-        }}
-        title="Open in Google Maps / Apple Maps"
-      >
-        Navigate <Navigation2 style={{ width: '11px', height: '11px' }} />
-      </button>
-      <button 
-        onClick={() => setWalkTargetSpot(null)} 
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
-        title="End Walk"
-      >
-        <X style={{ width: '15px', height: '15px' }} />
-      </button>
-    </div>
-  </div>
-)}
+        {/* Active Walk HUD Banner */}
+        {walkTargetSpot && (
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <Footprints style={{ width: '16px', height: '16px', color: '#e05a47', flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {walkTargetSpot.name}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <button 
+                onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
+                style={{ 
+                  backgroundColor: '#e05a47', 
+                  color: '#ffffff', 
+                  border: 'none', 
+                  borderRadius: '10px', 
+                  padding: '5px 10px', 
+                  fontSize: '11.5px', 
+                  fontWeight: 600,
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px' 
+                }}
+                title="Open Walking Directions"
+              >
+                Directions <Navigation2 style={{ width: '11px', height: '11px' }} />
+              </button>
+              <button 
+                onClick={() => setWalkTargetSpot(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
+                title="Dismiss"
+              >
+                <X style={{ width: '16px', height: '16px' }} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Empty State Overlay */}
@@ -1759,7 +1758,7 @@ export default function Home() {
               setIsAuthModalOpen(true);
               return;
             }
-            const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
+            const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
             dropPreviewAndOpenModal(center.lat, center.lng);
           }}
         />
@@ -1825,7 +1824,47 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Proximity Walk HUD Selector Modal with Live Search & Two-Tier Results */}
+      {/* Active Search Result Bottom Action Sheet */}
+      {activeSearchedSpot && (
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+            <div style={{ flex: 1, paddingRight: '10px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
+                Map Location
+              </span>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{activeSearchedSpot.city}</p>
+            </div>
+            <button onClick={() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
+              <X style={{ width: '19px', height: '19px' }} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+            <button
+              onClick={() => openNativeWalkNavigation(activeSearchedSpot.latitude, activeSearchedSpot.longitude, activeSearchedSpot.name)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+            >
+              <Navigation2 style={{ width: '15px', height: '15px' }} /> Open Walking Directions
+            </button>
+
+            <button
+              onClick={() => {
+                if (!currentUserRef.current) {
+                  setIsAuthModalOpen(true);
+                  return;
+                }
+                dropPreviewAndOpenModal(activeSearchedSpot.latitude, activeSearchedSpot.longitude, activeSearchedSpot.name);
+              }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#f5f5f4', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              <Plus style={{ width: '14px', height: '14px' }} /> Save as Curated Pin
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Proximity Walk Modal with Live Search & Two-Tier Results */}
       {isWalkModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative' }}>
@@ -1901,55 +1940,40 @@ export default function Home() {
                         No curated spots match "{walkSearchQuery}".
                       </p>
                     ) : (
-                      curatedMatches.map((spot) => {
-                        const dist = spot.dist || 0;
-                        const isWalkable = dist <= 10;
-                        const walkMin = Math.round((dist / 4.8) * 60);
-
-                        return (
-                          <div
-                            key={spot.id || spot.name}
-                            onClick={() => {
-                              setWalkTargetSpot(spot);
-                              setIsWalkModalOpen(false);
-                              setWalkSearchQuery('');
-                              flyToSpot(spot);
-                            }}
-                            style={{
-                              padding: '10px 12px',
-                              borderRadius: '14px',
-                              border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
-                              backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <div style={{ minWidth: 0, paddingRight: '8px' }}>
-                              <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {spot.name}
-                              </h4>
-                              <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                                {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
-                              </p>
-                            </div>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-                              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#e05a47' }}>
-                                {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`}
-                              </span>
-                              {isWalkable ? (
-                                <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
-                                  About {walkMin} mins
-                                </span>
-                              ) : (
-                                <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
-                              )}
-                            </div>
+                      curatedMatches.map((spot) => (
+                        <div
+                          key={spot.id || spot.name}
+                          onClick={() => {
+                            setWalkTargetSpot(spot);
+                            setIsWalkModalOpen(false);
+                            setWalkSearchQuery('');
+                            flyToSpot(spot);
+                          }}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '14px',
+                            border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
+                            backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {spot.name}
+                            </h4>
+                            <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
+                              {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                            </p>
                           </div>
-                        );
-                      })
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', color: '#e05a47', flexShrink: 0 }}>
+                            <Navigation2 style={{ width: '14px', height: '14px' }} />
+                          </div>
+                        </div>
+                      ))
                     )}
                   </>
                 );
@@ -1967,57 +1991,42 @@ export default function Home() {
                       No live map results found.
                     </p>
                   ) : (
-                    liveOsmResults.map((spot, idx) => {
-                      const dist = spot.dist || 0;
-                      const isWalkable = dist <= 10;
-                      const walkMin = Math.round((dist / 4.8) * 60);
-
-                      return (
-                        <div
-                          key={`osm-${idx}`}
-                          onClick={() => {
-                            setWalkTargetSpot(spot);
-                            setIsWalkModalOpen(false);
-                            setWalkSearchQuery('');
-                            if (spot.latitude && spot.longitude && map.current) {
-                              map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
-                            }
-                          }}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '14px',
-                            border: walkTargetSpot?.name === spot.name ? '1.5px solid #0284c7' : '1px solid #e7e5e4',
-                            backgroundColor: walkTargetSpot?.name === spot.name ? '#f0f9ff' : '#ffffff',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <div style={{ minWidth: 0, paddingRight: '8px' }}>
-                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {spot.name}
-                            </h4>
-                            <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
-                              {spot.city} · Map Location
-                            </p>
-                          </div>
-                          
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-                            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0284c7' }}>
-                              {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`}
-                            </span>
-                            {isWalkable ? (
-                              <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
-                                About {walkMin} mins
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
-                            )}
-                          </div>
+                    liveOsmResults.map((spot, idx) => (
+                      <div
+                        key={`osm-${idx}`}
+                        onClick={() => {
+                          setWalkTargetSpot(spot);
+                          setIsWalkModalOpen(false);
+                          setWalkSearchQuery('');
+                          if (spot.latitude && spot.longitude && map.current) {
+                            map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+                          }
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '14px',
+                          border: walkTargetSpot?.name === spot.name ? '1.5px solid #0284c7' : '1px solid #e7e5e4',
+                          backgroundColor: walkTargetSpot?.name === spot.name ? '#f0f9ff' : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {spot.name}
+                          </h4>
+                          <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
+                            {spot.city} · Map Location
+                          </p>
                         </div>
-                      );
-                    })
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', color: '#0284c7', flexShrink: 0 }}>
+                          <Navigation2 style={{ width: '14px', height: '14px' }} />
+                        </div>
+                      </div>
+                    ))
                   )}
                 </>
               )}
@@ -2231,7 +2240,7 @@ export default function Home() {
                       <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#1c1917' }}>{s.name}</h4>
                       <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c' }}>{s.city} · <span style={{ color: getCategoryColor(s.category), fontWeight: 600 }}>{s.category}</span></p>
                     </div>
-                    <Navigation2 style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
+                    <Navigation2 style={{ width: '14px', height: '14px' }} />
                   </div>
                 ))
               )}
