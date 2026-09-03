@@ -1144,7 +1144,6 @@ export default function Home() {
       const catObj = CATEGORIES.find((c) => c.label.toLowerCase() === spot.category?.toLowerCase());
       const color = catObj ? catObj.color : '#e05a47';
 
-      // Find index in optimized trail if active
       const trailIndex = optimizedTrailSpots.findIndex((s) => s.id === spot.id);
       const isInTrail = isTrailActive && trailIndex !== -1;
 
@@ -1454,6 +1453,65 @@ export default function Home() {
     setViewingSpot(spot);
     setIsDrawerOpen(false);
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
+  };
+
+  // JSON Export Handler
+  const handleExportJson = () => {
+    const userSpots = spots.filter((s) => s.user_id === currentUser?.id);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userSpots, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `bywayr-field-notes-${userProfile?.username || 'backup'}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  // JSON Import Handler
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileReader = new FileReader();
+    if (e.target.files && e.target.files[0]) {
+      fileReader.readAsText(e.target.files[0], "UTF-8");
+      fileReader.onload = async (event) => {
+        try {
+          const parsedSpots = JSON.parse(event.target?.result as string);
+          if (!Array.isArray(parsedSpots)) throw new Error('Invalid JSON format. Expected an array of spots.');
+          
+          if (!currentUser) {
+            setIsAuthModalOpen(true);
+            return;
+          }
+
+          setSaving(true);
+          let importedCount = 0;
+          for (const spot of parsedSpots) {
+            if (!spot.name || typeof spot.latitude !== 'number' || typeof spot.longitude !== 'number') continue;
+            
+            const { error } = await supabase.from('spots').insert([{
+              name: spot.name,
+              category: spot.category || 'Hidden Gems',
+              city: spot.city || 'Unknown City',
+              country: spot.country || 'Philippines',
+              description: spot.description || '',
+              latitude: spot.latitude,
+              longitude: spot.longitude,
+              image_url: spot.image_url || null,
+              user_id: currentUser.id,
+            }]);
+            
+            if (!error) importedCount++;
+          }
+          
+          alert(`Successfully imported ${importedCount} spots!`);
+          fetchSpots();
+        } catch (err: any) {
+          alert(`Import failed: ${err.message || 'Invalid JSON file'}`);
+        } finally {
+          setSaving(false);
+          if (e.target) e.target.value = '';
+        }
+      };
+    }
   };
 
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
@@ -2115,7 +2173,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal */}
+      {/* 8. Own Account Profile Modal with Functional JSON Export & Import */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -2163,32 +2221,29 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bywayr Plus (Coming Soon) Section */}
+            {/* Bywayr Plus Backup Section */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
-                </span>
-                <span style={{ fontSize: '10px', backgroundColor: '#fef3c7', color: '#d97706', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>
-                  COMING SOON
+                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus Backup
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>
-                JSON field note backups and bulk spot imports.
+                Download your personal field notes as JSON or bulk-import new spots.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
                 <button
-                  onClick={() => alert('Bywayr Plus data export is coming soon!')}
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                  onClick={handleExportJson}
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#44403c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                 >
                   <Download style={{ width: '13px', height: '13px' }} /> Export JSON
                 </button>
-                <button
-                  onClick={() => alert('Bywayr Plus data import is coming soon!')}
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#78716c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                <label
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#44403c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', textAlign: 'center' }}
                 >
                   <Upload style={{ width: '13px', height: '13px' }} /> Import JSON
-                </button>
+                  <input type="file" accept=".json" onChange={handleImportJson} style={{ display: 'none' }} />
+                </label>
               </div>
             </div>
 
