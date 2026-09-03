@@ -1441,38 +1441,45 @@ export default function Home() {
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
         @keyframes slideUp {
-          from { transform: translateY(30px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from { transform: translateY(24px) translateZ(0); opacity: 0; }
+          to { transform: translateY(0) translateZ(0); opacity: 1; }
         }
         @keyframes slideInLeft {
-          from { transform: translateX(-100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
+          from { transform: translateX(-100%) translateZ(0); opacity: 0; }
+          to { transform: translateX(0) translateZ(0); opacity: 1; }
         }
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { opacity: 0; transform: translateZ(0); }
+          to { opacity: 1; transform: translateZ(0); }
         }
         @keyframes scaleUp {
-          from { transform: scale(0.94); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
+          from { transform: scale(0.95) translateZ(0); opacity: 0; }
+          to { transform: scale(1) translateZ(0); opacity: 1; }
         }
         .animate-slide-up {
           animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          will-change: transform, opacity;
+          backface-visibility: hidden;
         }
         .animate-slide-left {
           animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          will-change: transform, opacity;
+          backface-visibility: hidden;
         }
         .animate-fade-in {
           animation: fadeIn 0.2s ease-out forwards;
+          will-change: opacity;
         }
         .animate-scale-up {
           animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          will-change: transform, opacity;
+          backface-visibility: hidden;
         }
         button, a {
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease, box-shadow 0.15s ease;
+          transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease, box-shadow 0.15s ease;
         }
         button:active, a:active {
-          transform: scale(0.94);
+          transform: scale(0.96);
         }
       `}</style>
 
@@ -1768,20 +1775,30 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay */}
+      {/* Empty State Overlay Positioned Cleanly Under Header Stack */}
       {filteredSpots.length === 0 && !loading && (
-        <EmptyState
-          category={selectedCategory}
-          onResetFilter={() => setSelectedCategory('All')}
-          onAddSpot={() => {
-            if (!currentUserRef.current) {
-              setIsAuthModalOpen(true);
-              return;
-            }
-            const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-            dropPreviewAndOpenModal(center.lat, center.lng);
-          }}
-        />
+        <div style={{ 
+          position: 'fixed', 
+          top: `${(selectedCategory !== 'All' ? 215 : 170) + (walkTargetSpot ? 50 : 0)}px`, 
+          left: '16px', 
+          right: '16px', 
+          maxWidth: '440px', 
+          zIndex: 9998, 
+          pointerEvents: 'auto' 
+        }}>
+          <EmptyState
+            category={selectedCategory}
+            onResetFilter={() => setSelectedCategory('All')}
+            onAddSpot={() => {
+              if (!currentUserRef.current) {
+                setIsAuthModalOpen(true);
+                return;
+              }
+              const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+              dropPreviewAndOpenModal(center.lat, center.lng);
+            }}
+          />
+        </div>
       )}
 
       {/* 3. Floating Map Controls */}
