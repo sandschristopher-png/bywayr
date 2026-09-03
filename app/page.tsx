@@ -5,6 +5,7 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
+import { EmptyState } from './src/main/components/EmptyState';
 import {
   MapPin,
   Loader2,
@@ -203,9 +204,6 @@ const getCategorySvg = (category: string, color: string): string => {
   if (cat.includes('late') || cat.includes('night')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
   }
-  if (cat.includes('gem')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
-  }
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
 };
 
@@ -342,11 +340,12 @@ export default function Home() {
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
-  // Proximity Walking Target State
+  // Proximity Walking Target & Search State
   const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
   const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
+  const [walkSearchQuery, setWalkSearchQuery] = useState('');
 
-  // Keyless Lighter Dark Slate Map Mode state
+  // Dark Slate Map Mode State
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_dark_mode') === 'true';
@@ -370,7 +369,17 @@ export default function Home() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const [onlyMySpots, setOnlyMySpots] = useState(false);
-  const [spots, setSpots] = useState<Spot[]>([]);
+  const [spots, setSpots] = useState<Spot[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('bywayr_cached_spots');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {}
+      }
+    }
+    return [];
+  });
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -659,6 +668,7 @@ export default function Home() {
       const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
       if (!error && data) {
         setSpots(data as Spot[]);
+        localStorage.setItem('bywayr_cached_spots', JSON.stringify(data));
       }
     } catch (err) {
       console.error('Failed to load spots:', err);
@@ -777,7 +787,7 @@ export default function Home() {
     }
   };
 
-  // Bulletproof Keyless Styled Basemap
+  // Basemap Initialization
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1017,12 +1027,12 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Calculate proximity walking route if walkTargetSpot is selected
+  // Dynamic Walking Route Distance Calculations
   const centerCoord = map.current ? [map.current.getCenter().lng, map.current.getCenter().lat] : [121.055, 14.575];
   const walkDistanceKm = walkTargetSpot ? calculateDistanceKm(centerCoord[1], centerCoord[0], walkTargetSpot.latitude, walkTargetSpot.longitude) : 0;
   const walkMinutes = Math.round((walkDistanceKm / 4.8) * 60);
 
-  // Render & Update Proximity Walking Polyline Layer
+  // Proximity Walking Line Layer
   useEffect(() => {
     if (!map.current) return;
     const mapInstance = map.current;
@@ -1097,7 +1107,7 @@ export default function Home() {
     }
   }, [walkTargetSpot]);
 
-  // Marker Rendering: Category SVG Icons
+  // Marker Rendering
   useEffect(() => {
     if (!map.current) return;
     spotMarkersRef.current.forEach((marker) => marker.remove());
@@ -1480,7 +1490,7 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  // Proximity sorted spots for the walk selector modal
+  // Proximity Sorted Spots for the Walk Selector Modal
   const proximitySortedSpots = [...spots]
     .filter((s) => s.latitude && s.longitude)
     .map((s) => ({
@@ -1490,8 +1500,7 @@ export default function Home() {
     .sort((a, b) => a.dist - b.dist);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
-      {/* Smooth Spring Micro-Interactions & Animation Styles */}
+    <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
         @keyframes slideUp {
           from { transform: translateY(30px); opacity: 0; }
@@ -1529,7 +1538,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. Map Canvas with Lighter Keyless Dark Slate Filter Support */}
+      {/* 1. Map Canvas */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -1545,7 +1554,7 @@ export default function Home() {
         }} 
       />
 
-      {/* 2. Top Header, Search, Categories Bar & Active Descriptor Sub-bar with Frosted Glass & Multi-Layered Shadows */}
+      {/* 2. Top Header & Search Bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -1617,7 +1626,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Bar with Always-On Aviasales Footer */}
+        {/* Search Input Bar */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
@@ -1663,7 +1672,6 @@ export default function Home() {
                 ))
               )}
 
-              {/* Always-On Subtle Aviasales Flight Search Footer */}
               <a
                 href="https://aviasales.tpk.lv/Y7mdLlKw"
                 target="_blank"
@@ -1771,7 +1779,7 @@ export default function Home() {
           })}
         </div>
 
-        {/* Dynamic Category Descriptor Sub-Bar */}
+        {/* Category Description Banner */}
         {selectedCategory !== 'All' && activeCategoryObject && (
           <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
@@ -1781,7 +1789,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Active Proximity Walk HUD Pill */}
+        {/* Active Walk Polyline Pill */}
         {walkTargetSpot && (
           <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
@@ -1804,13 +1812,28 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Floating Action Controls (Includes Locate, Walk Proximity Target, Dark Mode Toggle, Zoom In/Out) */}
-      <div style={{ position: 'fixed', bottom: '24px', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      {/* Empty State Overlay */}
+      {filteredSpots.length === 0 && !loading && (
+        <EmptyState
+          category={selectedCategory}
+          onResetFilter={() => setSelectedCategory('All')}
+          onAddSpot={() => {
+            if (!currentUserRef.current) {
+              setIsAuthModalOpen(true);
+              return;
+            }
+            const center = map.current ? map.current.getCenter() : { lat: 14.5995, lng: 120.9842 };
+            dropPreviewAndOpenModal(center.lat, center.lng);
+          }}
+        />
+      )}
+
+      {/* 3. Floating Map Controls */}
+      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
 
-        {/* Proximity Walk Selector Trigger Button */}
         <button
           onClick={() => setIsWalkModalOpen(true)}
           style={{
@@ -1828,12 +1851,11 @@ export default function Home() {
             justifyContent: 'center',
             cursor: 'pointer',
           }}
-          title="Choose a place to walk to"
+          title="Choose a destination to walk to"
         >
           <Footprints style={{ width: '20px', height: '20px' }} />
         </button>
 
-        {/* Dark Mode Toggle Button */}
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
           style={{
@@ -1866,59 +1888,115 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Proximity Walk Selector Modal */}
+      {/* Proximity Walk HUD Selector Modal with Live Search & ETA */}
       {isWalkModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: '22px', position: 'relative' }}>
-            <button onClick={() => setIsWalkModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
-                <Footprints style={{ width: '20px', height: '20px' }} />
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                  <Footprints style={{ width: '19px', height: '19px' }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Where to Walk?</h3>
+                  <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Select a destination to trace route & ETA</p>
+                </div>
               </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Where to Walk?</h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Select a nearby spot for walking directions</p>
-              </div>
+              <button onClick={() => { setIsWalkModalOpen(false); setWalkSearchQuery(''); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+                <X style={{ width: '19px', height: '19px' }} />
+              </button>
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '50vh' }}>
-              {proximitySortedSpots.length === 0 ? (
-                <p style={{ margin: '20px 0', fontSize: '12.5px', color: '#a8a29e', textAlign: 'center' }}>No saved spots available nearby.</p>
-              ) : (
-                proximitySortedSpots.map((spot) => (
-                  <div
-                    key={spot.id || spot.name}
-                    onClick={() => {
-                      setWalkTargetSpot(spot);
-                      setIsWalkModalOpen(false);
-                      flyToSpot(spot);
-                    }}
-                    style={{
-                      padding: '11px 14px',
-                      borderRadius: '14px',
-                      border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
-                      backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <div style={{ minWidth: 0, paddingRight: '10px' }}>
-                      <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                        {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#e05a47' }}>{spot.dist.toFixed(1)} km</span>
-                      <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
-                    </div>
-                  </div>
-                ))
+            {/* Live Search Input Inside Modal */}
+            <div style={{ position: 'relative', marginBottom: '10px' }}>
+              <Search style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '14px', height: '14px' }} />
+              <input
+                type="text"
+                placeholder="Filter spots by name or category..."
+                value={walkSearchQuery}
+                onChange={(e) => setWalkSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#f5f5f4',
+                  border: '1px solid #e7e5e4',
+                  borderRadius: '12px',
+                  padding: '8px 30px 8px 32px',
+                  fontSize: '12px',
+                  outline: 'none',
+                  color: '#1c1917',
+                }}
+              />
+              {walkSearchQuery && (
+                <button
+                  onClick={() => setWalkSearchQuery('')}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: 0 }}
+                >
+                  <X style={{ width: '13px', height: '13px' }} />
+                </button>
               )}
+            </div>
+
+            {/* List of Proximity Filtered Spots */}
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '7px', maxHeight: '48vh', paddingRight: '2px' }}>
+              {proximitySortedSpots
+                .filter((s) => {
+                  if (!walkSearchQuery.trim()) return true;
+                  const q = walkSearchQuery.toLowerCase();
+                  return (
+                    s.name.toLowerCase().includes(q) ||
+                    s.city.toLowerCase().includes(q) ||
+                    s.category.toLowerCase().includes(q)
+                  );
+                })
+                .map((spot) => {
+                  const isWalkable = spot.dist <= 10;
+                  const walkMin = Math.round((spot.dist / 4.8) * 60);
+
+                  return (
+                    <div
+                      key={spot.id || spot.name}
+                      onClick={() => {
+                        setWalkTargetSpot(spot);
+                        setIsWalkModalOpen(false);
+                        setWalkSearchQuery('');
+                        flyToSpot(spot);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '14px',
+                        border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
+                        backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {spot.name}
+                        </h4>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
+                          {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                        </p>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#e05a47' }}>
+                          {spot.dist < 1 ? `${Math.round(spot.dist * 1000)} m` : `${spot.dist.toFixed(1)} km`}
+                        </span>
+                        {isWalkable ? (
+                          <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
+                            ~{walkMin} min
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
 
             {walkTargetSpot && (
@@ -1926,18 +2004,19 @@ export default function Home() {
                 onClick={() => {
                   setWalkTargetSpot(null);
                   setIsWalkModalOpen(false);
+                  setWalkSearchQuery('');
                 }}
                 style={{
-                  marginTop: '12px',
+                  marginTop: '10px',
                   width: '100%',
                   backgroundColor: '#f5f5f4',
                   color: '#e05a47',
                   border: '1px solid #fed7aa',
-                  padding: '10px',
+                  padding: '9px',
                   borderRadius: '12px',
                   fontSize: '12px',
                   fontWeight: 600,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Clear Active Walk
@@ -1947,9 +2026,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet with Klook & Yesim Integration */}
+      {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: '20px', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
@@ -2136,7 +2215,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 6. Desktop Universal Share Modal */}
+      {/* 6. Universal Share Modal */}
       {shareDialogSpot && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -2224,7 +2303,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 7. Slide-Out Drawer with Smooth Slide-In */}
+      {/* 7. Slide-Out Drawer */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -2268,7 +2347,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal with Enhanced Avatar & Refined Passport Styling */}
+      {/* 8. Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -2276,7 +2355,6 @@ export default function Home() {
               <X style={{ width: '20px', height: '20px' }} />
             </button>
 
-            {/* Centered Large Avatar & Passport Identity */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
               <label style={{ width: '72px', height: '72px', borderRadius: '24px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
@@ -2316,7 +2394,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bywayr Plus Backup Section */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -2357,7 +2434,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Claim Username Modal */}
+      {/* 9. Claim Handle Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -2370,7 +2447,7 @@ export default function Home() {
             <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
-                <div style={{ position: 'relative', display: 'center', alignItems: 'center' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
                   <input
                     type="text"
@@ -2480,7 +2557,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 11. Add / Edit Spot Modal Form */}
+      {/* 11. Add / Edit Spot Modal */}
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -2582,7 +2659,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 12. Concept 1 Field Guide Welcome Modal with Smooth Scale Animation */}
+      {/* 12. Welcome Onboarding Modal */}
       {showWelcome && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
@@ -2594,7 +2671,7 @@ export default function Home() {
               Your Pocket Field Guide
             </h2>
             <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
-              A quiet map for travelers, wanderers, and expats to curate and share the unmapped local spots guidebooks overlook.
+              A quiet map for expats, travelers, and wanderers to curate and share the unmapped local spots guidebooks overlook.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#fafaf9', padding: '14px 15px', borderRadius: '16px', border: '1px solid #e7e5e4' }}>
@@ -2623,8 +2700,8 @@ export default function Home() {
                   <BookmarkCheck style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#1c1917' }}>Personal Field Guide</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Build your passport across cities and save must-try wandering wishlists.</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#1c1917' }}>Personal Passport</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Build your personal Passport, categorize your finds, and collect secret local spots along the way.</div>
                 </div>
               </div>
             </div>

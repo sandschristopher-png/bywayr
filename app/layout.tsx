@@ -46,8 +46,11 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Bywayr',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 };
 
@@ -56,6 +59,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#ffffff',
 };
 
@@ -65,8 +69,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+    <html lang="en" className={inter.className} style={{ height: '100dvh', overflow: 'hidden' }}>
+      <body style={{ margin: 0, padding: 0, overflow: 'hidden', height: '100dvh', width: '100vw', overscrollBehavior: 'none' }}>
         <ServiceWorkerRegister />
         {children}
       </body>

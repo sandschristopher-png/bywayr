@@ -1,11 +1,12 @@
 {
+  "id": "/",
   "name": "Bywayr — Pocket Field Guide",
   "short_name": "Bywayr",
   "description": "Curate and discover unmapped local spots and hidden gems.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f5f4",
-  "theme_color": "#1c1917",
+  "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "icons": [
     {
