@@ -2573,7 +2573,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex': marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
                   <ThumbsUp style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
@@ -2587,7 +2587,7 @@ export default function Home() {
                   <BookmarkCheck style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Personal Field Journal</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#1c1917' }}>Personal Field Guide</div>
                   <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Build your passport across cities and save must-try wandering wishlists.</div>
                 </div>
               </div>
