@@ -75,6 +75,7 @@ interface Spot {
   user_id?: string;
   created_at?: string;
   isLiveOsm?: boolean;
+  distanceKm?: number;
 }
 
 interface UserProfile {
@@ -151,6 +152,17 @@ const openNativeWalkNavigation = (lat: number, lng: number, name?: string) => {
   } else {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`, '_blank');
   }
+};
+
+const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
 const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string }> => {
@@ -1369,7 +1381,15 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  const proximitySortedSpots: Spot[] = [...spots].filter((s) => s.latitude && s.longitude);
+  // Proximity Calculation and Sorting Based on Map Center
+  const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+  const proximitySortedSpots: Spot[] = [...spots]
+    .filter((s) => s.latitude && s.longitude)
+    .map((spot) => ({
+      ...spot,
+      distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
+    }))
+    .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
 
   useEffect(() => {
     const query = walkSearchQuery.trim();
@@ -1929,10 +1949,12 @@ export default function Home() {
                   );
                 });
 
+                const hasCloseSpots = curatedMatches.length > 0 && (curatedMatches[0] as any).distanceKm <= 50;
+
                 return (
                   <>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 4px' }}>
-                      Field Notes Nearby ({curatedMatches.length})
+                      {hasCloseSpots ? `Field Notes Nearby (${curatedMatches.length})` : `Recent Field Notes (${curatedMatches.length})`}
                     </div>
 
                     {curatedMatches.length === 0 ? (
