@@ -1617,7 +1617,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Search Bar with Aviasales Integration */}
+        {/* Search Bar with Always-On Aviasales Footer */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
             <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
@@ -1626,7 +1626,7 @@ export default function Home() {
               placeholder="Search, paste coordinates, or plus codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => { if (searchResults.length > 0 || searchQuery.trim().length >= 3) setShowDropdown(true); }}
+              onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
               style={{ width: '100%', boxSizing: 'border-box', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '20px 20px 0 0' : '20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', outline: 'none', color: '#1c1917' }}
             />
             <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1649,28 +1649,46 @@ export default function Home() {
           </form>
 
           {showDropdown && searchQuery.trim().length >= 3 && (
-            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
-                <div style={{ padding: '16px', textAlign: 'center', color: '#78716c', fontSize: '12.5px' }}>
-                  <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#1c1917' }}>No local field notes found yet.</p>
-                  <p style={{ margin: '0 0 10px 0', fontSize: '11.5px' }}>Be the first explorer to drop a pin here, or plan your journey.</p>
-                  <a
-                    href="https://aviasales.tpk.lv/Y7mdLlKw"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#e05a47', fontWeight: 600, textDecoration: 'none', fontSize: '11.5px' }}
-                  >
-                    <Plane style={{ width: '13px', height: '13px' }} /> Compare flights via Aviasales →
-                  </a>
+                <div style={{ padding: '14px 15px', textAlign: 'center', color: '#78716c', fontSize: '12.5px' }}>
+                  No local field notes found for this location.
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
-                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: idx < searchResults.length - 1 ? '1px solid #f5f5f4' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                   </div>
                 ))
               )}
+
+              {/* Always-On Subtle Aviasales Flight Search Footer */}
+              <a
+                href="https://aviasales.tpk.lv/Y7mdLlKw"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '11px 15px',
+                  backgroundColor: '#fafaf9',
+                  borderTop: '1px solid #e7e5e4',
+                  color: '#44403c',
+                  textDecoration: 'none',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  borderBottomLeftRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                  <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
+                  <span>Planning a trip? Search flights via Aviasales</span>
+                </div>
+                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+              </a>
             </div>
           )}
         </div>
