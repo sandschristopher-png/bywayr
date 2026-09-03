@@ -52,8 +52,8 @@ import {
   Download,
   Upload,
   Crown,
-  Route,
   Footprints,
+  ExternalLink,
 } from 'lucide-react';
 
 interface Spot {
@@ -164,7 +164,37 @@ const getCategoryColor = (cat: string) => {
   return match ? match.color : '#e05a47';
 };
 
-// Calculate Haversine distance in kilometers
+const getCategorySvg = (category: string, color: string): string => {
+  const cat = category?.toLowerCase();
+  switch (cat) {
+    case 'cafe & chill':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h12Z"/><path d="M6 2v2"/></svg>`;
+    case 'alley eats':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v18"/><path d="M6 2v20"/><path d="M3 2v4a3 3 0 0 0 3 3v0a3 3 0 0 0 3-3V2"/></svg>`;
+    case 'listening & bars':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/></svg>`;
+    case 'secret coasts':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
+    case 'street markets':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>`;
+    case 'nature & trails':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.9"/></svg>`;
+    case 'viewpoints':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>`;
+    case 'stays & hideaways':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
+    case 'vintage & vinyl':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg>`;
+    case 'work & focus':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>`;
+    case 'late night':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+    case 'hidden gems':
+    default:
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
+  }
+};
+
 const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -270,7 +300,6 @@ export default function Home() {
   const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
-  // Mouse Drag to Scroll State for Categories
   const [isCategoryDragging, setIsCategoryDragging] = useState(false);
   const [categoryStartX, setCategoryStartX] = useState(0);
   const [categoryScrollLeft, setCategoryScrollLeft] = useState(0);
@@ -296,14 +325,11 @@ export default function Home() {
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Public Curator Profile Modal State
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
-  // Walking Route Trail State
   const [isTrailActive, setIsTrailActive] = useState(false);
 
-  // Auth & Username States
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
   const [authUsernameError, setAuthUsernameError] = useState('');
@@ -313,7 +339,6 @@ export default function Home() {
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
-  // App & Map States
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
@@ -324,11 +349,9 @@ export default function Home() {
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
-  // Share Dialog State
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
 
-  // Vouches State
   const [vouchedSpotIds, setVouchedSpotIds] = useState<string[]>([]);
   const [vouchCounts, setVouchCounts] = useState<Record<string, number>>({});
   const [savingVouch, setSavingVouch] = useState(false);
@@ -370,7 +393,6 @@ export default function Home() {
     }
   }, []);
 
-  // Register Service Worker for Offline PWA Caching
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch((err) => {
@@ -699,7 +721,6 @@ export default function Home() {
     setViewingProfileSpots(userSpots);
   };
 
-  // Mouse Drag-to-Scroll handlers for Category Bar
   const handleCategoryMouseDown = (e: React.MouseEvent) => {
     if (!categoryScrollRef.current) return;
     setIsCategoryDragging(true);
@@ -783,7 +804,6 @@ export default function Home() {
       localStorage.setItem('bywayr_map_zoom', zoom.toString());
     });
 
-    // Handle Mobile & Desktop Initial Geolocation
     initializedMap.on('load', () => {
       const hasSavedPosition = localStorage.getItem('bywayr_map_center');
       if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
@@ -961,14 +981,12 @@ export default function Home() {
     }
   };
 
-  // Filter spots by 'My Pins' and selected category
   const filteredSpots = spots.filter((spot) => {
     if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
     if (selectedCategory === 'All') return true;
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  // Calculate Walking Route Distance & Time
   const trailCoordinates = filteredSpots
     .filter((s) => s.latitude && s.longitude)
     .map((s) => [s.longitude, s.latitude]);
@@ -1055,7 +1073,7 @@ export default function Home() {
     }
   }, [isTrailActive, filteredSpots]);
 
-  // Marker Rendering: Displays Sequential Numbers when Walking Trail is Active
+  // Marker Rendering: Category SVG Icons or Sequential Numbers during Trail Mode
   useEffect(() => {
     if (!map.current) return;
     spotMarkersRef.current.forEach((marker) => marker.remove());
@@ -1064,15 +1082,20 @@ export default function Home() {
     filteredSpots.forEach((spot, index) => {
       if (!spot.latitude || !spot.longitude) return;
       const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
-      const color = getCategoryColor(spot.category);
+      const catObj = CATEGORIES.find((c) => c.label.toLowerCase() === spot.category?.toLowerCase());
+      const color = catObj ? catObj.color : '#e05a47';
 
       const el = document.createElement('div');
-      el.style.width = isTrailActive ? '30px' : '32px';
-      el.style.height = isTrailActive ? '30px' : '32px';
+      el.style.width = '32px';
+      el.style.height = '32px';
       el.style.borderRadius = '50%';
       el.style.backgroundColor = isTrailActive ? color : '#ffffff';
-      el.style.border = isMustTry ? '3.5px solid #d97706' : isTrailActive ? '2.5px solid #ffffff' : `3.5px solid ${color}`;
-      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.28)';
+      el.style.border = isMustTry
+        ? '3px solid #d97706'
+        : isTrailActive
+        ? '2.5px solid #ffffff'
+        : `2.5px solid ${color}`;
+      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
       el.style.cursor = 'pointer';
       el.style.display = 'flex';
       el.style.alignItems = 'center';
@@ -1088,12 +1111,13 @@ export default function Home() {
         num.style.lineHeight = '1';
         el.appendChild(num);
       } else {
-        const innerDot = document.createElement('div');
-        innerDot.style.width = '12px';
-        innerDot.style.height = '12px';
-        innerDot.style.borderRadius = '50%';
-        innerDot.style.backgroundColor = color;
-        el.appendChild(innerDot);
+        const svgIcon = document.createElement('div');
+        svgIcon.style.display = 'flex';
+        svgIcon.style.alignItems = 'center';
+        svgIcon.style.justifyContent = 'center';
+        svgIcon.style.color = color;
+        svgIcon.innerHTML = getCategorySvg(spot.category, color);
+        el.appendChild(svgIcon);
       }
 
       el.addEventListener('click', (e) => {
@@ -1383,7 +1407,6 @@ export default function Home() {
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '18px', boxShadow: '0 10px 25px -4px rgba(28, 25, 23, 0.12), 0 4px 6px -2px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-            {/* 3D Clay Icon Badge */}
             <div style={{ width: '32px', height: '32px', borderRadius: '10px', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 6px rgba(28, 25, 23, 0.15)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
@@ -1702,7 +1725,6 @@ export default function Home() {
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px', margin: '8px 0' }} />}
           {viewingSpot.description && <p style={{ margin: '8px 0 12px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
-          {/* Navigation & Neighborhood Accommodation Action Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <a
               href={`geo:${viewingSpot.latitude},${viewingSpot.longitude}?q=${viewingSpot.latitude},${viewingSpot.longitude}(${encodeURIComponent(viewingSpot.name)})`}
@@ -1754,6 +1776,28 @@ export default function Home() {
                 <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c' }}>Curator on Bywayr</p>
               </div>
             </div>
+
+            {viewingProfile.username && (
+              <a
+                href={`/u/${viewingProfile.username}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  backgroundColor: '#1c1917',
+                  color: '#fafaf9',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  marginBottom: '14px',
+                }}
+              >
+                Open Full Passport Profile <ExternalLink style={{ width: '13px', height: '13px' }} />
+              </a>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
               <div>
@@ -2033,7 +2077,7 @@ export default function Home() {
             <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div style={{ position: 'relative', display: 'center', alignItems: 'center' }}>
                   <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
                   <input
                     type="text"
@@ -2249,8 +2293,6 @@ export default function Home() {
       {showWelcome && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
-            
-            {/* Elevated 3D Clay Map Pin Badge */}
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', overflow: 'hidden', display: 'flex', margin: '0 auto 16px auto', boxShadow: '0 10px 20px -3px rgba(224, 90, 71, 0.28)' }}>
               <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>

@@ -1,0 +1,17 @@
+# Android / Bubblewrap / TWA
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+local.properties
+android.keystore
+*.keystore
+*.jks
+twa-manifest.json
+manifest-checksum.txt
+app/build.gradle
+app/gradle.properties
+app/src/
+build.gradle
+gradle.properties
+settings.gradle
