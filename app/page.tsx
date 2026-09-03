@@ -1011,9 +1011,44 @@ export default function Home() {
     return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  const trailCoordinates = filteredSpots
-    .filter((s) => s.latitude && s.longitude)
-    .map((s) => [s.longitude, s.latitude]);
+  // Smart Local Nearest-Neighbor Trail Sorter (prevents global zigzags across continents)
+  const getOptimizedTrailSpots = (spotsList: Spot[]) => {
+    const validSpots = spotsList.filter((s) => s.latitude && s.longitude);
+    if (validSpots.length <= 1) return validSpots;
+
+    const sorted: Spot[] = [];
+    const remaining = [...validSpots];
+
+    let current = remaining.shift()!;
+    sorted.push(current);
+
+    while (remaining.length > 0) {
+      let nearestIdx = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const dist = calculateDistanceKm(
+          current.latitude, current.longitude,
+          remaining[i].latitude, remaining[i].longitude
+        );
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestIdx = i;
+        }
+      }
+
+      // If the closest spot is more than 50km away, stop the local trail loop there
+      if (minDistance > 50) break;
+
+      current = remaining.splice(nearestIdx, 1)[0];
+      sorted.push(current);
+    }
+
+    return sorted;
+  };
+
+  const optimizedTrailSpots = getOptimizedTrailSpots(filteredSpots);
+  const trailCoordinates = optimizedTrailSpots.map((s) => [s.longitude, s.latitude]);
 
   let totalTrailDistanceKm = 0;
   for (let i = 0; i < trailCoordinates.length - 1; i++) {
@@ -1103,20 +1138,24 @@ export default function Home() {
     spotMarkersRef.current.forEach((marker) => marker.remove());
     spotMarkersRef.current = [];
 
-    filteredSpots.forEach((spot, index) => {
+    filteredSpots.forEach((spot) => {
       if (!spot.latitude || !spot.longitude) return;
       const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
       const catObj = CATEGORIES.find((c) => c.label.toLowerCase() === spot.category?.toLowerCase());
       const color = catObj ? catObj.color : '#e05a47';
 
+      // Find index in optimized trail if active
+      const trailIndex = optimizedTrailSpots.findIndex((s) => s.id === spot.id);
+      const isInTrail = isTrailActive && trailIndex !== -1;
+
       const el = document.createElement('div');
       el.style.width = '32px';
       el.style.height = '32px';
       el.style.borderRadius = '50%';
-      el.style.backgroundColor = isTrailActive ? color : '#ffffff';
+      el.style.backgroundColor = isInTrail ? color : '#ffffff';
       el.style.border = isMustTry
         ? '3px solid #d97706'
-        : isTrailActive
+        : isInTrail
         ? '2.5px solid #ffffff'
         : `2.5px solid ${color}`;
       el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
@@ -1126,9 +1165,9 @@ export default function Home() {
       el.style.justifyContent = 'center';
       el.title = spot.name;
 
-      if (isTrailActive) {
+      if (isInTrail) {
         const num = document.createElement('span');
-        num.innerText = (index + 1).toString();
+        num.innerText = (trailIndex + 1).toString();
         num.style.color = '#ffffff';
         num.style.fontSize = '12px';
         num.style.fontWeight = '800';
@@ -1155,7 +1194,7 @@ export default function Home() {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, mustTrySpotIds, isTrailActive]);
+  }, [filteredSpots, mustTrySpotIds, isTrailActive, optimizedTrailSpots]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -1699,7 +1738,7 @@ export default function Home() {
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
 
-        {/* Walking Trail Toggle Button Moved Here */}
+        {/* Walking Trail Toggle Button */}
         <button
           onClick={() => setIsTrailActive(!isTrailActive)}
           style={{
