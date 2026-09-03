@@ -2268,37 +2268,37 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Own Account Profile Modal with Functional JSON Export & Import */}
+      {/* 8. Own Account Profile Modal with Enhanced Avatar & Refined Passport Styling */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
-              <label style={{ width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', flexShrink: 0 }} title="Click to upload profile photo">
+
+            {/* Centered Large Avatar & Passport Identity */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
+              <label style={{ width: '72px', height: '72px', borderRadius: '24px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
-                  <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
+                  <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
                 ) : userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <User style={{ width: '24px', height: '24px', color: '#78716c' }} />
+                  <User style={{ width: '30px', height: '30px', color: '#78716c' }} />
                 )}
-                <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
-                  <Camera style={{ width: '18px', height: '18px' }} />
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
+                  <Camera style={{ width: '20px', height: '20px' }} />
                 </div>
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
               </label>
 
-              <div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px', letterSpacing: '-0.02em' }}>
-                  {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
-                  <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
-                    <Pencil style={{ width: '12px', height: '12px' }} />
-                  </button>
-                </h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>{currentUser.email}</p>
-              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
+                {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
+                <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                  <Pencil style={{ width: '13px', height: '13px' }} />
+                </button>
+              </h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{currentUser.email}</p>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
