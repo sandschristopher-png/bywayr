@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import { EmptyState } from './src/main/components/EmptyState';
+import { PwaInstallBanner } from './src/main/components/PwaInstallBanner';
 import {
   MapPin,
   Loader2,
@@ -1368,7 +1369,6 @@ export default function Home() {
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  // Proximity sorted spots for walking modal
   const proximitySortedSpots: Spot[] = [...spots].filter((s) => s.latitude && s.longitude);
 
   useEffect(() => {
@@ -2749,6 +2749,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* PWA Web Install Banner */}
+      <PwaInstallBanner />
     </div>
   );
 }
