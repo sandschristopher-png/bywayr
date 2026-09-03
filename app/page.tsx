@@ -73,6 +73,8 @@ interface Spot {
   image_url?: string;
   user_id?: string;
   created_at?: string;
+  dist?: number;
+  isLiveOsm?: boolean;
 }
 
 interface UserProfile {
@@ -344,6 +346,8 @@ export default function Home() {
   const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
   const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
   const [walkSearchQuery, setWalkSearchQuery] = useState('');
+  const [liveOsmResults, setLiveOsmResults] = useState<Spot[]>([]);
+  const [isSearchingOsm, setIsSearchingOsm] = useState(false);
 
   // Dark Slate Map Mode State
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -1491,13 +1495,61 @@ export default function Home() {
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
   // Proximity Sorted Spots for the Walk Selector Modal
-  const proximitySortedSpots = [...spots]
+  const proximitySortedSpots: Spot[] = [...spots]
     .filter((s) => s.latitude && s.longitude)
     .map((s) => ({
       ...s,
       dist: calculateDistanceKm(centerCoord[1], centerCoord[0], s.latitude, s.longitude)
     }))
-    .sort((a, b) => a.dist - b.dist);
+    .sort((a, b) => (a.dist || 0) - (b.dist || 0));
+
+  // Live OSM Proximity Search for Walking Modal
+  useEffect(() => {
+    const query = walkSearchQuery.trim();
+    if (query.length < 2) {
+      setLiveOsmResults([]);
+      setIsSearchingOsm(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingOsm(true);
+      try {
+        const center = map.current ? map.current.getCenter() : { lng: 121.055, lat: 14.575 };
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=4`
+        );
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+          const mapped: Spot[] = data.map((item: any) => {
+            const lat = parseFloat(item.lat);
+            const lon = parseFloat(item.lon);
+            return {
+              name: item.name || item.display_name.split(',')[0],
+              city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
+              category: 'Map Location',
+              description: item.display_name,
+              latitude: lat,
+              longitude: lon,
+              dist: calculateDistanceKm(center.lat, center.lng, lat, lon),
+              isLiveOsm: true,
+            };
+          }).sort((a: Spot, b: Spot) => (a.dist || 0) - (b.dist || 0));
+
+          setLiveOsmResults(mapped);
+        } else {
+          setLiveOsmResults([]);
+        }
+      } catch (err) {
+        console.error('OSM search error:', err);
+      } finally {
+        setIsSearchingOsm(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [walkSearchQuery]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
@@ -1888,7 +1940,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Proximity Walk HUD Selector Modal with Live Search & ETA */}
+      {/* Proximity Walk HUD Selector Modal with Live Search & Two-Tier Results */}
       {isWalkModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative' }}>
@@ -1899,7 +1951,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Where to Walk?</h3>
-                  <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Select a destination to trace route & ETA</p>
+                  <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Choose a curated spot or search any destination</p>
                 </div>
               </div>
               <button onClick={() => { setIsWalkModalOpen(false); setWalkSearchQuery(''); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
@@ -1908,11 +1960,11 @@ export default function Home() {
             </div>
 
             {/* Live Search Input Inside Modal */}
-            <div style={{ position: 'relative', marginBottom: '10px' }}>
+            <div style={{ position: 'relative', marginBottom: '12px' }}>
               <Search style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '14px', height: '14px' }} />
               <input
                 type="text"
-                placeholder="Filter spots by name or category..."
+                placeholder="Filter field notes or search any place..."
                 value={walkSearchQuery}
                 onChange={(e) => setWalkSearchQuery(e.target.value)}
                 style={{
@@ -1927,20 +1979,23 @@ export default function Home() {
                   color: '#1c1917',
                 }}
               />
-              {walkSearchQuery && (
-                <button
-                  onClick={() => setWalkSearchQuery('')}
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: 0 }}
-                >
-                  <X style={{ width: '13px', height: '13px' }} />
-                </button>
-              )}
+              <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                {isSearchingOsm && <Loader2 style={{ width: '13px', height: '13px', color: '#e05a47', animation: 'spin 1s linear infinite' }} />}
+                {walkSearchQuery && !isSearchingOsm && (
+                  <button
+                    onClick={() => setWalkSearchQuery('')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: 0 }}
+                  >
+                    <X style={{ width: '13px', height: '13px' }} />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* List of Proximity Filtered Spots */}
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '7px', maxHeight: '48vh', paddingRight: '2px' }}>
-              {proximitySortedSpots
-                .filter((s) => {
+            {/* Scrollable Results Area */}
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '48vh', paddingRight: '2px' }}>
+              {(() => {
+                const curatedMatches = proximitySortedSpots.filter((s) => {
                   if (!walkSearchQuery.trim()) return true;
                   const q = walkSearchQuery.toLowerCase();
                   return (
@@ -1948,57 +2003,142 @@ export default function Home() {
                     s.city.toLowerCase().includes(q) ||
                     s.category.toLowerCase().includes(q)
                   );
-                })
-                .map((spot) => {
-                  const isWalkable = spot.dist <= 10;
-                  const walkMin = Math.round((spot.dist / 4.8) * 60);
+                });
 
-                  return (
-                    <div
-                      key={spot.id || spot.name}
-                      onClick={() => {
-                        setWalkTargetSpot(spot);
-                        setIsWalkModalOpen(false);
-                        setWalkSearchQuery('');
-                        flyToSpot(spot);
-                      }}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '14px',
-                        border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
-                        backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div style={{ minWidth: 0, paddingRight: '8px' }}>
-                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {spot.name}
-                        </h4>
-                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                          {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
-                        </p>
-                      </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#e05a47' }}>
-                          {spot.dist < 1 ? `${Math.round(spot.dist * 1000)} m` : `${spot.dist.toFixed(1)} km`}
-                        </span>
-                        {isWalkable ? (
-                          <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
-                            ~{walkMin} min
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
-                        )}
-                      </div>
+                return (
+                  <>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 4px' }}>
+                      Field Notes Nearby ({curatedMatches.length})
                     </div>
-                  );
-                })}
+
+                    {curatedMatches.length === 0 ? (
+                      <p style={{ margin: '4px 0 8px 0', fontSize: '11.5px', color: '#a8a29e', padding: '0 4px' }}>
+                        No curated spots match "{walkSearchQuery}".
+                      </p>
+                    ) : (
+                      curatedMatches.map((spot) => {
+                        const dist = spot.dist || 0;
+                        const isWalkable = dist <= 10;
+                        const walkMin = Math.round((dist / 4.8) * 60);
+
+                        return (
+                          <div
+                            key={spot.id || spot.name}
+                            onClick={() => {
+                              setWalkTargetSpot(spot);
+                              setIsWalkModalOpen(false);
+                              setWalkSearchQuery('');
+                              flyToSpot(spot);
+                            }}
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: '14px',
+                              border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
+                              backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                              <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {spot.name}
+                              </h4>
+                              <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
+                                {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                              </p>
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#e05a47' }}>
+                                {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`}
+                              </span>
+                              {isWalkable ? (
+                                <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
+                                  ~{walkMin} min
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* SECTION 2: Live Map Search Results */}
+              {walkSearchQuery.trim().length >= 2 && (
+                <>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '8px 4px 2px 4px', borderTop: '1px dashed #e7e5e4', marginTop: '4px' }}>
+                    Live Map Places ({liveOsmResults.length})
+                  </div>
+
+                  {liveOsmResults.length === 0 && !isSearchingOsm ? (
+                    <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', padding: '0 4px' }}>
+                      No live map results found.
+                    </p>
+                  ) : (
+                    liveOsmResults.map((spot, idx) => {
+                      const dist = spot.dist || 0;
+                      const isWalkable = dist <= 10;
+                      const walkMin = Math.round((dist / 4.8) * 60);
+
+                      return (
+                        <div
+                          key={`osm-${idx}`}
+                          onClick={() => {
+                            setWalkTargetSpot(spot);
+                            setIsWalkModalOpen(false);
+                            setWalkSearchQuery('');
+                            if (spot.latitude && spot.longitude && map.current) {
+                              map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+                            }
+                          }}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '14px',
+                            border: walkTargetSpot?.name === spot.name ? '1.5px solid #0284c7' : '1px solid #e7e5e4',
+                            backgroundColor: walkTargetSpot?.name === spot.name ? '#f0f9ff' : '#ffffff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {spot.name}
+                            </h4>
+                            <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
+                              {spot.city} · Map Location
+                            </p>
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+                            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0284c7' }}>
+                              {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`}
+                            </span>
+                            {isWalkable ? (
+                              <span style={{ fontSize: '10px', color: '#78716c', fontWeight: 500 }}>
+                                ~{walkMin} min
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '10px', color: '#a8a29e' }}>Far</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
             </div>
 
+            {/* Clear Active Walk Button */}
             {walkTargetSpot && (
               <button
                 onClick={() => {
