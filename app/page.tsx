@@ -52,7 +52,6 @@ import {
   Download,
   Upload,
   Crown,
-  Globe,
 } from 'lucide-react';
 
 interface Spot {
@@ -280,7 +279,7 @@ export default function Home() {
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Public Curator Profile Modal State & Full Curator View
+  // Public Curator Profile Modal State
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
@@ -1017,7 +1016,7 @@ export default function Home() {
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
-            .addTo(initializedMap);
+            .addTo(map.current);
         }
 
         map.current.flyTo({ center: [longitude, latitude], zoom: 16, essential: true });
