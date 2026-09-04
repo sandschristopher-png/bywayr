@@ -1078,7 +1078,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization - Stadia Maps with API Key Authentication
+  // Basemap Initialization - Stadia Maps OSM Bright (Vibrant & Colorful)
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1101,10 +1101,10 @@ export default function Home() {
           tiles: [
             dark
               ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-              : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
+              : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
             dark
               ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-              : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
+              : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
           ],
           tileSize: 256,
           attribution: '© OpenStreetMap contributors, © Stadia Maps',
@@ -1212,10 +1212,10 @@ export default function Home() {
             tiles: [
               dark
                 ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-                : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
+                : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
               dark
                 ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-                : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
+                : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
             ],
             tileSize: 256,
             attribution: '© OpenStreetMap contributors, © Stadia Maps',
