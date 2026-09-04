@@ -1803,7 +1803,7 @@ export default function Home() {
 
           {allCategoriesList.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
-            const IconComp = cat.icon;
+            const LucideIcon = cat.icon;
             return (
               <button
                 key={cat.label}
@@ -1827,7 +1827,9 @@ export default function Home() {
                   flexShrink: 0 
                 }}
               >
-                {typeof IconComp === 'function' ? <IconComp /> : <IconComp style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />}
+                {typeof LucideIcon === 'function' && !Array.isArray(LucideIcon) ? (
+                  <LucideIcon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
+                ) : null}
                 {cat.label}
               </button>
             );
