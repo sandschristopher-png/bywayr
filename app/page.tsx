@@ -383,6 +383,17 @@ export default function Home() {
     }
   }, [isDarkMode]);
 
+  // Dynamically update OpenFreeMap vector style when switching Day/Night mode
+  useEffect(() => {
+    if (map.current) {
+      map.current.setStyle(
+        isDarkMode
+          ? 'https://tiles.openfreemap.org/styles/dark'
+          : 'https://tiles.openfreemap.org/styles/positron'
+      );
+    }
+  }, [isDarkMode]);
+
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
   const [authUsernameError, setAuthUsernameError] = useState('');
@@ -955,7 +966,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization
+  // Basemap Initialization - Clean High-Resolution OpenFreeMap Vector Cartography
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -971,39 +982,18 @@ export default function Home() {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'osm-tiles': {
-            type: 'raster',
-            tiles: [
-              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-layer',
-            type: 'raster',
-            source: 'osm-tiles',
-            minzoom: 0,
-            maxzoom: 19,
-            paint: {
-              'raster-hue-rotate': 18,
-              'raster-saturation': -0.35,
-              'raster-contrast': 0.12,
-              'raster-brightness-max': 0.98,
-            },
-          },
-        ],
-      },
+      style: isDarkMode 
+        ? 'https://tiles.openfreemap.org/styles/dark' 
+        : 'https://tiles.openfreemap.org/styles/positron',
       center: initialCenter,
       zoom: initialZoom,
+      attributionControl: false,
     });
+
+    initializedMap.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      'bottom-left'
+    );
 
     initializedMap.on('moveend', () => {
       const center = initializedMap.getCenter();
@@ -1713,7 +1703,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. Map Canvas */}
+      {/* 1. Map Canvas with Native Vector Rendering */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -1724,8 +1714,8 @@ export default function Home() {
           bottom: 0, 
           zIndex: 1,
           backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
-          transition: 'filter 0.3s ease, background-color 0.3s ease',
+          filter: 'none',
+          transition: 'background-color 0.3s ease',
         }} 
       />
 
