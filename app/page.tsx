@@ -177,7 +177,7 @@ const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string }> => {
+const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string; country?: string }> => {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
@@ -201,7 +201,8 @@ const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string
         data.address.tourism ||
         data.address.road ||
         '';
-      return { name, city };
+      const country = data.address.country || '';
+      return { name, city, country };
     }
   } catch (err) {
     console.error('Reverse geocode error:', err);
@@ -378,11 +379,11 @@ export default function Home() {
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
     category: 'Hidden Gems',
-    city: 'Manila',
+    city: 'Las Vegas',
     country: 'United States',
     description: '',
-    latitude: 14.5995,
-    longitude: 120.9842,
+    latitude: 36.1699,
+    longitude: -115.1398,
     image_url: '',
   });
 
@@ -1172,6 +1173,7 @@ export default function Home() {
           latitude: lat,
           longitude: lon,
           city: geo.city || prev.city || 'Las Vegas',
+          country: geo.country || prev.country || 'United States',
           name: prev.name || geo.name || '',
         }));
 
@@ -1232,7 +1234,7 @@ export default function Home() {
       name: defaultName || geo.name || '',
       category: 'Hidden Gems',
       city: geo.city || 'Las Vegas',
-      country: 'United States',
+      country: geo.country || 'United States',
       description: '',
       latitude: parseFloat(lat.toFixed(6)),
       longitude: parseFloat(lon.toFixed(6)),
@@ -1416,6 +1418,7 @@ export default function Home() {
             return {
               name: item.name || item.display_name.split(',')[0],
               city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
+              country: item.address?.country || '',
               category: 'Map Location',
               description: item.display_name,
               latitude: lat,
@@ -2269,8 +2272,11 @@ export default function Home() {
       {/* 5. Enhanced Public Passport Profile Blurred Overlay Modal */}
       {viewingProfile && (() => {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
-        const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || 'United States').trim()).filter(Boolean)));
+        const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
         
+        // Auto-detect curator country from their spots if profile.country is empty
+        const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'Philippines');
+
         const filteredProfileSpots = profileCityFilter === 'All' 
           ? viewingProfileSpots 
           : viewingProfileSpots.filter((s) => s.city.trim().toLowerCase() === profileCityFilter.toLowerCase());
@@ -2309,7 +2315,7 @@ export default function Home() {
                       border: '1px solid #e7e5e4'
                     }}>
                       <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#e05a47' }} />
-                      {viewingProfile.country || 'United States'}
+                      {resolvedCountry}
                     </span>
                   </h3>
                   <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
@@ -2329,7 +2335,7 @@ export default function Home() {
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
                 </div>
               </div>
