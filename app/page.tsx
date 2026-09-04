@@ -3330,7 +3330,7 @@ export default function Home() {
       )}
 
       {/* PWA Web Install Banner */}
-      <PwaInstallBounder />
+      <PwaInstallBanner />
     </div>
   );
 }
