@@ -288,9 +288,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('bywayr_user_profile');
       if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
+        try { return JSON.parse(saved); } catch {}
       }
     }
     return null;
@@ -819,6 +817,7 @@ export default function Home() {
     const userSpots = spots.filter((s) => s.user_id === userId);
     setViewingProfile(profile);
     setViewingProfileSpots(userSpots);
+    setViewingSpot(null);
   };
 
   const handleCategoryMouseDown = (e: React.MouseEvent) => {
@@ -2638,7 +2637,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Profile Modal with Bywayr Plus Custom Categories Section */}
+      {/* Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative' }}>
