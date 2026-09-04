@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.bywayr.app",
+      "package_name": "com.bywayr.twa",
       "sha256_cert_fingerprints": [
-        "82:51:87:C5:5C:D7:4F:71:E2:CC:5B:BB:E9:2C:AD:3B:3A:6E:9A:8A:37:69:F1:35:78:CE:A3:64:3A:62:E1:1E",
+        "4D:6C:F6:CD:86:07:77:81:C7:E7:6F:02:84:C0:B6:06:C2:46:60:95:8F:A9:6A:F3:91:AD:DA:16:59:D9:E2:B1",
         "9E:D2:CE:54:E6:1C:32:A7:32:4B:78:8A:EC:8A:C4:B9:09:5C:52:E8:E6:C4:2D:3D:51:25:EB:F3:FC:F5:55:67"
       ]
     }
