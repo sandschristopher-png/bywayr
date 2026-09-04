@@ -1786,9 +1786,6 @@ export default function Home() {
               </button>
             )}
 
-            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <List style={{ width: '15px', height: '15px' }} />
-            </button>
             <button
               onClick={() => {
                 triggerHaptic(8);
@@ -1803,6 +1800,10 @@ export default function Home() {
               style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '12px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
             >
               <Plus style={{ width: '14px', height: '14px' }} /> Add
+            </button>
+
+            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              <List style={{ width: '15px', height: '15px' }} />
             </button>
           </div>
         </div>
@@ -2763,22 +2764,27 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer */}
+      {/* Slide-Out Drawer (Sticky Footer for Travel Essentials & Updated Layout) */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingTop: 'env(safe-area-inset-top, 0px)', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={() => dismissModalWithHistory(() => setIsDrawerOpen(false))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', marginBottom: '16px' }}>
+
+            {/* Tabs */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', marginBottom: '16px', flexShrink: 0 }}>
               <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
               <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
             
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            {/* Scrollable Spot List */}
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
               {displayedDrawerSpots.map((spot) => {
                 const color = getCategoryColor(spot.category);
                 return (
@@ -2800,6 +2806,7 @@ export default function Home() {
                       alignItems: 'center',
                       gap: '12px',
                       cursor: 'pointer',
+                      flexShrink: 0,
                     }}
                   >
                     {spot.image_url && (
@@ -2840,60 +2847,61 @@ export default function Home() {
                   </div>
                 );
               })}
+            </div>
 
-              {/* Travel Essentials Section in Drawer */}
-              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e7e5e4' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingLeft: '4px' }}>
-                  Travel Essentials
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {/* 1. Aviasales */}
-                  <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                      </div>
-                      <span>Search Flights (Aviasales)</span>
+            {/* Sticky Travel Essentials Footer */}
+            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingLeft: '4px' }}>
+                Travel Essentials
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {/* 1. Aviasales */}
+                <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-                  </a>
+                    <span>Flight Search — Aviasales</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
 
-                  {/* 2. Klook */}
-                  <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                      </div>
-                      <span>Tours & Tickets (Klook)</span>
+                {/* 2. Klook */}
+                <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-                  </a>
+                    <span>Tours & Tickets — Klook</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
 
-                  {/* 3. Saily */}
-                  <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/saily.svg" alt="Saily" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                      </div>
-                      <span>eSIM Data (Saily)</span>
+                {/* 3. Saily */}
+                <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/saily.svg" alt="Saily" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-                  </a>
+                    <span>eSIM Data — Saily</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
 
-                  {/* 4. Yesim */}
-                  <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                      </div>
-                      <span>eSIM Data (Yesim)</span>
+                {/* 4. Yesim */}
+                <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-                  </a>
-                </div>
+                    <span>eSIM Data — Yesim</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
               </div>
             </div>
+
           </div>
         </div>
       )}
