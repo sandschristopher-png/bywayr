@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: 'Bywayr',
     images: [
       {
-        url: '/icon.svg',
+        url: '/icon-512.png',
         width: 512,
         height: 512,
         alt: 'Bywayr Field Guide',
@@ -34,15 +34,17 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'Bywayr — Curate & Discover Hidden Spots',
     description: 'Map, search, and curate secret spots, scenic viewpoints, and local gems.',
-    images: ['/icon.svg'],
+    images: ['/icon-512.png'],
   },
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', sizes: '48x48', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
+    shortcut: '/favicon.png',
     apple: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
   },
   appleWebApp: {
