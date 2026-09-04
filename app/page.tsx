@@ -2461,21 +2461,13 @@ export default function Home() {
               {displayedDrawerSpots.map((spot) => {
                 const author = spot.user_id ? profilesMap[spot.user_id]?.username : null;
                 return (
-                  <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e7e5e4', display: 'flex', gap: '12px', alignItems: 'center', backgroundColor: '#ffffff' }}>
-                    {spot.image_url ? (
-                      <img src={spot.image_url} alt={spot.name} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: '48px', height: '48px', borderRadius: '10px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
-                        <MapPin style={{ width: '18px', height: '18px' }} />
-                      </div>
-                    )}
-
+                  <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e7e5e4', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
                     <div style={{ flex: 1, minWidth: '0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                        <h4 onClick={() => flyToSpot(spot)} style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
+                        <h4 onClick={() => flyToSpot(spot)} style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
                         <span style={{ fontSize: '10px', color: '#a8a29e', fontWeight: 500, flexShrink: 0 }}>{formatRelativeTime(spot.created_at)}</span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c' }}>
                         {spot.city}
                         {author ? (
                           <>
@@ -2825,9 +2817,9 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' >,
-                <ThumbsUp style={{ width: '14px', height: '14px' }} />
-              </div>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <ThumbsUp style={{ width: '14px', height: '14px' }} />
+                </div>
                 <div>
                   <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Community Vouches</div>
                   <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Tag genuine community finds and keep track of your favorite spots.</div>
