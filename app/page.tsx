@@ -383,17 +383,6 @@ export default function Home() {
     }
   }, [isDarkMode]);
 
-  // Dynamically update OpenFreeMap vector style when switching Day/Night mode
-  useEffect(() => {
-    if (map.current) {
-      map.current.setStyle(
-        isDarkMode
-          ? 'https://tiles.openfreemap.org/styles/dark'
-          : 'https://tiles.openfreemap.org/styles/positron'
-      );
-    }
-  }, [isDarkMode]);
-
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
   const [authUsernameError, setAuthUsernameError] = useState('');
@@ -966,7 +955,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization - Clean High-Resolution OpenFreeMap Vector Cartography
+  // Basemap Initialization - Restored Stable Raster Tile Cartography
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -982,22 +971,48 @@ export default function Home() {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: isDarkMode 
-        ? 'https://tiles.openfreemap.org/styles/dark' 
-        : 'https://tiles.openfreemap.org/styles/positron',
+      style: {
+        version: 8,
+        sources: {
+          'osm-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+          },
+        },
+        layers: [
+          {
+            id: 'osm-layer',
+            type: 'raster',
+            source: 'osm-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+            paint: {
+              'raster-hue-rotate': 18,
+              'raster-saturation': -0.35,
+              'raster-contrast': 0.12,
+              'raster-brightness-max': 0.98,
+            },
+          },
+        ],
+      },
       center: initialCenter,
       zoom: initialZoom,
-      attributionControl: false,
     });
 
-    initializedMap.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      'bottom-left'
-    );
+    initializedMap.on('moveend', () => {
+      const center = initializedMap.getCenter();
+      const zoom = initializedMap.getZoom();
+      localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
+      localStorage.setItem('bywayr_map_zoom', zoom.toString());
+    });
 
     initializedMap.on('load', () => {
-      initializedMap.resize();
-
       const hasSavedPosition = localStorage.getItem('bywayr_map_center');
       if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
         navigator.geolocation.getCurrentPosition(
@@ -1698,7 +1713,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. Map Canvas with Native Vector Rendering */}
+      {/* 1. Map Canvas */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -1709,8 +1724,8 @@ export default function Home() {
           bottom: 0, 
           zIndex: 1,
           backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: 'none',
-          transition: 'background-color 0.3s ease',
+          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
+          transition: 'filter 0.3s ease, background-color 0.3s ease',
         }} 
       />
 
@@ -2380,7 +2395,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet (Cleaned: removed Klook/Yesim buttons since they are now in the Drawer Travel Essentials section) */}
+      {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -2748,7 +2763,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer (Cleanly integrated Travel Essentials section with brand SVGs) */}
+      {/* Slide-Out Drawer */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -2837,7 +2852,7 @@ export default function Home() {
                   <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                        <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                       </div>
                       <span>Search Flights (Aviasales)</span>
                     </div>
@@ -2848,7 +2863,7 @@ export default function Home() {
                   <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                        <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                       </div>
                       <span>Tours & Tickets (Klook)</span>
                     </div>
@@ -2859,7 +2874,7 @@ export default function Home() {
                   <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/saily.svg" alt="Saily" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                        <img src="/saily.svg" alt="Saily" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                       </div>
                       <span>eSIM Data (Saily)</span>
                     </div>
@@ -2870,7 +2885,7 @@ export default function Home() {
                   <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                        <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                       </div>
                       <span>eSIM Data (Yesim)</span>
                     </div>
@@ -3318,7 +3333,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: '0', display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
                   <BookmarkCheck style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
@@ -3354,7 +3369,7 @@ export default function Home() {
             padding: '8px 16px',
             borderRadius: '20px',
             fontSize: '12px',
-            fontWeight: '600',
+            fontWeight: 600,
             zIndex: 100010,
             boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
             pointerEvents: 'none',
