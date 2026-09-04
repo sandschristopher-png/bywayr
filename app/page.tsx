@@ -101,6 +101,58 @@ const CATEGORIES = [
   { label: 'Late Night', desc: '2 AM food stalls, midnight street bites & after-hours spots', color: '#7c3aed', icon: MoonStar },
 ];
 
+const dayStyle = {
+  version: 8 as const,
+  sources: {
+    'carto-light-tiles': {
+      type: 'raster' as const,
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+      ],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors, © CARTO',
+    },
+  },
+  layers: [
+    {
+      id: 'carto-light-layer',
+      type: 'raster' as const,
+      source: 'carto-light-tiles',
+      minzoom: 0,
+      maxzoom: 20,
+    },
+  ],
+};
+
+const nightStyle = {
+  version: 8 as const,
+  sources: {
+    'carto-dark-tiles': {
+      type: 'raster' as const,
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+      ],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors, © CARTO',
+    },
+  },
+  layers: [
+    {
+      id: 'carto-dark-layer',
+      type: 'raster' as const,
+      source: 'carto-dark-tiles',
+      minzoom: 0,
+      maxzoom: 20,
+    },
+  ],
+};
+
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
   return match ? match.color : '#e05a47';
@@ -317,6 +369,9 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('bywayr_dark_mode', isDarkMode.toString());
+    }
+    if (map.current) {
+      map.current.setStyle(isDarkMode ? nightStyle : dayStyle);
     }
   }, [isDarkMode]);
 
@@ -765,38 +820,10 @@ export default function Home() {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'osm-tiles-light': {
-            type: 'raster',
-            tiles: [
-              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-tiles-light-layer',
-            type: 'raster',
-            source: 'osm-tiles-light',
-            minzoom: 0,
-            maxzoom: 20,
-            paint: {
-              'raster-hue-rotate': 25,
-              'raster-saturation': -0.45,
-              'raster-contrast': 0.15,
-              'raster-brightness-max': 0.98,
-            },
-          },
-        ],
-      },
+      style: isDarkMode ? nightStyle : dayStyle,
       center: initialCenter,
       zoom: initialZoom,
+      fadeDuration: 120,
     });
 
     initializedMap.on('moveend', () => {
@@ -1408,7 +1435,7 @@ export default function Home() {
   }, [walkSearchQuery]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#121212' : '#f5f5f4' }}>
       <style jsx global>{`
         @keyframes slideUp {
           from { transform: translateY(24px) translateZ(0); opacity: 0; }
@@ -1474,7 +1501,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. Map Canvas */}
+      {/* 1. Map Canvas with Native Crisp Basemaps */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -1484,9 +1511,7 @@ export default function Home() {
           right: 0, 
           bottom: 0, 
           zIndex: 1,
-          backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
-          transition: 'filter 0.3s ease, background-color 0.3s ease'
+          backgroundColor: isDarkMode ? '#121212' : '#f5f5f4',
         }} 
       />
 
@@ -1628,10 +1653,10 @@ export default function Home() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                  <Plane style={{ width: '14px', height: '14px' }} />
+                  <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
                   <span>Planning a trip? Search flights via Aviasales</span>
                 </div>
-                <ArrowRight style={{ width: '13px', height: '13px' }} />
+                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
               </a>
             </div>
           )}
@@ -2783,7 +2808,7 @@ export default function Home() {
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px', letterSpacing: '-0.02em' }}>
-              <MapPin style={{ width: '19px', height: '19px', color: '#e05a47' }} />
+              <MapPin style={{ width: '19px', height: '19px' }} color="#e05a47" />
               {isEditing ? 'Edit Spot' : 'Add to Bywayr'}
             </h2>
             <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -2794,7 +2819,7 @@ export default function Home() {
                     <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#78716c' }}>
-                      <Camera style={{ width: '20px', height: '20px' }} />
+                      <Camera style={{ width: '20px', height: '20px', color: '#a8a29e' }} />
                       <span style={{ fontSize: '11.5px', fontWeight: 500 }}>Tap to upload image</span>
                     </div>
                   )}
