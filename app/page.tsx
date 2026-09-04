@@ -68,6 +68,8 @@ import {
   Zap,
   BookOpen,
   Cpu,
+  Download,
+  MessageSquare,
 } from 'lucide-react';
 
 interface Spot {
@@ -93,6 +95,14 @@ interface UserProfile {
   avatar_url?: string;
   bio?: string;
   country?: string;
+}
+
+interface SpotComment {
+  id: string;
+  spot_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
 }
 
 const CATEGORIES = [
@@ -333,6 +343,8 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const currentUserRef = useRef<any>(null);
 
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('bywayr_user_profile');
@@ -409,6 +421,11 @@ export default function Home() {
   const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry'>('fieldNotes');
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
+
+  // Spot comments state
+  const [spotComments, setSpotComments] = useState<SpotComment[]>([]);
+  const [newCommentText, setNewCommentText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
@@ -568,6 +585,112 @@ export default function Home() {
   const handleDismissWelcome = () => {
     localStorage.setItem('bywayr_seen_welcome', 'true');
     setShowWelcome(false);
+  };
+
+  // Fetch comments when viewing a spot
+  useEffect(() => {
+    if (viewingSpot?.id) {
+      fetchSpotComments(viewingSpot.id);
+    } else {
+      setSpotComments([]);
+    }
+  }, [viewingSpot?.id]);
+
+  const fetchSpotComments = async (spotId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('spot_comments')
+        .select('*')
+        .eq('spot_id', spotId)
+        .order('created_at', { ascending: true });
+      if (!error && data) {
+        setSpotComments(data);
+      }
+    } catch (err) {
+      console.error('Failed to load spot comments:', err);
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !viewingSpot?.id || !newCommentText.trim()) return;
+
+    triggerHaptic(10);
+    setSubmittingComment(true);
+
+    const { data, error } = await supabase
+      .from('spot_comments')
+      .insert([{
+        spot_id: viewingSpot.id,
+        user_id: activeUser.id,
+        content: newCommentText.trim(),
+      }])
+      .select();
+
+    if (!error && data && data.length > 0) {
+      setSpotComments((prev) => [...prev, data[0] as SpotComment]);
+      setNewCommentText('');
+    } else {
+      // Fallback local append if table doesn't exist yet
+      const fallbackComment: SpotComment = {
+        id: Date.now().toString(),
+        spot_id: viewingSpot.id,
+        user_id: activeUser.id,
+        content: newCommentText.trim(),
+        created_at: new Date().toISOString(),
+      };
+      setSpotComments((prev) => [...prev, fallbackComment]);
+      setNewCommentText('');
+    }
+    setSubmittingComment(false);
+  };
+
+  // Offline Export Handler (JSON / GPX)
+  const handleExportData = (format: 'json' | 'gpx') => {
+    triggerHaptic(12);
+    const targetSpots = drawerTab === 'mustTry' ? spots.filter(s => mustTrySpotIds.includes(s.id!)) : spots;
+    
+    if (format === 'json') {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(targetSpots, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } else {
+      // Generate GPX XML
+      let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Bywayr">\n`;
+      targetSpots.forEach(s => {
+        gpx += `  <wpt lat="${s.latitude}" lon="${s.longitude}">\n`;
+        gpx += `    <name>${escapeXml(s.name)}</name>\n`;
+        gpx += `    <desc>${escapeXml(s.description || s.category)}</desc>\n`;
+        gpx += `  </wpt>\n`;
+      });
+      gpx += `</gpx>`;
+
+      const dataStr = "data:text/gpx+xml;charset=utf-8," + encodeURIComponent(gpx);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.gpx`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+  };
+
+  const escapeXml = (str: string) => {
+    return str.replace(/[<>&'"]/g, (c) => {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+        default: return c;
+      }
+    });
   };
 
   const fetchUserProfile = async (userId: string) => {
@@ -1018,6 +1141,7 @@ export default function Home() {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
+            setUserCoords({ lat: latitude, lng: longitude });
             initializedMap.jumpTo({ center: [longitude, latitude], zoom: 15 });
 
             if (userLocationMarkerRef.current) {
@@ -1299,6 +1423,7 @@ export default function Home() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
+        setUserCoords({ lat: latitude, lng: longitude });
         if (!map.current) return;
 
         if (userLocationMarkerRef.current) {
@@ -1340,6 +1465,7 @@ export default function Home() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        setUserCoords({ lat: latitude, lng: longitude });
         const lat = parseFloat(latitude.toFixed(6));
         const lon = parseFloat(longitude.toFixed(6));
 
@@ -2396,9 +2522,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet */}
+      {/* 4. Spot Details Bottom Sheet with Comments / Discussion */}
       {viewingSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
@@ -2470,7 +2596,7 @@ export default function Home() {
           {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '16px', margin: '8px 0' }} />}
           {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
             <button
               onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
@@ -2485,6 +2611,50 @@ export default function Home() {
               {coordsCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
               {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
             </button>
+          </div>
+
+          {/* Spot Comments / Field Discussion Section */}
+          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, color: '#57534e', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
+              <MessageSquare style={{ width: '13px', height: '13px', color: '#e05a47' }} /> Field Notes Discussion ({spotComments.length})
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto', marginBottom: '10px' }}>
+              {spotComments.length === 0 ? (
+                <p style={{ margin: 0, fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No tips or comments left yet. Be the first!</p>
+              ) : (
+                spotComments.map((c) => {
+                  const authorProfile = profilesMap[c.user_id];
+                  return (
+                    <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '10px', padding: '8px 10px', fontSize: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
+                        <span style={{ fontSize: '10px', color: '#a8a29e' }}>{formatRelativeTime(c.created_at)}</span>
+                      </div>
+                      <p style={{ margin: 0, color: '#44403c', lineHeight: 1.35 }}>{c.content}</p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                placeholder="Leave a quick tip or note..."
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                style={{ flex: 1, boxSizing: 'border-box', backgroundColor: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '8px 12px', fontSize: '12px', outline: 'none', color: '#1c1917' }}
+              />
+              <button
+                type="submit"
+                disabled={submittingComment || !newCommentText.trim()}
+                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '0 12px', cursor: submittingComment || !newCommentText.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Send Comment"
+              >
+                {submittingComment ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : <Send style={{ width: '13px', height: '13px' }} />}
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -2764,29 +2934,41 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer (Sticky Footer for Travel Essentials & Updated Layout) */}
+      {/* Slide-Out Drawer with Live Distance Badges & Offline Export */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
             
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingTop: 'env(safe-area-inset-top, 0px)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingTop: 'env(safe-area-inset-top, 0px)', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={() => dismissModalWithHistory(() => setIsDrawerOpen(false))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', marginBottom: '16px', flexShrink: 0 }}>
-              <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
-              <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+            {/* Tabs & Offline Export Actions */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
+                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
+                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+              </div>
+              <button
+                onClick={() => handleExportData('json')}
+                style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '0 10px', color: '#44403c', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                title="Export as JSON or GPX for offline maps"
+              >
+                <Download style={{ width: '13px', height: '13px' }} /> Export
+              </button>
             </div>
             
-            {/* Scrollable Spot List */}
+            {/* Scrollable Spot List with Distance Badges */}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
               {displayedDrawerSpots.map((spot) => {
                 const color = getCategoryColor(spot.category);
+                const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
+                const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
+
                 return (
                   <div
                     key={spot.id || spot.name}
@@ -2818,19 +3000,26 @@ export default function Home() {
                     )}
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4
-                        style={{
-                          margin: '0 0 2px 0',
-                          fontSize: '13.5px',
-                          fontWeight: 700,
-                          color: '#1c1917',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {spot.name}
-                      </h4>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <h4
+                          style={{
+                            margin: 0,
+                            fontSize: '13.5px',
+                            fontWeight: 700,
+                            color: '#1c1917',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {spot.name}
+                        </h4>
+                        {distanceText && (
+                          <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>
+                            {distanceText}
+                          </span>
+                        )}
+                      </div>
                       <p
                         style={{
                           margin: 0,
@@ -2869,14 +3058,14 @@ export default function Home() {
 
                 {/* 2. Klook */}
                 <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-      <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-    </div>
-    <span>Tours, Hotels & Tickets — Klook</span>
-  </div>
-  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-</a>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                    </div>
+                    <span>Tours, Hotels & Tickets — Klook</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
 
                 {/* 3. Saily */}
                 <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
@@ -2951,6 +3140,22 @@ export default function Home() {
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
               </div>
+            </div>
+
+            {/* Offline Export Actions in Profile Modal */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+              <button
+                onClick={() => handleExportData('json')}
+                style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', color: '#1c1917', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Download style={{ width: '14px', height: '14px' }} /> Export JSON
+              </button>
+              <button
+                onClick={() => handleExportData('gpx')}
+                style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', color: '#1c1917', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Download style={{ width: '14px', height: '14px' }} /> Export GPX
+              </button>
             </div>
 
             {/* Bywayr Plus Coming Soon Section */}
