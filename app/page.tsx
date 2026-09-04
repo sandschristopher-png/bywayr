@@ -2218,83 +2218,92 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Public Curator Profile Modal */}
+      {/* 5. Full Passport Profile Blurred Overlay Modal */}
       {viewingProfile && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative' }}>
-            <button onClick={() => setViewingProfile(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '420px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+            <button onClick={() => setViewingProfile(null)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X style={{ width: '18px', height: '18px' }} />
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', paddingRight: '30px' }}>
+              <div style={{ width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
                 {viewingProfile.avatar_url ? (
                   <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <Compass style={{ width: '26px', height: '26px' }} />
+                  <Compass style={{ width: '28px', height: '28px' }} />
                 )}
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>@{viewingProfile.username || 'wanderer'}</h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c' }}>Curator on Bywayr</p>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>@{viewingProfile.username || 'wanderer'}</h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>Field Guide Curator</p>
               </div>
             </div>
 
-            {viewingProfile.username && (
-              <a
-                href={`/u/${viewingProfile.username}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  backgroundColor: '#1c1917',
-                  color: '#fafaf9',
-                  padding: '10px 12px',
-                  borderRadius: '14px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  marginBottom: '14px',
-                }}
-              >
-                Open Full Passport Profile <ExternalLink style={{ width: '13px', height: '13px' }} />
-              </a>
-            )}
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px 10px', marginBottom: '20px', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
-                <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Curated Pins</div>
+                <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Total Pins</div>
               </div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{new Set(viewingProfileSpots.map((s) => s.city)).size}</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{new Set(viewingProfileSpots.map((s) => s.city.trim())).size}</div>
                 <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{new Set(viewingProfileSpots.map((s) => (s.country || 'United States').trim())).size}</div>
+                <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
               </div>
             </div>
 
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#57534e', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#57534e', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Curated Field Notes
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
               {viewingProfileSpots.length === 0 ? (
-                <p style={{ margin: '12px 0', fontSize: '12.5px', color: '#a8a29e', textAlign: 'center' }}>No public pins shared yet.</p>
+                <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No public pins shared yet.</p>
               ) : (
                 viewingProfileSpots.map((s) => (
                   <div
                     key={s.id || s.name}
-                    onClick={() => {
-                      setViewingProfile(null);
-                      flyToSpot(s);
-                    }}
-                    style={{ padding: '11px 14px', borderRadius: '14px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    style={{ padding: '14px', borderRadius: '16px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 2px 8px rgba(28, 25, 23, 0.03)' }}
                   >
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 600, color: '#1c1917' }}>{s.name}</h4>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c' }}>{s.city} · <span style={{ color: getCategoryColor(s.category), fontWeight: 600 }}>{s.category}</span></p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '4px' }}>
+                          {s.category}
+                        </span>
+                        <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917' }}>{s.name}</h4>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>{s.city}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setViewingProfile(null);
+                          flyToSpot(s);
+                        }}
+                        style={{
+                          backgroundColor: '#f5f5f4',
+                          color: '#1c1917',
+                          border: '1px solid #d6d3d1',
+                          borderRadius: '10px',
+                          padding: '6px 10px',
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        View on Map <ExternalLink style={{ width: '11px', height: '11px' }} />
+                      </button>
                     </div>
-                    <Navigation2 style={{ width: '14px', height: '14px' }} />
+                    {s.description && (
+                      <p style={{ margin: 0, fontSize: '12px', color: '#44403c', lineHeight: 1.4, borderTop: '1px solid #f5f5f4', paddingTop: '8px' }}>
+                        {s.description}
+                      </p>
+                    )}
                   </div>
                 ))
               )}
