@@ -59,6 +59,15 @@ import {
   Wifi,
   Plane,
   AlertTriangle,
+  Gamepad2,
+  Flower2,
+  Palette,
+  Landmark,
+  Cake,
+  Glasses,
+  Zap,
+  BookOpen,
+  Cpu,
 } from 'lucide-react';
 
 interface Spot {
@@ -100,6 +109,16 @@ const CATEGORIES = [
   { label: 'Vintage & Vinyl', desc: 'Retro oddity shops, thrifts & crate-digging stops', color: '#b45309', icon: Disc },
   { label: 'Work & Focus', desc: 'Nomad-friendly work spots, quiet libraries & fast Wi-Fi cafes', color: '#2563eb', icon: Laptop },
   { label: 'Late Night', desc: '2 AM food stalls, midnight street bites & after-hours spots', color: '#7c3aed', icon: MoonStar },
+  { label: 'Arcades & Play', desc: 'Retro game centers, crane game lofts & entertainment hubs', color: '#6366f1', icon: Gamepad2 },
+  { label: 'Urban Oases', desc: 'Tucked-away green pockets, courtyards & quiet resting spots', color: '#10b981', icon: Flower2 },
+  { label: 'Street Art & Murals', desc: 'Alleyway graffiti, sticker walls & urban creative installations', color: '#ec4899', icon: Palette },
+  { label: 'Shrines & Relics', desc: 'Neighborhood shrines, historical plaques & spiritual nooks', color: '#d97706', icon: Landmark },
+  { label: 'Bakeries & Sweets', desc: 'Neighborhood patisseries, gelato counters & pastry spots', color: '#f43f5e', icon: Cake },
+  { label: 'Curiosities & Oddities', desc: 'Quirky micro-museums, unusual landmarks & local artifacts', color: '#8b5cf6', icon: Glasses },
+  { label: 'Neon & Nights', desc: 'Glowing neon strips, moody alleys & night photography perches', color: '#db2777', icon: Zap },
+  { label: 'Secret Passages', desc: 'Hidden stairways, covered alley cut-throughs & shortcuts', color: '#0284c7', icon: Footprints },
+  { label: 'Indie Bookshops', desc: 'Independent bookstores, zine nooks & reading spaces', color: '#b45309', icon: BookOpen },
+  { label: 'Tech & Gadgets', desc: 'Component shops, custom hardware dens & electronics alleys', color: '#2563eb', icon: Cpu },
 ];
 
 const getCategoryColor = (cat: string) => {
@@ -153,6 +172,36 @@ const getCategorySvg = (category: string, color: string): string => {
   }
   if (cat.includes('late') || cat.includes('night')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+  }
+  if (cat.includes('arcades')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12"/><line x1="12" y1="6" x2="12" y2="18"/><circle cx="18" cy="15" r="1"/><circle cx="16" cy="9" r="1"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`;
+  }
+  if (cat.includes('urban oases')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
+  }
+  if (cat.includes('street art')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.55-2.5 5.55-5.55C22 6.5 17.5 2 12 2z"/></svg>`;
+  }
+  if (cat.includes('shrines')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+  }
+  if (cat.includes('bakeries')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 5v6"/><path d="M17 8v3"/></svg>`;
+  }
+  if (cat.includes('curiosities')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7h14l2.5 6"/></svg>`;
+  }
+  if (cat.includes('neon')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+  }
+  if (cat.includes('passages')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-0-5H20"/></svg>`;
+  }
+  if (cat.includes('bookshops')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>`;
+  }
+  if (cat.includes('tech')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg>`;
   }
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
 };
