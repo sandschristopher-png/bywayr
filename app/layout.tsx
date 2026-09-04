@@ -10,6 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bywayr.com'),
+  applicationName: 'Bywayr',
   title: 'Bywayr — Curate & Discover Hidden Spots',
   description: 'A minimalist field guide for travelers and city wanderers to map, vouch for, and share hidden gems, alley eats, and local viewpoints.',
   manifest: '/manifest.json',
@@ -51,6 +52,7 @@ export const metadata: Metadata = {
   },
   other: {
     'mobile-web-app-capable': 'yes',
+    'apple-touch-fullscreen': 'yes',
   },
 };
 
