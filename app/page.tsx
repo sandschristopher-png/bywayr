@@ -818,12 +818,13 @@ export default function Home() {
               userLocationMarkerRef.current.setLngLat([longitude, latitude]);
             } else {
               const el = document.createElement('div');
-              el.style.width = '18px';
-              el.style.height = '18px';
+              el.style.width = '16px';
+              el.style.height = '16px';
               el.style.borderRadius = '50%';
               el.style.backgroundColor = '#0284c7';
               el.style.border = '3px solid #ffffff';
-              el.style.boxShadow = '0 0 14px rgba(2, 132, 199, 0.7)';
+              el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
+              el.className = 'user-location-pulse';
 
               userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
                 .setLngLat([longitude, latitude])
@@ -1089,12 +1090,13 @@ export default function Home() {
           userLocationMarkerRef.current.setLngLat([longitude, latitude]);
         } else {
           const el = document.createElement('div');
-          el.style.width = '18px';
-          el.style.height = '18px';
+          el.style.width = '16px';
+          el.style.height = '16px';
           el.style.borderRadius = '50%';
           el.style.backgroundColor = '#0284c7';
           el.style.border = '3px solid #ffffff';
-          el.style.boxShadow = '0 0 14px rgba(2, 132, 199, 0.7)';
+          el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
+          el.className = 'user-location-pulse';
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
@@ -1424,6 +1426,20 @@ export default function Home() {
           from { transform: scale(0.95) translateZ(0); opacity: 0; }
           to { transform: scale(1) translateZ(0); opacity: 1; }
         }
+        @keyframes gpsRadarPulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.75);
+          }
+          70% {
+            box-shadow: 0 0 0 16px rgba(2, 132, 199, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
+          }
+        }
+        .user-location-pulse {
+          animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
         .animate-slide-up {
           animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           will-change: transform, opacity;
@@ -1442,6 +1458,13 @@ export default function Home() {
           animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           will-change: transform, opacity;
           backface-visibility: hidden;
+        }
+        .spot-card-hover {
+          transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s ease;
+        }
+        .spot-card-hover:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(28, 25, 23, 0.08);
         }
         button, a {
           transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease, box-shadow 0.15s ease;
@@ -1605,10 +1628,10 @@ export default function Home() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                  <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
+                  <Plane style={{ width: '14px', height: '14px' }} />
                   <span>Planning a trip? Search flights via Aviasales</span>
                 </div>
-                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                <ArrowRight style={{ width: '13px', height: '13px' }} />
               </a>
             </div>
           )}
@@ -1769,7 +1792,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 3. Floating Map Controls */}
+      {/* 3. Floating Map Controls with Capsule Day/Night Switch */}
       <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0284c7' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
@@ -1797,27 +1820,60 @@ export default function Home() {
           <Footprints style={{ width: '20px', height: '20px' }} />
         </button>
 
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
+        {/* Vertical Capsule Day / Night Switch */}
+        <div
           style={{
-            width: '46px',
-            height: '46px',
+            display: 'flex',
+            flexDirection: 'column',
             backgroundColor: isDarkMode ? '#1c1917' : 'rgba(255, 255, 255, 0.92)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            color: isDarkMode ? '#fafaf9' : '#44403c',
-            border: isDarkMode ? '1px solid #1c1917' : '1px solid #e7e5e4',
-            borderRadius: '16px',
+            border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4',
+            borderRadius: '24px',
+            padding: '3px',
             boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
+            gap: '2px',
           }}
-          title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Slate Mode'}
         >
-          {isDarkMode ? <MoonStar style={{ width: '20px', height: '20px', color: '#e05a47' }} /> : <Sun style={{ width: '20px', height: '20px' }} />}
-        </button>
+          <button
+            onClick={() => setIsDarkMode(false)}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: !isDarkMode ? '#0284c7' : 'transparent',
+              color: !isDarkMode ? '#ffffff' : '#a8a29e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: !isDarkMode ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none',
+            }}
+            title="Day Mode"
+          >
+            <Sun style={{ width: '18px', height: '18px' }} />
+          </button>
+          <button
+            onClick={() => setIsDarkMode(true)}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: isDarkMode ? '#0284c7' : 'transparent',
+              color: isDarkMode ? '#ffffff' : '#78716c',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: isDarkMode ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none',
+            }}
+            title="Dark Mode"
+          >
+            <MoonStar style={{ width: '18px', height: '18px' }} />
+          </button>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <button onClick={() => map.current?.zoomIn()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom In">
@@ -2300,6 +2356,7 @@ export default function Home() {
                   filteredProfileSpots.map((s) => (
                     <div
                       key={s.id || s.name}
+                      className="spot-card-hover"
                       style={{ padding: '12px 14px', borderRadius: '16px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 2px 8px rgba(28, 25, 23, 0.03)' }}
                     >
                       {s.image_url ? (
@@ -2443,7 +2500,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer */}
+      {/* Slide-Out Drawer - Clean Minimalist Field Notes List */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -2457,29 +2514,59 @@ export default function Home() {
               <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
               <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin' }}>
               {displayedDrawerSpots.map((spot) => {
-                const author = spot.user_id ? profilesMap[spot.user_id]?.username : null;
+                const color = getCategoryColor(spot.category);
                 return (
-                  <div key={spot.id || spot.name} style={{ padding: '12px', borderRadius: '14px', border: '1px solid #e7e5e4', display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#ffffff' }}>
-                    <div style={{ flex: 1, minWidth: '0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                        <h4 onClick={() => flyToSpot(spot)} style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</h4>
-                        <span style={{ fontSize: '10px', color: '#a8a29e', fontWeight: 500, flexShrink: 0 }}>{formatRelativeTime(spot.created_at)}</span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c' }}>
-                        {spot.city}
-                        {author ? (
-                          <>
-                            {' · '}
-                            <span onClick={() => { setIsDrawerOpen(false); handleOpenPublicProfile(spot.user_id!); }} style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer' }}>
-                              @{author}
-                            </span>
-                          </>
-                        ) : ''}
-                        {' · '}
-                        <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
-                        {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}
+                  <div
+                    key={spot.id || spot.name}
+                    onClick={() => flyToSpot(spot)}
+                    className="spot-card-hover"
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '14px',
+                      border: '1px solid #e7e5e4',
+                      borderLeft: `4px solid ${color}`,
+                      backgroundColor: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {spot.image_url && (
+                      <img
+                        src={spot.image_url}
+                        alt={spot.name}
+                        style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                      />
+                    )}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4
+                        style={{
+                          margin: '0 0 2px 0',
+                          fontSize: '13.5px',
+                          fontWeight: 700,
+                          color: '#1c1917',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {spot.name}
+                      </h4>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '11px',
+                          color: '#78716c',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
                       </p>
                     </div>
                   </div>
@@ -2707,7 +2794,7 @@ export default function Home() {
                     <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#78716c' }}>
-                      <Camera style={{ width: '20px', height: '20px', color: '#a8a29e' }} />
+                      <Camera style={{ width: '20px', height: '20px' }} />
                       <span style={{ fontSize: '11.5px', fontWeight: 500 }}>Tap to upload image</span>
                     </div>
                   )}
