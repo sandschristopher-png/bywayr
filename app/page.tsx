@@ -60,6 +60,13 @@ import {
   Ticket,
   Wifi,
   Plane,
+  Flag,
+  Anchor,
+  Flame,
+  Heart,
+  Star,
+  Shield,
+  Tent,
 } from 'lucide-react';
 
 interface Spot {
@@ -86,7 +93,14 @@ interface UserProfile {
   bio?: string;
 }
 
-const CATEGORIES = [
+interface CustomCategory {
+  id: string;
+  name: string;
+  color: string;
+  icon_name: string;
+}
+
+const DEFAULT_CATEGORIES = [
   { label: 'All', desc: 'All curated field notes & unmapped spots', color: '#57534e', icon: Sparkles },
   { label: 'Hidden Gems', desc: 'Unmarked spots, secret corners & quiet local treasures', color: '#e05a47', icon: Gem },
   { label: 'Alley Eats', desc: 'Backstreet stalls, hidden bistros & local food legends', color: '#ea580c', icon: Utensils },
@@ -102,13 +116,44 @@ const CATEGORIES = [
   { label: 'Late Night', desc: '2 AM food stalls, midnight street bites & after-hours spots', color: '#7c3aed', icon: MoonStar },
 ];
 
-const getCategoryColor = (cat: string) => {
-  const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
-  return match ? match.color : '#e05a47';
+const AVAILABLE_ICONS = [
+  { name: 'Compass', icon: Compass },
+  { name: 'Flag', icon: Flag },
+  { name: 'Anchor', icon: Anchor },
+  { name: 'Flame', icon: Flame },
+  { name: 'Heart', icon: Heart },
+  { name: 'Star', icon: Star },
+  { name: 'Shield', icon: Shield },
+  { name: 'Tent', icon: Tent },
+  { name: 'MapPin', icon: MapPin },
+  { name: 'Coffee', icon: Coffee },
+];
+
+const AVAILABLE_COLORS = [
+  '#e05a47', '#ea580c', '#d97706', '#db2777', '#0284c7', 
+  '#9333ea', '#0d9488', '#059669', '#4f46e5', '#b45309', '#2563eb', '#7c3aed'
+];
+
+const renderCategoryIcon = (iconName: string, color: string, size = 13) => {
+  const found = AVAILABLE_ICONS.find((i) => i.name.toLowerCase() === iconName.toLowerCase());
+  const IconComponent = found ? found.icon : Sparkles;
+  return <IconComponent style={{ width: `${size}px`, height: `${size}px`, color }} />;
 };
 
-const getCategorySvg = (category: string, color: string): string => {
+const getCategoryColor = (cat: string, customCategories: CustomCategory[]) => {
+  const matchDef = DEFAULT_CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
+  if (matchDef) return matchDef.color;
+  const matchCust = customCategories.find((c) => c.name.toLowerCase() === cat.toLowerCase());
+  if (matchCust) return matchCust.color;
+  return '#e05a47';
+};
+
+const getCategorySvg = (category: string, color: string, customCategories: CustomCategory[]): string => {
   const cat = category?.toLowerCase() || '';
+  const matchCust = customCategories.find((c) => c.name.toLowerCase() === cat);
+  if (matchCust) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6z"/></svg>`;
+  }
   if (cat.includes('cafe') || cat.includes('chill')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h12Z"/><path d="M6 2v2"/></svg>`;
   }
@@ -117,30 +162,6 @@ const getCategorySvg = (category: string, color: string): string => {
   }
   if (cat.includes('bar') || cat.includes('listen')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/></svg>`;
-  }
-  if (cat.includes('coast') || cat.includes('beach')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
-  }
-  if (cat.includes('market')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>`;
-  }
-  if (cat.includes('nature') || cat.includes('trail')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.9"/></svg>`;
-  }
-  if (cat.includes('view') || cat.includes('point')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>`;
-  }
-  if (cat.includes('stay') || cat.includes('hideaway')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
-  }
-  if (cat.includes('vintage') || cat.includes('vinyl')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg>`;
-  }
-  if (cat.includes('work') || cat.includes('focus')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>`;
-  }
-  if (cat.includes('late') || cat.includes('night')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
   }
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
 };
@@ -155,7 +176,7 @@ const openNativeWalkNavigation = (lat: number, lng: number, name?: string) => {
 };
 
 const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371; // Earth radius in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
@@ -275,23 +296,37 @@ export default function Home() {
     return null;
   });
 
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('bywayr_custom_categories');
+      if (cached) {
+        try { return JSON.parse(cached); } catch {}
+      }
+    }
+    return [];
+  });
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState(AVAILABLE_COLORS[0]);
+  const [newCatIcon, setNewCatIcon] = useState(AVAILABLE_ICONS[0].name);
+  const [savingCategory, setSavingCategory] = useState(false);
 
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
 
-  // Proximity Walking & Active Search Selection State
   const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
   const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
   const [walkSearchQuery, setWalkSearchQuery] = useState('');
   const [liveOsmResults, setLiveOsmResults] = useState<Spot[]>([]);
   const [isSearchingOsm, setIsSearchingOsm] = useState(false);
 
-  // Quick Active Preview Spot (For search results & dropped pins)
   const [activeSearchedSpot, setActiveSearchedSpot] = useState<{
     name: string;
     city: string;
@@ -299,7 +334,6 @@ export default function Home() {
     longitude: number;
   } | null>(null);
 
-  // Dark Slate Map Mode State
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_dark_mode') === 'true';
@@ -327,9 +361,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('bywayr_cached_spots');
       if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch {}
+        try { return JSON.parse(cached); } catch {}
       }
     }
     return [];
@@ -417,6 +449,18 @@ export default function Home() {
     }
   };
 
+  const fetchCustomCategories = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.from('user_categories').select('*').eq('user_id', userId);
+      if (!error && data) {
+        setCustomCategories(data);
+        localStorage.setItem('bywayr_custom_categories', JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error('Failed to load custom categories:', err);
+    }
+  };
+
   const fetchProfiles = async () => {
     try {
       const { data, error } = await supabase.from('profiles').select('*');
@@ -467,12 +511,85 @@ export default function Home() {
         setIsAuthModalOpen(false);
       } else {
         setUserProfile(null);
+        setCustomCategories([]);
         localStorage.removeItem('bywayr_user_profile');
+        localStorage.removeItem('bywayr_custom_categories');
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    fetchSpots();
+    fetchProfiles();
+    fetchVouches(currentUser?.id);
+    if (currentUser?.id) {
+      fetchMustTryBookmarks(currentUser.id);
+      fetchUserProfile(currentUser.id);
+      fetchCustomCategories(currentUser.id);
+    } else {
+      setMustTrySpotIds([]);
+      setVouchedSpotIds([]);
+      setUserProfile(null);
+    }
+  }, [currentUser]);
+
+  const handleAddCustomCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !newCatName.trim()) return;
+
+    setSavingCategory(true);
+    const { data, error } = await supabase
+      .from('user_categories')
+      .insert([{
+        user_id: activeUser.id,
+        name: newCatName.trim(),
+        color: newCatColor,
+        icon_name: newCatIcon,
+      }])
+      .select();
+
+    if (!error && data && data.length > 0) {
+      const updated = [...customCategories, data[0]];
+      setCustomCategories(updated);
+      localStorage.setItem('bywayr_custom_categories', JSON.stringify(updated));
+      setNewCatName('');
+      setIsCategoryModalOpen(false);
+    } else {
+      alert(`Error saving category: ${error?.message || 'Unknown error'}`);
+    }
+    setSavingCategory(false);
+  };
+
+  const handleDeleteCustomCategory = async (catId: string) => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) return;
+    if (!confirm('Are you sure you want to delete this custom category?')) return;
+
+    const { error } = await supabase.from('user_categories').delete().eq('id', catId).eq('user_id', activeUser.id);
+    if (!error) {
+      const updated = customCategories.filter((c) => c.id !== catId);
+      setCustomCategories(updated);
+      localStorage.setItem('bywayr_custom_categories', JSON.stringify(updated));
+      if (selectedCategory === customCategories.find((c) => c.id === catId)?.name) {
+        setSelectedCategory('All');
+      }
+    }
+  };
+
+  const allCategoriesList = [
+    ...DEFAULT_CATEGORIES,
+    ...customCategories.map((c) => ({
+      label: c.name,
+      desc: 'Custom Bywayr Plus category',
+      color: c.color,
+      icon: (props: any) => renderCategoryIcon(c.icon_name, c.color, 12),
+      isCustom: true,
+      id: c.id,
+    })),
+  ];
 
   const handleGoogleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
@@ -613,7 +730,9 @@ export default function Home() {
     setVouchedSpotIds([]);
     setOnlyMySpots(false);
     setUserProfile(null);
+    setCustomCategories([]);
     localStorage.removeItem('bywayr_user_profile');
+    localStorage.removeItem('bywayr_custom_categories');
     setIsProfileModalOpen(false);
     setIsClaimUsernameModalOpen(false);
   };
@@ -640,20 +759,6 @@ export default function Home() {
       console.error('Failed to load bookmarks:', err);
     }
   };
-
-  useEffect(() => {
-    fetchSpots();
-    fetchProfiles();
-    fetchVouches(currentUser?.id);
-    if (currentUser?.id) {
-      fetchMustTryBookmarks(currentUser.id);
-      fetchUserProfile(currentUser.id);
-    } else {
-      setMustTrySpotIds([]);
-      setVouchedSpotIds([]);
-      setUserProfile(null);
-    }
-  }, [currentUser]);
 
   const toggleMustTry = async (spotId?: string) => {
     if (!spotId) return;
@@ -1005,8 +1110,7 @@ export default function Home() {
       if (!spot.latitude || !spot.longitude) return;
       const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
       const isWalkTarget = walkTargetSpot?.id === spot.id;
-      const catObj = CATEGORIES.find((c) => c.label.toLowerCase() === spot.category?.toLowerCase());
-      const color = catObj ? catObj.color : '#e05a47';
+      const color = getCategoryColor(spot.category, customCategories);
 
       const el = document.createElement('div');
       el.style.width = '32px';
@@ -1037,7 +1141,7 @@ export default function Home() {
         svgIcon.style.alignItems = 'center';
         svgIcon.style.justifyContent = 'center';
         svgIcon.style.color = color;
-        svgIcon.innerHTML = getCategorySvg(spot.category, color);
+        svgIcon.innerHTML = getCategorySvg(spot.category, color, customCategories);
         el.appendChild(svgIcon);
       }
 
@@ -1053,7 +1157,7 @@ export default function Home() {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
+  }, [filteredSpots, mustTrySpotIds, walkTargetSpot, customCategories]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -1386,9 +1490,9 @@ export default function Home() {
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
   const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
-  const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
+  
+  const activeCategoryObject = allCategoriesList.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  // Proximity Calculation and Sorting Based on Map Center
   const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
   const proximitySortedSpots: Spot[] = [...spots]
     .filter((s) => s.latitude && s.longitude)
@@ -1698,7 +1802,7 @@ export default function Home() {
             </button>
           )}
 
-          {CATEGORIES.map((cat) => {
+          {allCategoriesList.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
             const Icon = cat.icon;
             return (
@@ -1724,7 +1828,7 @@ export default function Home() {
                   flexShrink: 0 
                 }}
               >
-                <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
+                {typeof Icon === 'function' ? <Icon /> : <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />}
                 {cat.label}
               </button>
             );
@@ -2011,7 +2115,7 @@ export default function Home() {
                               {spot.name}
                             </h4>
                             <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                              {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                              {spot.city} · <span style={{ color: getCategoryColor(spot.category, customCategories), fontWeight: 600 }}>{spot.category}</span>
                             </p>
                           </div>
                           
@@ -2111,7 +2215,7 @@ export default function Home() {
         <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category, customCategories)}18`, color: getCategoryColor(viewingSpot.category, customCategories), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
               <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{viewingSpot.name}</h3>
@@ -2270,7 +2374,7 @@ export default function Home() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '4px' }}>
+                        <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category, customCategories)}18`, color: getCategoryColor(s.category, customCategories), fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '4px' }}>
                           {s.category}
                         </span>
                         <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917' }}>{s.name}</h4>
@@ -2312,7 +2416,97 @@ export default function Home() {
         </div>
       )}
 
-      {/* 6. Universal Share Modal */}
+      {/* 6. Custom Category Creator Modal */}
+      {isCategoryModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100006, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative' }}>
+            <button onClick={() => setIsCategoryModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Add Custom Category</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#78716c' }}>Create a custom category with your own icon and color.</p>
+
+            <form onSubmit={handleAddCustomCategory} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category Name</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={25}
+                  placeholder="e.g. Hidden Rooftops"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '6px' }}>Select Icon</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                  {AVAILABLE_ICONS.map((item) => {
+                    const IconComp = item.icon;
+                    const isSelected = newCatIcon === item.name;
+                    return (
+                      <button
+                        type="button"
+                        key={item.name}
+                        onClick={() => setNewCatIcon(item.name)}
+                        style={{
+                          height: '40px',
+                          borderRadius: '12px',
+                          border: isSelected ? '2px solid #e05a47' : '1px solid #e7e5e4',
+                          backgroundColor: isSelected ? '#fff1ee' : '#fafaf9',
+                          color: isSelected ? '#e05a47' : '#44403c',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <IconComp style={{ width: '18px', height: '18px' }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '6px' }}>Select Color</label>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {AVAILABLE_COLORS.map((hex) => {
+                    const isSelected = newCatColor === hex;
+                    return (
+                      <div
+                        key={hex}
+                        onClick={() => setNewCatColor(hex)}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '50%',
+                          backgroundColor: hex,
+                          cursor: 'pointer',
+                          border: isSelected ? '3px solid #1c1917' : '2px solid #ffffff',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingCategory || !newCatName.trim()}
+                style={{ width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+              >
+                {savingCategory ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : 'Save Category'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Universal Share Modal */}
       {shareDialogSpot && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
@@ -2400,7 +2594,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 7. Slide-Out Drawer */}
+      {/* Slide-Out Drawer */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -2432,7 +2626,7 @@ export default function Home() {
                           </>
                         ) : ''}
                         {' · '}
-                        <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                        <span style={{ color: getCategoryColor(spot.category, customCategories), fontWeight: 600 }}>{spot.category}</span>
                         {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}
                       </p>
                     </div>
@@ -2444,10 +2638,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* 8. Profile Modal */}
+      {/* 8. Profile Modal with Bywayr Plus Custom Categories Section */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative' }}>
             <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
@@ -2491,15 +2685,41 @@ export default function Home() {
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Bywayr Plus Section */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus Backup
+                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
                 </span>
+                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px' }}>Coming soon</span>
               </div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>
-                Download your personal field notes as JSON or bulk-import new spots.
-              </p>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e7e5e4', paddingTop: '8px' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#44403c' }}>Custom Categories ({customCategories.length})</span>
+                <button
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '10px', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Plus style={{ width: '12px', height: '12px' }} /> Add Custom
+                </button>
+              </div>
+
+              {customCategories.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '110px', overflowY: 'auto' }}>
+                  {customCategories.map((cat) => (
+                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '10px', padding: '6px 10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: cat.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.name}</span>
+                      </div>
+                      <button onClick={() => handleDeleteCustomCategory(cat.id)} style={{ background: 'none', border: 'none', color: '#e05a47', cursor: 'pointer', padding: '2px' }} title="Delete">
+                        <Trash2 style={{ width: '13px', height: '13px' }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
                 <button
                   onClick={handleExportJson}
@@ -2732,9 +2952,9 @@ export default function Home() {
                 <div>
                   <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
                   <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
-                    {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
+                    {allCategoriesList.filter(c => c.label !== 'All').map(cat => (
                       <option key={cat.label} value={cat.label}>
-                        {cat.label} — {cat.desc}
+                        {cat.label}
                       </option>
                     ))}
                   </select>
