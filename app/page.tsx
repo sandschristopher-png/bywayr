@@ -51,8 +51,6 @@ import {
   Disc,
   Laptop,
   MoonStar,
-  Download,
-  Upload,
   Crown,
   Footprints,
   ExternalLink,
@@ -60,13 +58,6 @@ import {
   Ticket,
   Wifi,
   Plane,
-  Flag,
-  Anchor,
-  Flame,
-  Heart,
-  Star,
-  Shield,
-  Tent,
 } from 'lucide-react';
 
 interface Spot {
@@ -93,14 +84,7 @@ interface UserProfile {
   bio?: string;
 }
 
-interface CustomCategory {
-  id: string;
-  name: string;
-  color: string;
-  icon_name: string;
-}
-
-const DEFAULT_CATEGORIES = [
+const CATEGORIES = [
   { label: 'All', desc: 'All curated field notes & unmapped spots', color: '#57534e', icon: Sparkles },
   { label: 'Hidden Gems', desc: 'Unmarked spots, secret corners & quiet local treasures', color: '#e05a47', icon: Gem },
   { label: 'Alley Eats', desc: 'Backstreet stalls, hidden bistros & local food legends', color: '#ea580c', icon: Utensils },
@@ -116,44 +100,13 @@ const DEFAULT_CATEGORIES = [
   { label: 'Late Night', desc: '2 AM food stalls, midnight street bites & after-hours spots', color: '#7c3aed', icon: MoonStar },
 ];
 
-const AVAILABLE_ICONS = [
-  { name: 'Compass', icon: Compass },
-  { name: 'Flag', icon: Flag },
-  { name: 'Anchor', icon: Anchor },
-  { name: 'Flame', icon: Flame },
-  { name: 'Heart', icon: Heart },
-  { name: 'Star', icon: Star },
-  { name: 'Shield', icon: Shield },
-  { name: 'Tent', icon: Tent },
-  { name: 'MapPin', icon: MapPin },
-  { name: 'Coffee', icon: Coffee },
-];
-
-const AVAILABLE_COLORS = [
-  '#e05a47', '#ea580c', '#d97706', '#db2777', '#0284c7', 
-  '#9333ea', '#0d9488', '#059669', '#4f46e5', '#b45309', '#2563eb', '#7c3aed'
-];
-
-const renderCategoryIcon = (iconName: string, color: string, size = 13) => {
-  const found = AVAILABLE_ICONS.find((i) => i.name.toLowerCase() === iconName.toLowerCase());
-  const IconComponent = found ? found.icon : Sparkles;
-  return <IconComponent style={{ width: `${size}px`, height: `${size}px`, color }} />;
+const getCategoryColor = (cat: string) => {
+  const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
+  return match ? match.color : '#e05a47';
 };
 
-const getCategoryColor = (cat: string, customCategories: CustomCategory[]) => {
-  const matchDef = DEFAULT_CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
-  if (matchDef) return matchDef.color;
-  const matchCust = customCategories.find((c) => c.name.toLowerCase() === cat.toLowerCase());
-  if (matchCust) return matchCust.color;
-  return '#e05a47';
-};
-
-const getCategorySvg = (category: string, color: string, customCategories: CustomCategory[]): string => {
+const getCategorySvg = (category: string, color: string): string => {
   const cat = category?.toLowerCase() || '';
-  const matchCust = customCategories.find((c) => c.name.toLowerCase() === cat);
-  if (matchCust) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6z"/></svg>`;
-  }
   if (cat.includes('cafe') || cat.includes('chill')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h12Z"/><path d="M6 2v2"/></svg>`;
   }
@@ -162,6 +115,30 @@ const getCategorySvg = (category: string, color: string, customCategories: Custo
   }
   if (cat.includes('bar') || cat.includes('listen')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/></svg>`;
+  }
+  if (cat.includes('coast') || cat.includes('beach')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
+  }
+  if (cat.includes('market')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>`;
+  }
+  if (cat.includes('nature') || cat.includes('trail')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.9"/></svg>`;
+  }
+  if (cat.includes('view') || cat.includes('point')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>`;
+  }
+  if (cat.includes('stay') || cat.includes('hideaway')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
+  }
+  if (cat.includes('vintage') || cat.includes('vinyl')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg>`;
+  }
+  if (cat.includes('work') || cat.includes('focus')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>`;
+  }
+  if (cat.includes('late') || cat.includes('night')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
   }
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
 };
@@ -294,27 +271,11 @@ export default function Home() {
     return null;
   });
 
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('bywayr_custom_categories');
-      if (cached) {
-        try { return JSON.parse(cached); } catch {}
-      }
-    }
-    return [];
-  });
-
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatColor, setNewCatColor] = useState(AVAILABLE_COLORS[0]);
-  const [newCatIcon, setNewCatIcon] = useState(AVAILABLE_ICONS[0].name);
-  const [savingCategory, setSavingCategory] = useState(false);
 
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
@@ -447,18 +408,6 @@ export default function Home() {
     }
   };
 
-  const fetchCustomCategories = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.from('user_categories').select('*').eq('user_id', userId);
-      if (!error && data) {
-        setCustomCategories(data);
-        localStorage.setItem('bywayr_custom_categories', JSON.stringify(data));
-      }
-    } catch (err) {
-      console.error('Failed to load custom categories:', err);
-    }
-  };
-
   const fetchProfiles = async () => {
     try {
       const { data, error } = await supabase.from('profiles').select('*');
@@ -509,9 +458,7 @@ export default function Home() {
         setIsAuthModalOpen(false);
       } else {
         setUserProfile(null);
-        setCustomCategories([]);
         localStorage.removeItem('bywayr_user_profile');
-        localStorage.removeItem('bywayr_custom_categories');
       }
     });
 
@@ -525,69 +472,12 @@ export default function Home() {
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
       fetchUserProfile(currentUser.id);
-      fetchCustomCategories(currentUser.id);
     } else {
       setMustTrySpotIds([]);
       setVouchedSpotIds([]);
       setUserProfile(null);
     }
   }, [currentUser]);
-
-  const handleAddCustomCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const activeUser = currentUserRef.current;
-    if (!activeUser || !newCatName.trim()) return;
-
-    setSavingCategory(true);
-    const { data, error } = await supabase
-      .from('user_categories')
-      .insert([{
-        user_id: activeUser.id,
-        name: newCatName.trim(),
-        color: newCatColor,
-        icon_name: newCatIcon,
-      }])
-      .select();
-
-    if (!error && data && data.length > 0) {
-      const updated = [...customCategories, data[0]];
-      setCustomCategories(updated);
-      localStorage.setItem('bywayr_custom_categories', JSON.stringify(updated));
-      setNewCatName('');
-      setIsCategoryModalOpen(false);
-    } else {
-      alert(`Error saving category: ${error?.message || 'Unknown error'}`);
-    }
-    setSavingCategory(false);
-  };
-
-  const handleDeleteCustomCategory = async (catId: string) => {
-    const activeUser = currentUserRef.current;
-    if (!activeUser) return;
-    if (!confirm('Are you sure you want to delete this custom category?')) return;
-
-    const { error } = await supabase.from('user_categories').delete().eq('id', catId).eq('user_id', activeUser.id);
-    if (!error) {
-      const updated = customCategories.filter((c) => c.id !== catId);
-      setCustomCategories(updated);
-      localStorage.setItem('bywayr_custom_categories', JSON.stringify(updated));
-      if (selectedCategory === customCategories.find((c) => c.id === catId)?.name) {
-        setSelectedCategory('All');
-      }
-    }
-  };
-
-  const allCategoriesList = [
-    ...DEFAULT_CATEGORIES,
-    ...customCategories.map((c) => ({
-      label: c.name,
-      desc: 'Custom Bywayr Plus category',
-      color: c.color,
-      icon: (props: any) => renderCategoryIcon(c.icon_name, c.color, 12),
-      isCustom: true,
-      id: c.id,
-    })),
-  ];
 
   const handleGoogleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
@@ -728,9 +618,7 @@ export default function Home() {
     setVouchedSpotIds([]);
     setOnlyMySpots(false);
     setUserProfile(null);
-    setCustomCategories([]);
     localStorage.removeItem('bywayr_user_profile');
-    localStorage.removeItem('bywayr_custom_categories');
     setIsProfileModalOpen(false);
     setIsClaimUsernameModalOpen(false);
   };
@@ -1093,11 +981,23 @@ export default function Home() {
     }
   };
 
-  const filteredSpots = spots.filter((spot) => {
-    if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
-    if (selectedCategory === 'All') return true;
-    return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
-  });
+  // Filtered and sorted newest-first for the sidebar and map
+  const filteredSpots = spots
+    .filter((spot) => {
+      if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
+      if (selectedCategory === 'All') return true;
+      return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
+    })
+    .sort((a, b) => {
+      const idA = a.id ? Number(a.id) : 0;
+      const idB = b.id ? Number(b.id) : 0;
+      if (!isNaN(idA) && !isNaN(idB) && idA !== idB) {
+        return idB - idA;
+      }
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
 
   // Marker Rendering
   useEffect(() => {
@@ -1109,7 +1009,7 @@ export default function Home() {
       if (!spot.latitude || !spot.longitude) return;
       const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
       const isWalkTarget = walkTargetSpot?.id === spot.id;
-      const color = getCategoryColor(spot.category, customCategories);
+      const color = getCategoryColor(spot.category);
 
       const el = document.createElement('div');
       el.style.width = '32px';
@@ -1140,7 +1040,7 @@ export default function Home() {
         svgIcon.style.alignItems = 'center';
         svgIcon.style.justifyContent = 'center';
         svgIcon.style.color = color;
-        svgIcon.innerHTML = getCategorySvg(spot.category, color, customCategories);
+        svgIcon.innerHTML = getCategorySvg(spot.category, color);
         el.appendChild(svgIcon);
       }
 
@@ -1156,7 +1056,7 @@ export default function Home() {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, mustTrySpotIds, walkTargetSpot, customCategories]);
+  }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -1429,68 +1329,11 @@ export default function Home() {
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
-  const handleExportJson = () => {
-    const userSpots = spots.filter((s) => s.user_id === currentUser?.id);
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userSpots, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `bywayr-field-notes-${userProfile?.username || 'backup'}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileReader = new FileReader();
-    if (e.target.files && e.target.files[0]) {
-      fileReader.readAsText(e.target.files[0], "UTF-8");
-      fileReader.onload = async (event) => {
-        try {
-          const parsedSpots = JSON.parse(event.target?.result as string);
-          if (!Array.isArray(parsedSpots)) throw new Error('Invalid JSON format. Expected an array of spots.');
-          
-          if (!currentUser) {
-            setIsAuthModalOpen(true);
-            return;
-          }
-
-          setSaving(true);
-          let importedCount = 0;
-          for (const spot of parsedSpots) {
-            if (!spot.name || typeof spot.latitude !== 'number' || typeof spot.longitude !== 'number') continue;
-            
-            const { error } = await supabase.from('spots').insert([{
-              name: spot.name,
-              category: spot.category || 'Hidden Gems',
-              city: spot.city || 'Unknown City',
-              country: spot.country || 'United States',
-              description: spot.description || '',
-              latitude: spot.latitude,
-              longitude: spot.longitude,
-              image_url: spot.image_url || null,
-              user_id: currentUser.id,
-            }]);
-            
-            if (!error) importedCount++;
-          }
-          
-          alert(`Successfully imported ${importedCount} spots!`);
-          fetchSpots();
-        } catch (err: any) {
-          alert(`Import failed: ${err.message || 'Invalid JSON file'}`);
-        } finally {
-          setSaving(false);
-          if (e.target) e.target.value = '';
-        }
-      };
-    }
-  };
-
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
   const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   
-  const activeCategoryObject = allCategoriesList.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
+  const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
   const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
   const proximitySortedSpots: Spot[] = [...spots]
@@ -1801,9 +1644,9 @@ export default function Home() {
             </button>
           )}
 
-          {allCategoriesList.map((cat) => {
+          {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
-            const LucideIcon = cat.icon;
+            const Icon = cat.icon;
             return (
               <button
                 key={cat.label}
@@ -1827,9 +1670,7 @@ export default function Home() {
                   flexShrink: 0 
                 }}
               >
-                {typeof LucideIcon === 'function' && !Array.isArray(LucideIcon) ? (
-                  <LucideIcon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
-                ) : null}
+                <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
                 {cat.label}
               </button>
             );
@@ -2116,7 +1957,7 @@ export default function Home() {
                               {spot.name}
                             </h4>
                             <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                              {spot.city} · <span style={{ color: getCategoryColor(spot.category, customCategories), fontWeight: 600 }}>{spot.category}</span>
+                              {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                             </p>
                           </div>
                           
@@ -2216,7 +2057,7 @@ export default function Home() {
         <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category, customCategories)}18`, color: getCategoryColor(viewingSpot.category, customCategories), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
               <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{viewingSpot.name}</h3>
@@ -2375,7 +2216,7 @@ export default function Home() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category, customCategories)}18`, color: getCategoryColor(s.category, customCategories), fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '4px' }}>
+                        <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', marginBottom: '4px' }}>
                           {s.category}
                         </span>
                         <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917' }}>{s.name}</h4>
@@ -2413,96 +2254,6 @@ export default function Home() {
                 ))
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. Custom Category Creator Modal */}
-      {isCategoryModalOpen && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100006, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative' }}>
-            <button onClick={() => setIsCategoryModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
-            </button>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Add Custom Category</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#78716c' }}>Create a custom category with your own icon and color.</p>
-
-            <form onSubmit={handleAddCustomCategory} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category Name</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={25}
-                  placeholder="e.g. Hidden Rooftops"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '6px' }}>Select Icon</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                  {AVAILABLE_ICONS.map((item) => {
-                    const IconComp = item.icon;
-                    const isSelected = newCatIcon === item.name;
-                    return (
-                      <button
-                        type="button"
-                        key={item.name}
-                        onClick={() => setNewCatIcon(item.name)}
-                        style={{
-                          height: '40px',
-                          borderRadius: '12px',
-                          border: isSelected ? '2px solid #e05a47' : '1px solid #e7e5e4',
-                          backgroundColor: isSelected ? '#fff1ee' : '#fafaf9',
-                          color: isSelected ? '#e05a47' : '#44403c',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <IconComp style={{ width: '18px', height: '18px' }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '6px' }}>Select Color</label>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {AVAILABLE_COLORS.map((hex) => {
-                    const isSelected = newCatColor === hex;
-                    return (
-                      <div
-                        key={hex}
-                        onClick={() => setNewCatColor(hex)}
-                        style={{
-                          width: '26px',
-                          height: '26px',
-                          borderRadius: '50%',
-                          backgroundColor: hex,
-                          cursor: 'pointer',
-                          border: isSelected ? '3px solid #1c1917' : '2px solid #ffffff',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={savingCategory || !newCatName.trim()}
-                style={{ width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
-              >
-                {savingCategory ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : 'Save Category'}
-              </button>
-            </form>
           </div>
         </div>
       )}
@@ -2627,7 +2378,7 @@ export default function Home() {
                           </>
                         ) : ''}
                         {' · '}
-                        <span style={{ color: getCategoryColor(spot.category, customCategories), fontWeight: 600 }}>{spot.category}</span>
+                        <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                         {spot.id && vouchCounts[spot.id] ? ` · ✓ ${vouchCounts[spot.id]}` : ''}
                       </p>
                     </div>
@@ -2686,55 +2437,17 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bywayr Plus Section */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Bywayr Plus Coming Soon Section */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Crown style={{ width: '15px', height: '15px', color: '#d97706' }} /> Bywayr Plus
                 </span>
-                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px' }}>Coming soon</span>
+                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>Coming soon</span>
               </div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e7e5e4', paddingTop: '8px' }}>
-                <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#44403c' }}>Custom Categories ({customCategories.length})</span>
-                <button
-                  onClick={() => setIsCategoryModalOpen(true)}
-                  style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '10px', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Plus style={{ width: '12px', height: '12px' }} /> Add Custom
-                </button>
-              </div>
-
-              {customCategories.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '110px', overflowY: 'auto' }}>
-                  {customCategories.map((cat) => (
-                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', borderRadius: '10px', padding: '6px 10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: cat.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.name}</span>
-                      </div>
-                      <button onClick={() => handleDeleteCustomCategory(cat.id)} style={{ background: 'none', border: 'none', color: '#e05a47', cursor: 'pointer', padding: '2px' }} title="Delete">
-                        <Trash2 style={{ width: '13px', height: '13px' }} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
-                <button
-                  onClick={handleExportJson}
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#44403c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                >
-                  <Download style={{ width: '13px', height: '13px' }} /> Export JSON
-                </button>
-                <label
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, color: '#44403c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', textAlign: 'center' }}
-                >
-                  <Upload style={{ width: '13px', height: '13px' }} /> Import JSON
-                  <input type="file" accept=".json" onChange={handleImportJson} style={{ display: 'none' }} />
-                </label>
-              </div>
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
+                Unlock custom categories, custom icons, and JSON backups via Google Play & App Store billing.
+              </p>
             </div>
 
             <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
@@ -2747,6 +2460,288 @@ export default function Home() {
 
             <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Claim Handle Modal */}
+      {isClaimUsernameModalOpen && currentUser && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+              <AtSign style={{ width: '24px', height: '24px' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', textAlign: 'center', letterSpacing: '-0.02em' }}>Choose Your Handle</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
+
+            <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
+                  <input
+                    type="text"
+                    required
+                    maxLength={20}
+                    placeholder="traveler"
+                    value={claimUsername}
+                    onChange={(e) => {
+                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setClaimUsername(clean);
+                      if (clean.length > 0 && clean.length < 3) {
+                        setClaimUsernameError('Must be at least 3 characters');
+                      } else {
+                        setClaimUsernameError('');
+                      }
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                  />
+                </div>
+                {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
+              </div>
+
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 10. Auth Modal */}
+      {isAuthModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
+            <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto' }}>
+              <img src="/icon.svg" alt="Bywayr" style={{ width: '28px', height: '28px' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+            
+            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              Continue with Google
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+              <span style={{ fontSize: '11px', color: '#a8a29e', fontWeight: 600 }}>OR EMAIL</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+            </div>
+
+            {magicLinkSent ? (
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
+                <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 5px auto' }} />
+                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
+                <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
+                  <input
+                    type="text"
+                    maxLength={20}
+                    placeholder="e.g. explorer_ph"
+                    value={authUsername}
+                    onChange={(e) => {
+                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setAuthUsername(clean);
+                      if (clean.length > 0 && clean.length < 3) {
+                        setAuthUsernameError('Must be at least 3 characters');
+                      } else {
+                        setAuthUsernameError('');
+                      }
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                  />
+                  {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
+                </div>
+
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                  />
+                </div>
+
+                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                  {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 11. Add / Edit Spot Modal */}
+      {isModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button onClick={handleCloseModal} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px', letterSpacing: '-0.02em' }}>
+              <MapPin style={{ width: '19px', height: '19px', color: '#e05a47' }} />
+              {isEditing ? 'Edit Spot' : 'Add to Bywayr'}
+            </h2>
+            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #d6d3d1', borderRadius: '14px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#fafaf9', position: 'relative', overflow: 'hidden' }}>
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#78716c' }}>
+                      <Camera style={{ width: '20px', height: '20px', color: '#a8a29e' }} />
+                      <span style={{ fontSize: '11.5px', fontWeight: 500 }}>Tap to upload image</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                </label>
+              </div>
+
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={handleModalLocate}
+                  disabled={isModalLocating}
+                  style={{
+                    backgroundColor: '#f5f5f4',
+                    color: '#1c1917',
+                    border: '1px solid #d6d3d1',
+                    borderRadius: '14px',
+                    padding: '9px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {isModalLocating ? (
+                    <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <Crosshair style={{ width: '14px', height: '14px' }} />
+                  )}
+                  Pin My Current Location
+                </button>
+              )}
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
+                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
+              </div>
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
+                  <div>
+                    <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Latitude</label>
+                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Longitude</label>
+                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
+                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
+                    {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
+                      <option key={cat.label} value={cat.label}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
+                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
+                <textarea rows={2} placeholder="Atmosphere, tips, menu favorites, best time to visit..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', resize: 'none' }} />
+              </div>
+              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '4px', width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}>
+                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 12. Welcome Onboarding Modal */}
+      {showWelcome && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', overflow: 'hidden', display: 'flex', margin: '0 auto 16px auto', boxShadow: '0 10px 20px -3px rgba(224, 90, 71, 0.28)' }}>
+              <img src="/icon.svg" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.03em' }}>
+              Your Pocket Field Guide
+            </h2>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
+              A quiet map for expats, travelers, and wanderers to curate and share the unmapped local spots guidebooks overlook.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#fafaf9', padding: '14px 15px', borderRadius: '16px', border: '1px solid #e7e5e4' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fff1ee', padding: '6px', borderRadius: '10px', color: '#e05a47', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <Gem style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Curate Unmapped Corners</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Plot backstreet food stalls, hidden night views, and unlisted local gems.</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <ThumbsUp style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Community Vouches</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Tag genuine community finds and keep track of your favorite spots.</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                  <BookmarkCheck style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#1c1917' }}>Personal Passport</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Build your personal Passport, categorize your finds, and collect secret local spots along the way.</div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleDismissWelcome}
+              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.22)' }}
+            >
+              Open the Field Guide
             </button>
           </div>
         </div>
