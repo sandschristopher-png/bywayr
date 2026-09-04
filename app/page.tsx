@@ -1766,7 +1766,7 @@ export default function Home() {
                   alignItems: 'center', 
                   gap: '4px' 
                 }}
-                title="Open Walking Directions"
+                title="Get Directions"
               >
                 Directions <Navigation2 style={{ width: '11px', height: '11px' }} />
               </button>
@@ -1889,7 +1889,7 @@ export default function Home() {
               onClick={() => openNativeWalkNavigation(activeSearchedSpot.latitude, activeSearchedSpot.longitude, activeSearchedSpot.name)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
             >
-              <Navigation2 style={{ width: '15px', height: '15px' }} /> Open Walking Directions
+              <Navigation2 style={{ width: '15px', height: '15px' }} /> Get Directions
             </button>
 
             <button
@@ -2185,7 +2185,7 @@ export default function Home() {
               onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
             >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Open Walking Directions
+              <Navigation2 style={{ width: '14px', height: '14px' }} /> Get Directions
             </button>
 
             <button
