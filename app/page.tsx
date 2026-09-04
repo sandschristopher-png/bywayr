@@ -1031,7 +1031,6 @@ export default function Home() {
     } else {
       const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
       if (!error) {
-        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
         setVouchedSpotIds((prev) => [...prev, spotId]);
         setVouchCounts((prev) => ({
           ...prev,
@@ -1079,7 +1078,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization - Clean Minimalist CARTO Rasters (Zero API Key friction)
+  // Basemap Initialization - Stadia Maps with API Key Authentication
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1093,37 +1092,38 @@ export default function Home() {
       if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
     } catch {}
 
-    const getCartoStyle = (dark: boolean) => ({
+    const apiKey = '2e0833d1-af3b-42e8-a166-c67424d3a130';
+    const getStadiaStyle = (dark: boolean) => ({
       version: 8 as const,
       sources: {
-        'carto-tiles': {
+        'stadia-tiles': {
           type: 'raster' as const,
           tiles: [
             dark
-              ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-              : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
+              : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
             dark
-              ? 'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-              : 'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
+              : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
           ],
           tileSize: 256,
-          attribution: '© OpenStreetMap contributors, © CARTO',
+          attribution: '© OpenStreetMap contributors, © Stadia Maps',
         },
       },
       layers: [
         {
-          id: 'carto-layer',
+          id: 'stadia-layer',
           type: 'raster' as const,
-          source: 'carto-tiles',
+          source: 'stadia-tiles',
           minzoom: 0,
-          maxzoom: 19,
+          maxzoom: 20,
         },
       ],
     });
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: getCartoStyle(isDarkMode),
+      style: getStadiaStyle(isDarkMode),
       center: initialCenter,
       zoom: initialZoom,
       attributionControl: false,
@@ -1200,37 +1200,38 @@ export default function Home() {
     };
   }, []);
 
-  // Dynamic Day/Night style toggle for CARTO tiles
+  // Dynamic Day/Night style toggle for Stadia Maps
   useEffect(() => {
     if (map.current) {
-      const getCartoStyle = (dark: boolean) => ({
+      const apiKey = '2e0833d1-af3b-42e8-a166-c67424d3a130';
+      const getStadiaStyle = (dark: boolean) => ({
         version: 8 as const,
         sources: {
-          'carto-tiles': {
+          'stadia-tiles': {
             type: 'raster' as const,
             tiles: [
               dark
-                ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-                : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
+                : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
               dark
-                ? 'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-                : 'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
+                : `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png?api_key=${apiKey}`,
             ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors, © CARTO',
+            attribution: '© OpenStreetMap contributors, © Stadia Maps',
           },
         },
         layers: [
           {
-            id: 'carto-layer',
+            id: 'stadia-layer',
             type: 'raster' as const,
-            source: 'carto-tiles',
+            source: 'stadia-tiles',
             minzoom: 0,
-            maxzoom: 19,
+            maxzoom: 20,
           },
         ],
       });
-      map.current.setStyle(getCartoStyle(isDarkMode));
+      map.current.setStyle(getStadiaStyle(isDarkMode));
     }
   }, [isDarkMode]);
 
