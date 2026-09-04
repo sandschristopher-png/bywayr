@@ -1031,6 +1031,7 @@ export default function Home() {
     } else {
       const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
       if (!error) {
+        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
         setVouchedSpotIds((prev) => [...prev, spotId]);
         setVouchCounts((prev) => ({
           ...prev,
@@ -1078,7 +1079,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization - Restored Stable Raster Tile Cartography
+  // Basemap Initialization - Clean Minimalist CARTO Rasters (Zero API Key friction)
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1092,41 +1093,46 @@ export default function Home() {
       if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
     } catch {}
 
+    const getCartoStyle = (dark: boolean) => ({
+      version: 8 as const,
+      sources: {
+        'carto-tiles': {
+          type: 'raster' as const,
+          tiles: [
+            dark
+              ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+              : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            dark
+              ? 'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+              : 'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors, © CARTO',
+        },
+      },
+      layers: [
+        {
+          id: 'carto-layer',
+          type: 'raster' as const,
+          source: 'carto-tiles',
+          minzoom: 0,
+          maxzoom: 19,
+        },
+      ],
+    });
+
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'osm-tiles': {
-            type: 'raster',
-            tiles: [
-              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-layer',
-            type: 'raster',
-            source: 'osm-tiles',
-            minzoom: 0,
-            maxzoom: 19,
-            paint: {
-              'raster-hue-rotate': 18,
-              'raster-saturation': -0.35,
-              'raster-contrast': 0.12,
-              'raster-brightness-max': 0.98,
-            },
-          },
-        ],
-      },
+      style: getCartoStyle(isDarkMode),
       center: initialCenter,
       zoom: initialZoom,
+      attributionControl: false,
     });
+
+    initializedMap.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      'bottom-left'
+    );
 
     initializedMap.on('moveend', () => {
       const center = initializedMap.getCenter();
@@ -1193,6 +1199,40 @@ export default function Home() {
       map.current = null;
     };
   }, []);
+
+  // Dynamic Day/Night style toggle for CARTO tiles
+  useEffect(() => {
+    if (map.current) {
+      const getCartoStyle = (dark: boolean) => ({
+        version: 8 as const,
+        sources: {
+          'carto-tiles': {
+            type: 'raster' as const,
+            tiles: [
+              dark
+                ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              dark
+                ? 'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                : 'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors, © CARTO',
+          },
+        },
+        layers: [
+          {
+            id: 'carto-layer',
+            type: 'raster' as const,
+            source: 'carto-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      });
+      map.current.setStyle(getCartoStyle(isDarkMode));
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     if (!loading && spots.length > 0 && map.current) {
@@ -1850,8 +1890,7 @@ export default function Home() {
           bottom: 0, 
           zIndex: 1,
           backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
-          transition: 'filter 0.3s ease, background-color 0.3s ease',
+          transition: 'background-color 0.3s ease',
         }} 
       />
 
