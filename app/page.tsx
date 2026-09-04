@@ -1131,7 +1131,7 @@ export default function Home() {
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
-            .addTo(initializedMap);
+            .addTo(map.current);
         }
 
         map.current.flyTo({ center: [longitude, latitude], zoom: 16, essential: true });
