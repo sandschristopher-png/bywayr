@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
@@ -124,6 +124,14 @@ const CATEGORIES = [
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
   return match ? match.color : '#e05a47';
+};
+
+const triggerHaptic = (duration = 10) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(duration);
+    } catch {}
+  }
 };
 
 const formatRelativeTime = (dateStr?: string) => {
@@ -425,6 +433,10 @@ export default function Home() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  const [showExitToast, setShowExitToast] = useState(false);
+  const lastBackPressTime = useRef<number>(0);
+  const isPopstateHandling = useRef(false);
+
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
     category: 'Hidden Gems',
@@ -436,6 +448,103 @@ export default function Home() {
     image_url: '',
   });
 
+  const isAnyOverlayActive = !!(
+    isModalOpen ||
+    isDrawerOpen ||
+    viewingSpot ||
+    viewingProfile ||
+    isWalkModalOpen ||
+    shareDialogSpot ||
+    isProfileModalOpen ||
+    isAuthModalOpen ||
+    isClaimUsernameModalOpen ||
+    isDeleteAccountModalOpen ||
+    activeSearchedSpot ||
+    showWelcome
+  );
+
+  const activeOverlayRef = useRef<boolean>(false);
+  useEffect(() => {
+    activeOverlayRef.current = isAnyOverlayActive;
+  }, [isAnyOverlayActive]);
+
+  const pushModalHistoryState = useCallback((sheetKey: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ bywayr_sheet: sheetKey }, '');
+    }
+  }, []);
+
+  const closeTopmostSheet = useCallback(() => {
+    if (isDeleteAccountModalOpen) { setIsDeleteAccountModalOpen(false); return; }
+    if (isClaimUsernameModalOpen) { setIsClaimUsernameModalOpen(false); return; }
+    if (isProfileModalOpen) { setIsProfileModalOpen(false); return; }
+    if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
+    if (shareDialogSpot) { setShareDialogSpot(null); return; }
+    if (isWalkModalOpen) { setIsWalkModalOpen(false); return; }
+    if (viewingProfile) { setViewingProfile(null); return; }
+    if (isModalOpen) { handleCloseModal(); return; }
+    if (viewingSpot) {
+      setViewingSpot(null);
+      if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
+    if (activeSearchedSpot) {
+      setActiveSearchedSpot(null);
+      if (previewMarkerRef.current) previewMarkerRef.current.remove();
+      return;
+    }
+    if (isDrawerOpen) { setIsDrawerOpen(false); return; }
+    if (showWelcome) { handleDismissWelcome(); return; }
+  }, [
+    isDeleteAccountModalOpen,
+    isClaimUsernameModalOpen,
+    isProfileModalOpen,
+    isAuthModalOpen,
+    shareDialogSpot,
+    isWalkModalOpen,
+    viewingProfile,
+    isModalOpen,
+    viewingSpot,
+    activeSearchedSpot,
+    isDrawerOpen,
+    showWelcome,
+  ]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      isPopstateHandling.current = true;
+      if (activeOverlayRef.current) {
+        closeTopmostSheet();
+      } else {
+        const now = Date.now();
+        if (now - lastBackPressTime.current < 2000) {
+          setShowExitToast(false);
+          return;
+        }
+        lastBackPressTime.current = now;
+        setShowExitToast(true);
+        window.history.pushState(null, '', window.location.href);
+        setTimeout(() => {
+          setShowExitToast(false);
+        }, 2000);
+      }
+      setTimeout(() => {
+        isPopstateHandling.current = false;
+      }, 50);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [closeTopmostSheet]);
+
+  const dismissModalWithHistory = (closeFn: () => void) => {
+    triggerHaptic(6);
+    closeFn();
+    if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
+      window.history.back();
+    }
+  };
+
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
@@ -444,8 +553,9 @@ export default function Home() {
     const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
     if (!hasSeenWelcome) {
       setShowWelcome(true);
+      pushModalHistoryState('welcome');
     }
-  }, []);
+  }, [pushModalHistoryState]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
@@ -468,9 +578,11 @@ export default function Home() {
         localStorage.setItem('bywayr_user_profile', JSON.stringify(data));
         if (!data.username) {
           setIsClaimUsernameModalOpen(true);
+          pushModalHistoryState('claimUsername');
         }
       } else if (!data) {
         setIsClaimUsernameModalOpen(true);
+        pushModalHistoryState('claimUsername');
       }
     } catch (err) {
       console.error('Failed to load profile:', err);
@@ -549,6 +661,7 @@ export default function Home() {
   }, [currentUser]);
 
   const handleGoogleSignIn = async () => {
+    triggerHaptic(10);
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
@@ -590,7 +703,10 @@ export default function Home() {
     });
 
     if (error) alert(`Error sending link: ${error.message}`);
-    else setMagicLinkSent(true);
+    else {
+      triggerHaptic(15);
+      setMagicLinkSent(true);
+    }
     setIsSendingMagicLink(false);
   };
 
@@ -629,6 +745,7 @@ export default function Home() {
     if (error) {
       setClaimUsernameError(error.message);
     } else {
+      triggerHaptic(15);
       const updated = { ...userProfile, id: activeUser.id, username: clean };
       setUserProfile(updated);
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
@@ -668,6 +785,7 @@ export default function Home() {
 
       if (profileError) throw profileError;
 
+      triggerHaptic(15);
       const updated = { ...userProfile, id: activeUser.id, avatar_url: publicUrl };
       setUserProfile(updated);
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
@@ -680,6 +798,7 @@ export default function Home() {
   };
 
   const handleSignOut = async () => {
+    triggerHaptic(10);
     await supabase.auth.signOut();
     setCurrentUser(null);
     currentUserRef.current = null;
@@ -746,9 +865,11 @@ export default function Home() {
     const activeUser = currentUserRef.current;
     if (!activeUser) {
       setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
       return;
     }
 
+    triggerHaptic(12);
     setSavingBookmark(true);
     const isBookmarked = mustTrySpotIds.includes(spotId);
 
@@ -767,9 +888,11 @@ export default function Home() {
     const activeUser = currentUserRef.current;
     if (!activeUser) {
       setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
       return;
     }
 
+    triggerHaptic(12);
     setSavingVouch(true);
     const isVouched = vouchedSpotIds.includes(spotId);
 
@@ -796,12 +919,14 @@ export default function Home() {
   };
 
   const handleOpenPublicProfile = (userId: string) => {
+    triggerHaptic(8);
     const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
     const userSpots = spots.filter((s) => s.user_id === userId);
     setViewingProfile(profile);
     setViewingProfileSpots(userSpots);
     setProfileCityFilter('All');
     setViewingSpot(null);
+    pushModalHistoryState('publicProfile');
   };
 
   const handleCategoryMouseDown = (e: React.MouseEvent) => {
@@ -830,7 +955,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization (Standard OpenStreetMap with zero watermarks)
+  // Basemap Initialization
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -920,6 +1045,9 @@ export default function Home() {
 
     initializedMap.on('click', (e) => {
       setShowDropdown(false);
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       const originalTarget = e.originalEvent.target as HTMLElement;
       if (originalTarget?.closest('.maplibregl-marker')) return;
       const lat = parseFloat(e.lngLat.lat.toFixed(6));
@@ -929,6 +1057,9 @@ export default function Home() {
 
     initializedMap.on('dragstart', () => {
       setShowDropdown(false);
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
     });
 
     map.current = initializedMap;
@@ -1052,6 +1183,7 @@ export default function Home() {
   }, [searchQuery]);
 
   const handleSelectSearchResult = (item: any) => {
+    triggerHaptic(8);
     const lat = parseFloat(item.lat);
     const lon = parseFloat(item.lon);
     setShowDropdown(false);
@@ -1067,6 +1199,7 @@ export default function Home() {
       longitude: lon,
     });
     setViewingSpot(null);
+    pushModalHistoryState('activeSearchedSpot');
 
     if (map.current) {
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
@@ -1078,7 +1211,6 @@ export default function Home() {
     }
   };
 
-  // Filtered and sorted newest-first for the sidebar and map
   const filteredSpots = spots
     .filter((spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
@@ -1143,6 +1275,7 @@ export default function Home() {
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        triggerHaptic(8);
         setActiveSearchedSpot(null);
         flyToSpot(spot);
       });
@@ -1156,6 +1289,7 @@ export default function Home() {
   }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
 
   const handleLocateMe = () => {
+    triggerHaptic(8);
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
@@ -1196,6 +1330,7 @@ export default function Home() {
   };
 
   const handleModalLocate = () => {
+    triggerHaptic(8);
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
@@ -1238,6 +1373,7 @@ export default function Home() {
 
   const handleShareSpot = async (spot: Spot) => {
     if (!spot.id) return;
+    triggerHaptic(8);
     const shareUrl = `${window.location.origin}${window.location.pathname}?spot=${spot.id}`;
     const shareText = `Check out ${spot.name} in ${spot.city} on Bywayr!`;
 
@@ -1250,9 +1386,11 @@ export default function Home() {
 
     setShareDialogSpot(spot);
     setShareDialogCopied(false);
+    pushModalHistoryState('share');
   };
 
   const handleCopyCoordinates = async (lat: number, lon: number) => {
+    triggerHaptic(10);
     await navigator.clipboard.writeText(`${lat}, ${lon}`);
     setCoordsCopied(true);
     setTimeout(() => setCoordsCopied(false), 2000);
@@ -1262,10 +1400,12 @@ export default function Home() {
     const activeUser = currentUserRef.current;
     if (!activeUser) {
       setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
       return;
     }
 
     if (!map.current) return;
+    triggerHaptic(8);
     setViewingSpot(null);
     setActiveSearchedSpot(null);
     setIsEditing(false);
@@ -1293,11 +1433,13 @@ export default function Home() {
     setImageFile(null);
     setImagePreview(null);
     setIsModalOpen(true);
+    pushModalHistoryState('addSpotModal');
   };
 
   const handleOpenEditModal = (spot: Spot) => {
     const activeUser = currentUserRef.current;
     if (!activeUser || spot.user_id !== activeUser.id) return;
+    triggerHaptic(8);
     setIsEditing(true);
     setNewSpot(spot);
     setImagePreview(spot.image_url || null);
@@ -1305,6 +1447,7 @@ export default function Home() {
     setViewingSpot(null);
     setActiveSearchedSpot(null);
     setIsModalOpen(true);
+    pushModalHistoryState('editSpotModal');
   };
 
   const handleCloseModal = () => {
@@ -1323,6 +1466,7 @@ export default function Home() {
     if (!spot.id || !activeUser || spot.user_id !== activeUser.id) return;
     if (!confirm(`Are you sure you want to delete "${spot.name}"?`)) return;
 
+    triggerHaptic(15);
     setDeleting(true);
     const { error } = await supabase.from('spots').delete().eq('id', spot.id);
     if (!error) {
@@ -1345,10 +1489,12 @@ export default function Home() {
     const activeUser = currentUserRef.current;
     if (!activeUser) {
       setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
       return;
     }
     if (!newSpot.name || isNaN(newSpot.latitude) || isNaN(newSpot.longitude)) return;
 
+    triggerHaptic(12);
     setSaving(true);
     let uploadedUrl = newSpot.image_url || '';
 
@@ -1386,7 +1532,7 @@ export default function Home() {
         setSpots((prev) => prev.map((s) => (s.id === newSpot.id ? (data[0] as Spot) : s)));
         setViewingSpot(data[0] as Spot);
         setActiveSearchedSpot(null);
-        setIsModalOpen(false);
+        dismissModalWithHistory(() => setIsModalOpen(false));
       }
     } else {
       const { data, error } = await supabase
@@ -1410,7 +1556,7 @@ export default function Home() {
           previewMarkerRef.current = null;
         }
         setSpots((prev) => [data[0] as Spot, ...prev]);
-        setIsModalOpen(false);
+        dismissModalWithHistory(() => setIsModalOpen(false));
         setSearchQuery('');
         setActiveSearchedSpot(null);
         if (map.current) map.current.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 16 });
@@ -1425,6 +1571,7 @@ export default function Home() {
     setViewingSpot(spot);
     setActiveSearchedSpot(null);
     setIsDrawerOpen(false);
+    pushModalHistoryState('viewingSpot');
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
@@ -1493,6 +1640,14 @@ export default function Home() {
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
+        html, body {
+          overscroll-behavior-y: contain;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+        }
+        input, textarea {
+          user-select: text;
+        }
         @keyframes slideUp {
           from { transform: translateY(24px) translateZ(0); opacity: 0; }
           to { transform: translateY(0) translateZ(0); opacity: 1; }
@@ -1550,6 +1705,7 @@ export default function Home() {
           box-shadow: 0 4px 12px rgba(28, 25, 23, 0.08);
         }
         button, a {
+          touch-action: manipulation;
           transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease, box-shadow 0.15s ease;
         }
         button:active, a:active {
@@ -1557,7 +1713,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. Map Canvas with Clean Zero-API-Key OSM Styling */}
+      {/* 1. Map Canvas */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -1574,7 +1730,7 @@ export default function Home() {
       />
 
       {/* 2. Top Header & Search Bar */}
-      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', top: 'calc(16px + env(safe-area-inset-top, 0px))', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -1591,7 +1747,11 @@ export default function Home() {
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
             {currentUser ? (
               <button 
-                onClick={() => setIsProfileModalOpen(true)} 
+                onClick={() => {
+                  triggerHaptic(8);
+                  setIsProfileModalOpen(true);
+                  pushModalHistoryState('profile');
+                }} 
                 style={{ 
                   backgroundColor: '#f5f5f4', 
                   border: '1px solid #d6d3d1', 
@@ -1621,18 +1781,20 @@ export default function Home() {
                 </span>
               </button>
             ) : (
-              <button onClick={() => { setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '12px', padding: '7px 11px', color: '#fafaf9', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <button onClick={() => { triggerHaptic(8); setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); pushModalHistoryState('auth'); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '12px', padding: '7px 11px', color: '#fafaf9', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
               </button>
             )}
 
-            <button onClick={() => setIsDrawerOpen(true)} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <List style={{ width: '15px', height: '15px' }} />
             </button>
             <button
               onClick={() => {
+                triggerHaptic(8);
                 if (!currentUserRef.current) {
                   setIsAuthModalOpen(true);
+                  pushModalHistoryState('auth');
                   return;
                 }
                 const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
@@ -1740,7 +1902,10 @@ export default function Home() {
         >
           {currentUser && (
             <button
-              onClick={() => setOnlyMySpots(!onlyMySpots)}
+              onClick={() => {
+                triggerHaptic(6);
+                setOnlyMySpots(!onlyMySpots);
+              }}
               style={{
                 backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.88)',
                 backdropFilter: 'blur(12px)',
@@ -1771,7 +1936,10 @@ export default function Home() {
             return (
               <button
                 key={cat.label}
-                onClick={() => setSelectedCategory(cat.label)}
+                onClick={() => {
+                  triggerHaptic(6);
+                  setSelectedCategory(cat.label);
+                }}
                 style={{ 
                   backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.88)', 
                   backdropFilter: 'blur(12px)',
@@ -1827,7 +1995,7 @@ export default function Home() {
                   borderRadius: '10px', 
                   padding: '5px 10px', 
                   fontSize: '11.5px', 
-                  fontWeight: 600,
+                  fontWeight: 600, 
                   cursor: 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -1849,11 +2017,11 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay Positioned Cleanly Under Header Stack */}
+      {/* Empty State Overlay */}
       {filteredSpots.length === 0 && !loading && (
         <div style={{ 
           position: 'fixed', 
-          top: `${(selectedCategory !== 'All' ? 215 : 170) + (walkTargetSpot ? 50 : 0)}px`, 
+          top: `calc(${((selectedCategory !== 'All' ? 215 : 170) + (walkTargetSpot ? 50 : 0))}px + env(safe-area-inset-top, 0px))`, 
           left: '16px', 
           right: '16px', 
           maxWidth: '440px', 
@@ -1866,6 +2034,7 @@ export default function Home() {
             onAddSpot={() => {
               if (!currentUserRef.current) {
                 setIsAuthModalOpen(true);
+                pushModalHistoryState('auth');
                 return;
               }
               const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
@@ -1875,14 +2044,18 @@ export default function Home() {
         </div>
       )}
 
-      {/* 3. Floating Map Controls (Brand Styled in #e05a47) */}
+      {/* 3. Floating Map Controls */}
       <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
 
         <button
-          onClick={() => setIsWalkModalOpen(true)}
+          onClick={() => {
+            triggerHaptic(8);
+            setIsWalkModalOpen(true);
+            pushModalHistoryState('walkModal');
+          }}
           style={{
             width: '46px',
             height: '46px',
@@ -1919,7 +2092,10 @@ export default function Home() {
           }}
         >
           <button
-            onClick={() => setIsDarkMode(false)}
+            onClick={() => {
+              triggerHaptic(6);
+              setIsDarkMode(false);
+            }}
             style={{
               width: '40px',
               height: '40px',
@@ -1938,7 +2114,10 @@ export default function Home() {
             <Sun style={{ width: '18px', height: '18px' }} />
           </button>
           <button
-            onClick={() => setIsDarkMode(true)}
+            onClick={() => {
+              triggerHaptic(6);
+              setIsDarkMode(true);
+            }}
             style={{
               width: '40px',
               height: '40px',
@@ -1979,7 +2158,7 @@ export default function Home() {
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{activeSearchedSpot.city}</p>
             </div>
-            <button onClick={() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
+            <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
               <X style={{ width: '19px', height: '19px' }} />
             </button>
           </div>
@@ -1996,6 +2175,7 @@ export default function Home() {
               onClick={() => {
                 if (!currentUserRef.current) {
                   setIsAuthModalOpen(true);
+                  pushModalHistoryState('auth');
                   return;
                 }
                 dropPreviewAndOpenModal(activeSearchedSpot.latitude, activeSearchedSpot.longitude, activeSearchedSpot.name);
@@ -2008,7 +2188,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Proximity Walk Modal with Live Search & Two-Tier Results */}
+      {/* Proximity Walk Modal with Live Search */}
       {isWalkModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative' }}>
@@ -2022,7 +2202,7 @@ export default function Home() {
                   <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Choose a curated spot or search any destination</p>
                 </div>
               </div>
-              <button onClick={() => { setIsWalkModalOpen(false); setWalkSearchQuery(''); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <button onClick={() => dismissModalWithHistory(() => { setIsWalkModalOpen(false); setWalkSearchQuery(''); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
                 <X style={{ width: '19px', height: '19px' }} />
               </button>
             </div>
@@ -2090,9 +2270,12 @@ export default function Home() {
                         <div
                           key={spot.id || spot.name}
                           onClick={() => {
+                            triggerHaptic(8);
                             setWalkTargetSpot(spot);
-                            setIsWalkModalOpen(false);
-                            setWalkSearchQuery('');
+                            dismissModalWithHistory(() => {
+                              setIsWalkModalOpen(false);
+                              setWalkSearchQuery('');
+                            });
                             flyToSpot(spot);
                           }}
                           style={{
@@ -2125,7 +2308,7 @@ export default function Home() {
                 );
               })()}
 
-              {/* SECTION 2: Live Map Search Results */}
+              {/* Live Map Search Results */}
               {walkSearchQuery.trim().length >= 2 && (
                 <>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '8px 4px 2px 4px', borderTop: '1px dashed #e7e5e4', marginTop: '4px' }}>
@@ -2141,9 +2324,12 @@ export default function Home() {
                       <div
                         key={`osm-${idx}`}
                         onClick={() => {
+                          triggerHaptic(8);
                           setWalkTargetSpot(spot);
-                          setIsWalkModalOpen(false);
-                          setWalkSearchQuery('');
+                          dismissModalWithHistory(() => {
+                            setIsWalkModalOpen(false);
+                            setWalkSearchQuery('');
+                          });
                           if (spot.latitude && spot.longitude && map.current) {
                             map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
                           }
@@ -2182,9 +2368,12 @@ export default function Home() {
             {walkTargetSpot && (
               <button
                 onClick={() => {
+                  triggerHaptic(8);
                   setWalkTargetSpot(null);
-                  setIsWalkModalOpen(false);
-                  setWalkSearchQuery('');
+                  dismissModalWithHistory(() => {
+                    setIsWalkModalOpen(false);
+                    setWalkSearchQuery('');
+                  });
                 }}
                 style={{
                   marginTop: '10px',
@@ -2271,7 +2460,7 @@ export default function Home() {
                   </button>
                 </>
               )}
-              <button onClick={() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
+              <button onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
                 <X style={{ width: '19px', height: '19px' }} />
               </button>
             </div>
@@ -2318,12 +2507,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Enhanced Public Passport Profile Blurred Overlay Modal */}
+      {/* 5. Public Passport Profile Modal */}
       {viewingProfile && (() => {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
         const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
         
-        // Auto-detect curator country from their spots if profile.country is empty
         const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'Philippines');
 
         const filteredProfileSpots = profileCityFilter === 'All' 
@@ -2333,11 +2521,11 @@ export default function Home() {
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
             <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-              <button onClick={() => setViewingProfile(null)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
 
-              {/* Curator Info & Clean Text Country Badge */}
+              {/* Curator Info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px' }}>
                 <div style={{ width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
                   {viewingProfile.avatar_url ? (
@@ -2389,11 +2577,14 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Travel Footprint / City Filter Pills */}
+              {/* City Filter Pills */}
               {uniqueCities.length > 1 && (
                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
                   <button
-                    onClick={() => setProfileCityFilter('All')}
+                    onClick={() => {
+                      triggerHaptic(6);
+                      setProfileCityFilter('All');
+                    }}
                     style={{
                       backgroundColor: profileCityFilter === 'All' ? '#1c1917' : '#f5f5f4',
                       color: profileCityFilter === 'All' ? '#fafaf9' : '#57534e',
@@ -2411,7 +2602,10 @@ export default function Home() {
                   {uniqueCities.map((city) => (
                     <button
                       key={city}
-                      onClick={() => setProfileCityFilter(city)}
+                      onClick={() => {
+                        triggerHaptic(6);
+                        setProfileCityFilter(city);
+                      }}
                       style={{
                         backgroundColor: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#1c1917' : '#f5f5f4',
                         color: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#fafaf9' : '#57534e',
@@ -2434,7 +2628,7 @@ export default function Home() {
                 Curated Field Notes
               </div>
 
-              {/* Spot Cards with Thumbnails & Timestamps */}
+              {/* Spot Cards */}
               <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
                 {filteredProfileSpots.length === 0 ? (
                   <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
@@ -2468,7 +2662,8 @@ export default function Home() {
 
                       <button
                         onClick={() => {
-                          setViewingProfile(null);
+                          triggerHaptic(8);
+                          dismissModalWithHistory(() => setViewingProfile(null));
                           flyToSpot(s);
                         }}
                         style={{
@@ -2502,7 +2697,7 @@ export default function Home() {
       {shareDialogSpot && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
-            <button onClick={() => setShareDialogSpot(null)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+            <button onClick={() => dismissModalWithHistory(() => setShareDialogSpot(null))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Share Spot</h3>
@@ -2558,6 +2753,7 @@ export default function Home() {
 
             <button
               onClick={async () => {
+                triggerHaptic(10);
                 const url = `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`;
                 await navigator.clipboard.writeText(url);
                 setShareDialogCopied(true);
@@ -2586,27 +2782,31 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer - Clean Minimalist Field Notes List */}
+      {/* Slide-Out Drawer */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
-              <button onClick={() => setIsDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
+              <button onClick={() => dismissModalWithHistory(() => setIsDrawerOpen(false))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', marginBottom: '16px' }}>
-              <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
-              <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+              <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
+              <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '8px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
             </div>
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin' }}>
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
               {displayedDrawerSpots.map((spot) => {
                 const color = getCategoryColor(spot.category);
                 return (
                   <div
                     key={spot.id || spot.name}
-                    onClick={() => flyToSpot(spot)}
+                    onClick={() => {
+                      triggerHaptic(8);
+                      dismissModalWithHistory(() => setIsDrawerOpen(false));
+                      flyToSpot(spot);
+                    }}
                     className="spot-card-hover"
                     style={{
                       padding: '12px 14px',
@@ -2667,7 +2867,7 @@ export default function Home() {
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative' }}>
-            <button onClick={() => setIsProfileModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+            <button onClick={() => dismissModalWithHistory(() => setIsProfileModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
 
@@ -2688,7 +2888,7 @@ export default function Home() {
 
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
                 {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
-                <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                   <Pencil style={{ width: '13px', height: '13px' }} />
                 </button>
               </h3>
@@ -2723,7 +2923,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div onClick={() => setOnlyMySpots(!onlyMySpots)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
+            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
@@ -2735,11 +2935,12 @@ export default function Home() {
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
 
-            {/* Subtle Delete Account Action Link */}
             <button
               onClick={() => {
+                triggerHaptic(8);
                 setDeleteConfirmText('');
                 setIsDeleteAccountModalOpen(true);
+                pushModalHistoryState('deleteAccount');
               }}
               style={{
                 marginTop: '12px',
@@ -2815,7 +3016,7 @@ export default function Home() {
               </button>
 
               <button
-                onClick={() => setIsDeleteAccountModalOpen(false)}
+                onClick={() => dismissModalWithHistory(() => setIsDeleteAccountModalOpen(false))}
                 disabled={isDeletingAccount}
                 style={{
                   width: '100%',
@@ -2883,7 +3084,7 @@ export default function Home() {
       {isAuthModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
-            <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+            <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <div style={{ width: '52px', height: '52px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -2962,7 +3163,7 @@ export default function Home() {
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button onClick={handleCloseModal} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+            <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
             <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px', letterSpacing: '-0.02em' }}>
@@ -3108,12 +3309,38 @@ export default function Home() {
             </div>
 
             <button
-              onClick={handleDismissWelcome}
+              onClick={() => dismissModalWithHistory(handleDismissWelcome)}
               style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.22)' }}
             >
               Open the Field Guide
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Exit App Confirmation Toast */}
+      {showExitToast && (
+        <div
+          className="animate-fade-in"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(28, 25, 23, 0.92)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            color: '#fafaf9',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: 600,
+            zIndex: 100010,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+            pointerEvents: 'none',
+          }}
+        >
+          Press back again to exit Bywayr
         </div>
       )}
 
