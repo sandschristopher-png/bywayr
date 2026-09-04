@@ -58,6 +58,7 @@ import {
   Ticket,
   Wifi,
   Plane,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface Spot {
@@ -289,6 +290,10 @@ export default function Home() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
@@ -637,6 +642,32 @@ export default function Home() {
     setIsClaimUsernameModalOpen(false);
   };
 
+  const handleDeleteAccount = async () => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
+
+    setIsDeletingAccount(true);
+    try {
+      await supabase.from('bookmarks').delete().eq('user_id', activeUser.id);
+      await supabase.from('vouches').delete().eq('user_id', activeUser.id);
+      await supabase.from('profiles').delete().eq('id', activeUser.id);
+      await supabase.rpc('delete_user');
+    } catch (err) {
+      console.error('Account deletion cleanup error:', err);
+    } finally {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      currentUserRef.current = null;
+      setUserProfile(null);
+      setMustTrySpotIds([]);
+      setVouchedSpotIds([]);
+      localStorage.removeItem('bywayr_user_profile');
+      setIsDeleteAccountModalOpen(false);
+      setIsProfileModalOpen(false);
+      setIsDeletingAccount(false);
+    }
+  };
+
   const fetchSpots = async () => {
     try {
       const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
@@ -749,7 +780,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization (Standard OpenStreetMap with clean palette & no API keys)
+  // Basemap Initialization (Standard OpenStreetMap with zero watermarks)
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1100,7 +1131,7 @@ export default function Home() {
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
-            .addTo(map.current);
+            .addTo(initializedMap);
         }
 
         map.current.flyTo({ center: [longitude, latitude], zoom: 16, essential: true });
@@ -1474,7 +1505,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. Map Canvas with Clean Zero-API-Key Styling */}
+      {/* 1. Map Canvas with Clean Zero-API-Key OSM Styling */}
       <div 
         ref={mapContainer} 
         style={{ 
@@ -2648,6 +2679,103 @@ export default function Home() {
             <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
+
+            {/* Subtle Delete Account Action Link */}
+            <button
+              onClick={() => {
+                setDeleteConfirmText('');
+                setIsDeleteAccountModalOpen(true);
+              }}
+              style={{
+                marginTop: '12px',
+                background: 'none',
+                border: 'none',
+                color: '#a8a29e',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textAlign: 'center',
+                width: '100%',
+                padding: '4px',
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#e05a47')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#a8a29e')}
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Verification Dialog */}
+      {isDeleteAccountModalOpen && currentUser && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+              <AlertTriangle style={{ width: '24px', height: '24px' }} />
+            </div>
+
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Delete Account</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#78716c', lineHeight: 1.45 }}>
+              This will permanently delete your profile, handle, and bookmarks. Your public spots will remain anonymously as community field notes.
+            </p>
+
+            <div style={{ marginBottom: '14px', textAlign: 'left' }}>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: '#57534e', display: 'block', marginBottom: '5px' }}>
+                Type <span style={{ color: '#e05a47' }}>DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                autoFocus
+                placeholder="DELETE"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', textAlign: 'center', letterSpacing: '0.05em', fontWeight: 700 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE' || isDeletingAccount}
+                style={{
+                  width: '100%',
+                  backgroundColor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#e05a47' : '#f5f5f4',
+                  color: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#ffffff' : '#a8a29e',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  padding: '12px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  cursor: deleteConfirmText.trim().toUpperCase() === 'DELETE' && !isDeletingAccount ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '0 4px 12px rgba(224, 90, 71, 0.25)' : 'none',
+                }}
+              >
+                {isDeletingAccount ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Permanently Delete Account'}
+              </button>
+
+              <button
+                onClick={() => setIsDeleteAccountModalOpen(false)}
+                disabled={isDeletingAccount}
+                style={{
+                  width: '100%',
+                  backgroundColor: 'transparent',
+                  color: '#78716c',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  padding: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
