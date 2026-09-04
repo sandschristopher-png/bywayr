@@ -995,14 +995,9 @@ export default function Home() {
       'bottom-left'
     );
 
-    initializedMap.on('moveend', () => {
-      const center = initializedMap.getCenter();
-      const zoom = initializedMap.getZoom();
-      localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
-      localStorage.setItem('bywayr_map_zoom', zoom.toString());
-    });
-
     initializedMap.on('load', () => {
+      initializedMap.resize();
+
       const hasSavedPosition = localStorage.getItem('bywayr_map_center');
       if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
         navigator.geolocation.getCurrentPosition(
@@ -3335,7 +3330,7 @@ export default function Home() {
       )}
 
       {/* PWA Web Install Banner */}
-      <PwaInstallBanner />
+      <PwaInstallBounder />
     </div>
   );
 }
