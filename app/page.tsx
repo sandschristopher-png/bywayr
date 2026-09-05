@@ -490,6 +490,7 @@ export default function Home() {
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id));
   const mySpotsCount = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id).length : 0;
   const myCitiesCount = currentUser ? new Set(spots.filter((s: Spot) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
+  const myCountriesCount = currentUser ? new Set(spots.filter((s: Spot) => s.user_id === currentUser.id).map((s) => (s.country || '').trim()).filter(Boolean)).size : 0;
   
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
@@ -3064,7 +3065,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Public Passport Profile Modal */}
+      {/* 5. Public/User Profile Modal with Passport Stamps */}
       {viewingProfile && (() => {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
         const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
@@ -3567,16 +3568,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bywayr Plus Coming Soon Section */}
+            {/* Passport Stamps Section in Account Profile */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Crown style={{ width: '15px', height: '15px', color: '#d97706' }} /> Bywayr Plus
+                  <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
                 </span>
-                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>Coming soon</span>
+                <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{myCountriesCount || (mySpotsCount > 0 ? 1 : 0)} Countries</span>
               </div>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
-                Unlock custom categories, custom icons, and JSON/GPX backups via Google Play & App Store billing.
+                Track your global footprint across unique cities and unmapped field notes.
               </p>
             </div>
 
