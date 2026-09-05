@@ -644,7 +644,7 @@ export default function Home() {
     setTimeout(() => {
       setIsDrawerOpen(false);
       setIsDrawerClosing(false);
-    }, 280);
+    }, 320);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
       window.history.back();
     }
@@ -657,7 +657,7 @@ export default function Home() {
     setTimeout(() => {
       setIsProfileModalOpen(false);
       setIsProfileClosing(false);
-    }, 280);
+    }, 320);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
       window.history.back();
     }
@@ -2062,21 +2062,23 @@ export default function Home() {
           from { transform: translateY(24px) translateZ(0); opacity: 0; }
           to { transform: translateY(0) translateZ(0); opacity: 1; }
         }
-        @keyframes slideInLeft {
-          from { transform: translateX(-100%) translateZ(0); opacity: 0; }
-          to { transform: translateX(0) translateZ(0); opacity: 1; }
+        @keyframes drawerInLeft {
+          0% { transform: translateX(-100%) translateZ(0); opacity: 0.5; }
+          60% { transform: translateX(12px) translateZ(0); opacity: 1; }
+          100% { transform: translateX(0) translateZ(0); opacity: 1; }
         }
-        @keyframes slideOutLeft {
-          from { transform: translateX(0) translateZ(0); opacity: 1; }
-          to { transform: translateX(-100%) translateZ(0); opacity: 0; }
+        @keyframes drawerOutLeft {
+          0% { transform: translateX(0) translateZ(0); opacity: 1; }
+          100% { transform: translateX(-100%) translateZ(0); opacity: 0; }
         }
-        @keyframes slideInRight {
-          from { transform: translateX(100%) translateZ(0); opacity: 0; }
-          to { transform: translateX(0) translateZ(0); opacity: 1; }
+        @keyframes drawerInRight {
+          0% { transform: translateX(100%) translateZ(0); opacity: 0.5; }
+          60% { transform: translateX(-12px) translateZ(0); opacity: 1; }
+          100% { transform: translateX(0) translateZ(0); opacity: 1; }
         }
-        @keyframes slideOutRight {
-          from { transform: translateX(0) translateZ(0); opacity: 1; }
-          to { transform: translateX(100%) translateZ(0); opacity: 0; }
+        @keyframes drawerOutRight {
+          0% { transform: translateX(0) translateZ(0); opacity: 1; }
+          100% { transform: translateX(100%) translateZ(0); opacity: 0; }
         }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateZ(0); }
@@ -2087,8 +2089,9 @@ export default function Home() {
           to { opacity: 0; }
         }
         @keyframes scaleUp {
-          from { transform: scale(0.85) translateZ(0); opacity: 0; }
-          to { transform: scale(1) translateZ(0); opacity: 1; }
+          0% { transform: scale(0.8) translateZ(0); opacity: 0; }
+          70% { transform: scale(1.03) translateZ(0); opacity: 1; }
+          100% { transform: scale(1) translateZ(0); opacity: 1; }
         }
         @keyframes gpsRadarPulse {
           0% {
@@ -2105,29 +2108,31 @@ export default function Home() {
           flex-shrink: 0;
           cursor: pointer;
           user-select: none;
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease;
+          transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease;
         }
         .passport-stamp-card:hover {
-          transform: translateY(-3px) scale(1.03);
-          box-shadow: 0 6px 18px rgba(28, 25, 23, 0.1);
+          transform: translateY(-4px) scale(1.04);
+          box-shadow: 0 8px 22px rgba(28, 25, 23, 0.12);
         }
         .passport-stamp-card:active {
-          transform: scale(0.96);
+          transform: scale(0.92) rotate(-0.5deg);
+          box-shadow: 0 2px 6px rgba(28, 25, 23, 0.15);
+          filter: contrast(105%);
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .animate-slide-up {
-          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: slideUp 0.35s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
           will-change: transform, opacity;
           backface-visibility: hidden;
         }
         .animate-fade-in {
-          animation: fadeIn 0.2s ease-out forwards;
+          animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           will-change: opacity;
         }
         .animate-scale-up {
-          animation: scaleUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          animation: scaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
           will-change: transform, opacity;
           backface-visibility: hidden;
         }
@@ -3727,7 +3732,7 @@ export default function Home() {
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-start',
-            animation: isDrawerClosing ? 'fadeOut 0.3s ease-out forwards' : 'fadeIn 0.2s ease-out forwards'
+            animation: isDrawerClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
         >
           <div 
@@ -3741,7 +3746,7 @@ export default function Home() {
               flexDirection: 'column', 
               padding: '20px', 
               boxSizing: 'border-box',
-              animation: isDrawerClosing ? 'slideOutLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+              animation: isDrawerClosing ? 'drawerOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInLeft 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
@@ -3890,7 +3895,7 @@ export default function Home() {
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-end',
-            animation: isProfileClosing ? 'fadeOut 0.3s ease-out forwards' : 'fadeIn 0.2s ease-out forwards'
+            animation: isProfileClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
         >
           <div 
@@ -3905,7 +3910,7 @@ export default function Home() {
               padding: '24px', 
               boxSizing: 'border-box',
               overflowY: 'auto',
-              animation: isProfileClosing ? 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+              animation: isProfileClosing ? 'drawerOutRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInRight 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
