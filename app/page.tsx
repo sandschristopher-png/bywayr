@@ -3059,7 +3059,7 @@ export default function Home() {
           >
             
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingTop: 'env(safe-area-inset-top, 0px)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
@@ -3174,7 +3174,7 @@ export default function Home() {
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>Flight Search — Aviasales</span>
+                    <span>Flight Search | Aviasales</span>
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
@@ -3185,7 +3185,7 @@ export default function Home() {
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     </div>
-                    <span>Tours, Hotels & Tickets — Klook</span>
+                    <span>Tickets & Hotels | Klook</span>
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
@@ -3196,7 +3196,7 @@ export default function Home() {
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>eSIM Data — Yesim</span>
+                    <span>eSIM Data | Yesim</span>
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
