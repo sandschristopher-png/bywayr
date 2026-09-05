@@ -3929,6 +3929,16 @@ export default function Home() {
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
+
+                <a href="https://kkday.tpk.lv/s21IbWWp" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/kkday.svg" alt="KKDay" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                    </div>
+                    <span>Tours & Activities | KKDay</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
               </div>
             </div>
           </div>
