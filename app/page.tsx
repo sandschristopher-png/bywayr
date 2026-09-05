@@ -5,6 +5,7 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
+import { EmptyState } from './src/main/components/EmptyState';
 import { PwaInstallBanner } from './src/main/components/PwaInstallBanner';
 import {
   MapPin,
@@ -2272,7 +2273,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Popup (Cleaned up: No bulky outer frame, single integrated X button) */}
+      {/* Empty State Popup */}
       {filteredSpots.length === 0 && !loading && (
         <div 
           className="animate-fade-in" 
@@ -2957,37 +2958,38 @@ export default function Home() {
         </div>
       )}
 
-      {/* Add / Edit Spot Modal (`isModalOpen`) */}
+      {/* Add / Edit Spot Modal (`isModalOpen` — Compact & Streamlined) */}
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '420px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto' }}>
-            <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X style={{ width: '18px', height: '18px' }} />
-            </button>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                {isEditing ? 'Edit Curated Spot' : 'Add Curated Spot'}
+              </h3>
+              <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: '0' }}>
+                <X style={{ width: '16px', height: '16px' }} />
+              </button>
+            </div>
 
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
-              {isEditing ? 'Edit Curated Spot' : 'Add Curated Spot'}
-            </h3>
-
-            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Spot Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. ÔDELICE"
                   value={newSpot.name}
                   onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Category</label>
                 <select
                   value={newSpot.category}
                   onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', backgroundColor: '#ffffff', color: '#1c1917' }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', backgroundColor: '#ffffff', color: '#1c1917' }}
                 >
                   {CATEGORIES.filter((c) => c.label !== 'All').map((cat) => (
                     <option key={cat.label} value={cat.label}>{cat.label}</option>
@@ -2997,55 +2999,55 @@ export default function Home() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>City</label>
                   <input
                     type="text"
                     required
                     placeholder="City"
                     value={newSpot.city}
                     onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Country</label>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country</label>
                   <input
                     type="text"
                     placeholder="Country"
                     value={newSpot.country || ''}
                     onChange={(e) => setNewSpot({ ...newSpot, country: e.target.value })}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Description / Field Notes</label>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Description / Field Notes</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Share a tip or description..."
                   value={newSpot.description}
                   onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917', resize: 'vertical' }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917', resize: 'vertical' }}
                 />
               </div>
 
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>Photo</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e' }}>Photo</label>
                   <button type="button" onClick={handleModalLocate} disabled={isModalLocating} style={{ background: 'none', border: 'none', color: '#e05a47', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
                     {isModalLocating ? <Loader2 style={{ width: '11px', height: '11px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '11px', height: '11px' }} />}
                     Use Current GPS
                   </button>
                 </div>
                 
-                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', backgroundColor: '#f5f5f4', border: '1px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', fontSize: '12px', color: '#57534e', fontWeight: 600 }}>
-                  <Camera style={{ width: '16px', height: '16px', color: '#e05a47' }} />
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', backgroundColor: '#f5f5f4', border: '1px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', fontSize: '11.5px', color: '#57534e', fontWeight: 600 }}>
+                  <Camera style={{ width: '15px', height: '15px', color: '#e05a47' }} />
                   <span>{imageFile ? imageFile.name : imagePreview ? 'Change Photo' : 'Upload Photo'}</span>
                   <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
                 </label>
                 {imagePreview && (
-                  <div style={{ marginTop: '8px', width: '100%', height: '120px', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ marginTop: '6px', width: '100%', height: '90px', borderRadius: '10px', overflow: 'hidden' }}>
                     <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 )}
@@ -3055,14 +3057,14 @@ export default function Home() {
                 type="submit"
                 disabled={saving || uploadingImage}
                 style={{
-                  marginTop: '8px',
+                  marginTop: '4px',
                   width: '100%',
                   backgroundColor: '#e05a47',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '14px',
-                  padding: '12px',
-                  fontSize: '13px',
+                  padding: '11px',
+                  fontSize: '12.5px',
                   fontWeight: 700,
                   cursor: saving || uploadingImage ? 'not-allowed' : 'pointer',
                   display: 'flex',
@@ -3072,7 +3074,7 @@ export default function Home() {
                   boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)'
                 }}
               >
-                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Publish Curated Spot')}
+                {saving || uploadingImage ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Publish Curated Spot')}
               </button>
             </form>
           </div>
@@ -3768,52 +3770,44 @@ export default function Home() {
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
             </div>
 
-            {magicLinkSent ? (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-                <CheckCircle2 style={{ color: '#16a34a', width: '24px', height: '24px', margin: '0 auto 5px auto' }} />
-                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 600, color: '#15803d' }}>Magic Link Sent!</p>
-                <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: '#166534' }}>Check your inbox for <strong>{authEmail}</strong> to sign in.</p>
+            <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
+                <input
+                  type="text"
+                  maxLength={20}
+                  placeholder="e.g. explorer_ph"
+                  value={authUsername}
+                  onChange={(e) => {
+                    const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    setAuthUsername(clean);
+                    if (clean.length > 0 && clean.length < 3) {
+                      setAuthUsernameError('Must be at least 3 characters');
+                    } else {
+                      setAuthUsernameError('');
+                    }
+                  }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                />
+                {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
               </div>
-            ) : (
-              <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
-                  <input
-                    type="text"
-                    maxLength={20}
-                    placeholder="e.g. explorer_ph"
-                    value={authUsername}
-                    onChange={(e) => {
-                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                      setAuthUsername(clean);
-                      if (clean.length > 0 && clean.length < 3) {
-                        setAuthUsernameError('Must be at least 3 characters');
-                      } else {
-                        setAuthUsernameError('');
-                      }
-                    }}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
-                  />
-                  {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
-                </div>
 
-                <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="Enter your email"
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
-                  />
-                </div>
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
 
-                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                  {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
-                </button>
-              </form>
-            )}
+              <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
+              </button>
+            </form>
           </div>
         </div>
       )}
