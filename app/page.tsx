@@ -66,7 +66,6 @@ import {
   Zap,
   BookOpen,
   Cpu,
-  Download,
   MessageSquare,
   WifiOff,
   GlassWater,
@@ -1150,51 +1149,6 @@ export default function Home() {
         }
       }
     }
-  };
-
-  const handleExportData = (format: 'json' | 'gpx') => {
-    triggerHaptic(12);
-    const targetSpots = drawerTab === 'mustTry' ? spots.filter(s => mustTrySpotIds.includes(s.id!)) : spots;
-    
-    if (format === 'json') {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(targetSpots, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    } else {
-      let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Bywayr">\n`;
-      targetSpots.forEach(s => {
-        gpx += `  <wpt lat="${s.latitude}" lon="${s.longitude}">\n`;
-        gpx += `    <name>${escapeXml(s.name)}</name>\n`;
-        gpx += `    <desc>${escapeXml(s.description || s.category)}</desc>\n`;
-        gpx += `  </wpt>\n`;
-      });
-      gpx += `</gpx>`;
-
-      const dataStr = "data:text/gpx+xml;charset=utf-8," + encodeURIComponent(gpx);
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.gpx`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-  };
-
-  const escapeXml = (str: string) => {
-    return str.replace(/[<>&'"]/g, (c) => {
-      switch (c) {
-        case '<': return '&lt;';
-        case '>': return '&gt;';
-        case '&': return '&amp;';
-        case '\'': return '&apos;';
-        case '"': return '&quot;';
-        default: return c;
-      }
-    });
   };
 
   const fetchUserProfile = async (userId: string) => {
@@ -3182,19 +3136,12 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tabs & Offline Export Actions */}
+            {/* Tabs (Export buttons removed for future Bywayr Plus release) */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
                 <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
                 <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
               </div>
-              <button
-                onClick={() => handleExportData('json')}
-                style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '0 10px', color: '#44403c', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
-                title="Export as JSON or GPX for offline maps"
-              >
-                <Download style={{ width: '13px', height: '13px' }} /> Export
-              </button>
             </div>
             
             {/* Scrollable Spot List with Distance Badges */}
@@ -3370,22 +3317,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Offline Export Actions in Profile Modal */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
-              <button
-                onClick={() => handleExportData('json')}
-                style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', color: '#1c1917', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <Download style={{ width: '14px', height: '14px' }} /> Export JSON
-              </button>
-              <button
-                onClick={() => handleExportData('gpx')}
-                style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', color: '#1c1917', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <Download style={{ width: '14px', height: '14px' }} /> Export GPX
-              </button>
-            </div>
-
             {/* Bywayr Plus Coming Soon Section */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3395,7 +3326,7 @@ export default function Home() {
                 <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>Coming soon</span>
               </div>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
-                Unlock custom categories, custom icons, and JSON backups via Google Play & App Store billing.
+                Unlock custom categories, custom icons, and JSON/GPX backups via Google Play & App Store billing.
               </p>
             </div>
 
@@ -3817,6 +3748,7 @@ export default function Home() {
             zIndex: 100010,
             boxShadow: '0 8px 24px rgba(224, 90, 71, 0.35)',
             pointerEvents: 'none',
+            imageRendering: 'pixelated',
           }}
         >
           Press back again to exit Bywayr
