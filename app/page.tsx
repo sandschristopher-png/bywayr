@@ -819,11 +819,11 @@ export default function Home() {
           userLocationMarkerRef.current.setLngLat([longitude, latitude]);
         } else {
           const el = document.createElement('div');
-          el.style.width = '16px';
-          el.style.height = '16px';
+          el.style.width = '18px';
+          el.style.height = '18px';
           el.style.borderRadius = '50%';
           el.style.backgroundColor = '#e05a47';
-          el.style.border = '3px solid #ffffff';
+          el.style.border = '3.5px solid #ffffff';
           el.style.boxShadow = '0 0 0 0 rgba(224, 90, 71, 0.75)';
           el.className = 'user-location-pulse';
 
@@ -1545,11 +1545,11 @@ export default function Home() {
               userLocationMarkerRef.current.setLngLat([longitude, latitude]);
             } else {
               const el = document.createElement('div');
-              el.style.width = '16px';
-              el.style.height = '16px';
+              el.style.width = '18px';
+              el.style.height = '18px';
               el.style.borderRadius = '50%';
               el.style.backgroundColor = '#e05a47';
-              el.style.border = '3px solid #ffffff';
+              el.style.border = '3.5px solid #ffffff';
               el.style.boxShadow = '0 0 0 0 rgba(224, 90, 71, 0.75)';
               el.className = 'user-location-pulse';
 
@@ -1724,16 +1724,16 @@ export default function Home() {
       const color = getCategoryColor(spot.category);
 
       const el = document.createElement('div');
-      el.style.width = '32px';
-      el.style.height = '32px';
+      el.style.width = '36px';
+      el.style.height = '36px';
       el.style.borderRadius = '50%';
       el.style.backgroundColor = isWalkTarget ? '#e05a47' : '#ffffff';
       el.style.border = isMustTry
-        ? '3px solid #d97706'
+        ? '3.5px solid #d97706'
         : isWalkTarget
-        ? '3px solid #ffffff'
-        : `2.5px solid ${color}`;
-      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
+        ? '3.5px solid #ffffff'
+        : `3px solid ${color}`;
+      el.style.boxShadow = '0 8px 20px rgba(28, 25, 23, 0.28)';
       el.style.cursor = 'pointer';
       el.style.display = 'flex';
       el.style.alignItems = 'center';
@@ -1744,7 +1744,7 @@ export default function Home() {
         const iconDiv = document.createElement('div');
         iconDiv.style.display = 'flex';
         iconDiv.style.color = '#ffffff';
-        iconDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+        iconDiv.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
         el.appendChild(iconDiv);
       } else {
         const svgIcon = document.createElement('div');
@@ -1947,45 +1947,45 @@ export default function Home() {
       {isOffline && (
         <div className="animate-fade-in" style={{
           position: 'fixed',
-          top: '12px',
+          top: '16px',
           left: '50%',
           transform: 'translateX(-50%)',
           backgroundColor: '#1c1917',
           color: '#fafaf9',
-          padding: '7px 14px',
-          borderRadius: '20px',
-          fontSize: '11.5px',
+          padding: '8px 16px',
+          borderRadius: '22px',
+          fontSize: '13px',
           fontWeight: 600,
           zIndex: 100015,
           boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: '8px',
           whiteSpace: 'nowrap',
           pointerEvents: 'none',
         }}>
-          <WifiOff style={{ width: '13px', height: '13px', color: '#e05a47' }} />
+          <WifiOff style={{ width: '15px', height: '15px', color: '#e05a47' }} />
           <span>Offline mode active · Using cached field notes</span>
         </div>
       )}
 
-      {/* 2. Top Header & Search Bar (Locked with absolute positioning to prevent mobile UI jitter) */}
-      <div style={{ position: 'absolute', top: isOffline ? '50px' : '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
-        <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+      {/* 2. Top Header & Search Bar (Maximized space with minimalist plus icon & scaled up UI for readability) */}
+      <div style={{ position: 'absolute', top: isOffline ? '56px' : '20px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'auto', touchAction: 'none' }}>
+        <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '12px 16px', borderRadius: '22px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.1), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.03em', lineHeight: 1.2 }}>Bywayr</h1>
-              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '17px', color: '#1c1917', letterSpacing: '-0.03em', lineHeight: 1.2 }}>Bywayr</h1>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {loading ? 'Connecting...' : `${spots.length} saved spots${selectedCategory !== 'All' || onlyMySpots || maxRadiusKm !== null ? ` (${filteredSpots.length} shown)` : ''}`}
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-            {/* 1. Add Spot Button */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+            {/* 1. Minimalist Plus Add Button */}
             <button
               onClick={() => {
                 triggerHaptic(8);
@@ -1997,14 +1997,15 @@ export default function Home() {
                 const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
                 dropPreviewAndOpenModal(center.lat, center.lng);
               }}
-              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '12px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
+              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '14px', width: '38px', height: '38px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 3px 10px rgba(224, 90, 71, 0.35)' }}
+              title="Add Curated Spot"
             >
-              <Plus style={{ width: '14px', height: '14px' }} /> Add
+              <Plus style={{ width: '20px', height: '20px', strokeWidth: 2.8 }} />
             </button>
 
             {/* 2. Field Notes (Drawer) Button */}
-            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }} title="Open Field Notes">
-              <List style={{ width: '15px', height: '15px' }} />
+            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '14px', width: '38px', height: '38px', color: '#44403c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} title="Open Field Notes">
+              <List style={{ width: '18px', height: '18px' }} />
             </button>
 
             {/* 3. User Profile Button */}
@@ -2018,34 +2019,34 @@ export default function Home() {
                 style={{ 
                   backgroundColor: '#f5f5f4', 
                   border: '1px solid #d6d3d1', 
-                  borderRadius: '12px', 
-                  padding: '5px 9px', 
+                  borderRadius: '14px', 
+                  padding: '6px 11px', 
                   color: '#44403c', 
-                  fontSize: '12px', 
+                  fontSize: '13px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '6px', 
+                  gap: '7px', 
                   whiteSpace: 'nowrap', 
                   overflow: 'hidden', 
                   textOverflow: 'ellipsis', 
-                  maxWidth: '120px', 
+                  maxWidth: '130px', 
                   flexShrink: 1 
                 }}
               >
                 {userProfile?.avatar_url ? (
-                  <img src={userProfile.avatar_url} alt="Avatar" style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <img src={userProfile.avatar_url} alt="Avatar" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
-                  <User style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+                  <User style={{ width: '15px', height: '15px', flexShrink: 0 }} />
                 )}
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Account'}
                 </span>
               </button>
             ) : (
-              <button onClick={() => { triggerHaptic(8); setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); pushModalHistoryState('auth'); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '12px', padding: '7px 11px', color: '#fafaf9', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
+              <button onClick={() => { triggerHaptic(8); setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); pushModalHistoryState('auth'); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '14px', padding: '8px 13px', color: '#fafaf9', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <LogIn style={{ width: '15px', height: '15px', flexShrink: 0 }} /> Sign In
               </button>
             )}
           </div>
@@ -2054,17 +2055,17 @@ export default function Home() {
         {/* Primary Search Input Bar */}
         <div style={{ position: 'relative', width: '100%' }}>
           <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
-            <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '17px', height: '17px' }} />
+            <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '19px', height: '19px' }} />
             <input
               type="text"
               placeholder="Search, paste coordinates, or plus codes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
-              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '12px 42px 12px 40px', fontSize: '13px', borderRadius: showDropdown ? '20px 20px 0 0' : '20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', outline: 'none', color: '#1c1917' }}
+              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '14px 44px 14px 46px', fontSize: '14px', borderRadius: showDropdown ? '22px 22px 0 0' : '22px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', outline: 'none', color: '#1c1917' }}
             />
-            <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {isSearching && <Loader2 style={{ color: '#e05a47', width: '17px', height: '17px', animation: 'spin 1s linear infinite' }} />}
+            <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {isSearching && <Loader2 style={{ color: '#e05a47', width: '19px', height: '19px', animation: 'spin 1s linear infinite' }} />}
               {searchQuery && !isSearching && (
                 <button
                   type="button"
@@ -2076,22 +2077,22 @@ export default function Home() {
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
                   title="Clear search"
                 >
-                  <X style={{ width: '16px', height: '16px' }} />
+                  <X style={{ width: '18px', height: '18px' }} />
                 </button>
               )}
             </div>
           </form>
 
           {showDropdown && searchQuery.trim().length >= 3 && (
-            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 20px 20px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 22px 22px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
-                <div style={{ padding: '14px 15px', textAlign: 'center', color: '#78716c', fontSize: '12.5px' }}>
+                <div style={{ padding: '14px 16px', textAlign: 'center', color: '#78716c', fontSize: '13.5px' }}>
                   No local places found.
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
-                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 15px', fontSize: '12.5px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '12px 16px', fontSize: '13.5px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <MapPin style={{ width: '15px', height: '15px', color: '#a8a29e', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                   </div>
                 ))
@@ -2105,22 +2106,22 @@ export default function Home() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '11px 15px',
+                  padding: '13px 16px',
                   backgroundColor: '#fafaf9',
                   borderTop: '1px solid #e7e5e4',
                   color: '#44403c',
                   textDecoration: 'none',
-                  fontSize: '12px',
+                  fontSize: '13px',
                   fontWeight: 600,
-                  borderBottomLeftRadius: '20px',
-                  borderBottomRightRadius: '20px',
+                  borderBottomLeftRadius: '22px',
+                  borderBottomRightRadius: '22px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                  <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Plane style={{ width: '15px', height: '15px', color: '#e05a47' }} />
                   <span>Planning a trip? Search flights via Aviasales</span>
                 </div>
-                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
               </a>
             </div>
           )}
@@ -2136,7 +2137,7 @@ export default function Home() {
           onWheel={handleCategoryWheel}
           style={{ 
             display: 'flex', 
-            gap: '6px', 
+            gap: '8px', 
             overflowX: 'auto', 
             paddingBottom: '2px', 
             scrollbarWidth: 'none', 
@@ -2153,25 +2154,25 @@ export default function Home() {
                 setOnlyMySpots(!onlyMySpots);
               }}
               style={{
-                backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.88)',
+                backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.9)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 color: onlyMySpots ? '#e05a47' : '#57534e',
                 border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '11.5px',
+                padding: '8px 14px',
+                borderRadius: '22px',
+                fontSize: '12.5px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '6px',
                 flexShrink: 0
               }}
             >
-              <User style={{ width: '13px', height: '13px' }} />
+              <User style={{ width: '14px', height: '14px' }} />
               My Pins ({mySpotsCount})
             </button>
           )}
@@ -2184,25 +2185,25 @@ export default function Home() {
               else setMaxRadiusKm(null);
             }}
             style={{
-              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : 'rgba(255, 255, 255, 0.88)',
+              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : 'rgba(255, 255, 255, 0.9)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               color: maxRadiusKm !== null ? '#0284c7' : '#57534e',
               border: maxRadiusKm !== null ? '1px solid #bae6fd' : '1px solid #e7e5e4',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '11.5px',
+              padding: '8px 14px',
+              borderRadius: '22px',
+              fontSize: '12.5px',
               fontWeight: 600,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
               display: 'flex',
               alignItems: 'center',
-              gap: '5px',
+              gap: '6px',
               flexShrink: 0,
             }}
           >
-            <Compass style={{ width: '13px', height: '13px' }} />
+            <Compass style={{ width: '14px', height: '14px' }} />
             {maxRadiusKm === null ? 'Radius: Any' : `Within ${maxRadiusKm}km`}
           </button>
 
@@ -2217,25 +2218,25 @@ export default function Home() {
                   setSelectedCategory(cat.label);
                 }}
                 style={{ 
-                  backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.88)', 
+                  backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.9)', 
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
                   color: isSelected ? '#fafaf9' : '#57534e', 
                   border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
-                  padding: '6px 12px', 
-                  borderRadius: '20px', 
-                  fontSize: '11.5px', 
+                  padding: '8px 14px', 
+                  borderRadius: '22px', 
+                  fontSize: '12.5px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   whiteSpace: 'nowrap', 
                   boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '6px',
+                  gap: '7px',
                   flexShrink: 0 
                 }}
               >
-                <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
+                <Icon style={{ width: '13px', height: '13px', color: isSelected ? '#fafaf9' : cat.color }} />
                 {cat.label}
               </button>
             );
@@ -2244,8 +2245,8 @@ export default function Home() {
 
         {/* Category Description Banner */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '16px', border: '1px solid #e7e5e4', fontSize: '12px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
             </span>
@@ -2259,41 +2260,41 @@ export default function Home() {
             style={{
               position: 'relative',
               width: '100%',
-              backgroundColor: 'rgba(255, 255, 255, 0.94)',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
-              borderRadius: '20px',
+              borderRadius: '22px',
               boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
               border: '1px solid #e7e5e4',
-              padding: '16px',
+              padding: '18px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px',
+              gap: '12px',
               marginTop: '2px',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 No unmapped spots here yet
               </h3>
               <button 
                 onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
-                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                 title="Dismiss"
               >
-                <X style={{ width: '14px', height: '14px' }} />
+                <X style={{ width: '15px', height: '15px' }} />
               </button>
             </div>
             
-            <p style={{ margin: 0, fontSize: '12px', color: '#78716c', lineHeight: 1.4 }}>
+            <p style={{ margin: 0, fontSize: '13px', color: '#78716c', lineHeight: 1.4 }}>
               No spots in "{selectedCategory}" nearby.
             </p>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '2px' }}>
               <button
                 onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
-                style={{ flex: 1, padding: '9px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '11px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Show All Spots
               </button>
@@ -2307,7 +2308,7 @@ export default function Home() {
                   const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
                   dropPreviewAndOpenModal(center.lat, center.lng);
                 }}
-                style={{ flex: 1, padding: '9px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+                style={{ flex: 1, padding: '11px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
               >
                 + Drop a Pin
               </button>
@@ -2317,39 +2318,39 @@ export default function Home() {
 
         {/* Active Walk HUD Banner */}
         {walkTargetSpot && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-              <Footprints style={{ width: '16px', height: '16px', color: '#e05a47', flexShrink: 0 }} />
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '18px', fontSize: '13.5px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <Footprints style={{ width: '18px', height: '18px', color: '#e05a47', flexShrink: 0 }} />
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {walkTargetSpot.name}
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
               <button 
                 onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
                 style={{ 
                   backgroundColor: '#e05a47', 
                   color: '#ffffff', 
                   border: 'none', 
-                  borderRadius: '10px', 
-                  padding: '5px 10px', 
-                  fontSize: '11.5px', 
+                  borderRadius: '12px', 
+                  padding: '6px 12px', 
+                  fontSize: '12px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '4px' 
+                  gap: '5px' 
                 }}
                 title="Get Directions"
               >
-                Directions <Navigation2 style={{ width: '11px', height: '11px' }} />
+                Directions <Navigation2 style={{ width: '12px', height: '12px' }} />
               </button>
               <button 
                 onClick={() => setWalkTargetSpot(null)} 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
                 title="Dismiss"
               >
-                <X style={{ width: '16px', height: '16px' }} />
+                <X style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
           </div>
