@@ -281,7 +281,6 @@ const compressImageToWebP = async (file: File, maxDimension = 1200, quality = 0.
   });
 };
 
-// Reusable Passport Stamp Component
 const PassportStamp = ({ label, subtext, color = '#e05a47', rotation = -4 }: { label: string; subtext?: string; color?: string; rotation?: number }) => (
   <div
     style={{
@@ -341,6 +340,11 @@ export default function Home() {
     return null;
   });
 
+  const [editBio, setEditBio] = useState('');
+  const [editCountry, setEditCountry] = useState('United States');
+  const [isSavingProfileDetails, setIsSavingProfileDetails] = useState(false);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -377,6 +381,13 @@ export default function Home() {
     return false;
   });
   const [isInteracting, setIsInteracting] = useState(false);
+
+  useEffect(() => {
+    if (userProfile) {
+      setEditBio(userProfile.bio || '');
+      setEditCountry(userProfile.country || 'United States');
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -425,7 +436,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Drawer state for smooth slide-in/slide-out
+  // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
@@ -753,6 +764,32 @@ export default function Home() {
     setProfileCityFilter('All');
     setViewingSpot(null);
     pushModalHistoryState('publicProfile');
+  };
+
+  const handleSaveProfileDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser) return;
+
+    setIsSavingProfileDetails(true);
+    triggerHaptic(10);
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: activeUser.id,
+      bio: editBio.trim(),
+      country: editCountry.trim(),
+      updated_at: new Date().toISOString(),
+    });
+
+    if (!error) {
+      const updated = { ...userProfile, id: activeUser.id, bio: editBio.trim(), country: editCountry.trim() };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+      fetchProfiles();
+      setProfileSaveSuccess(true);
+      setTimeout(() => setProfileSaveSuccess(false), 2000);
+    }
+    setIsSavingProfileDetails(false);
   };
 
   const handleCategoryMouseDown = (e: React.MouseEvent) => {
@@ -3292,7 +3329,7 @@ export default function Home() {
                     </div>
                     <span>Flight Search | Aviasales</span>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
                 </a>
 
                 {/* 2. Klook */}
@@ -3303,7 +3340,7 @@ export default function Home() {
                     </div>
                     <span>Tickets & Hotels | Klook</span>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
                 </a>
 
                 {/* 3. Yesim */}
@@ -3314,7 +3351,7 @@ export default function Home() {
                     </div>
                     <span>eSIM Data | Yesim</span>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
                 </a>
               </div>
             </div>
@@ -3323,7 +3360,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Profile Modal (Own Profile) */}
+      {/* Profile Modal (Own Profile Customization) */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
@@ -3331,7 +3368,7 @@ export default function Home() {
               <X style={{ width: '20px', height: '20px' }} />
             </button>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '14px' }}>
               <label style={{ width: '72px', height: '72px', borderRadius: '24px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
                   <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
@@ -3391,6 +3428,56 @@ export default function Home() {
                 )}
               </div>
             </div>
+
+            {/* Passport Profile Bio & Country Edit Form */}
+            <form onSubmit={handleSaveProfileDetails} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Globe style={{ width: '13px', height: '13px', color: '#e05a47' }} /> Passport Identity
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Base Country</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Philippines, United States"
+                  value={editCountry}
+                  onChange={(e) => setEditCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Bio / Travel Tagline</label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  placeholder="e.g. Local food hunter & night walker"
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSavingProfileDetails}
+                style={{
+                  width: '100%',
+                  backgroundColor: profileSaveSuccess ? '#059669' : '#1c1917',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '11.5px',
+                  padding: '9px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  transition: 'background-color 0.2s',
+                }}
+              >
+                {isSavingProfileDetails ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : profileSaveSuccess ? 'Saved to Passport!' : 'Save Passport Info'}
+              </button>
+            </form>
 
             {/* Bywayr Plus Coming Soon Section */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
