@@ -69,6 +69,8 @@ import {
   MessageSquare,
   WifiOff,
   Mic2,
+  Award,
+  Globe,
 } from 'lucide-react';
 
 interface Spot {
@@ -279,6 +281,38 @@ const compressImageToWebP = async (file: File, maxDimension = 1200, quality = 0.
   });
 };
 
+// Reusable Passport Stamp Component
+const PassportStamp = ({ label, subtext, color = '#e05a47', rotation = -4 }: { label: string; subtext?: string; color?: string; rotation?: number }) => (
+  <div
+    style={{
+      display: 'inline-flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: `2px dashed ${color}`,
+      borderRadius: '50%',
+      width: '74px',
+      height: '74px',
+      padding: '6px',
+      boxSizing: 'border-box',
+      transform: `rotate(${rotation}deg)`,
+      color: color,
+      backgroundColor: `${color}08`,
+      flexShrink: 0,
+      userSelect: 'none',
+    }}
+  >
+    <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.1 }}>
+      {label}
+    </span>
+    {subtext && (
+      <span style={{ fontSize: '7.5px', fontWeight: 700, opacity: 0.85, marginTop: '2px', textTransform: 'uppercase' }}>
+        {subtext}
+      </span>
+    )}
+  </div>
+);
+
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -467,8 +501,10 @@ export default function Home() {
     });
 
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id));
-  const mySpotsCount = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id).length : 0;
-  const myCitiesCount = currentUser ? new Set(spots.filter((s: Spot) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
+  const mySpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
+  const mySpotsCount = mySpots.length;
+  const myCitiesCount = new Set(mySpots.map((s) => s.city.trim()).filter(Boolean)).size;
+  const myCountriesList = Array.from(new Set(mySpots.map((s) => (s.country || 'United States').trim()).filter(Boolean)));
   
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
@@ -2089,7 +2125,7 @@ export default function Home() {
                   <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
                   <span>Planning a trip? Search flights via Aviasales</span>
                 </div>
-                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
               </a>
             </div>
           )}
@@ -2261,7 +2297,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Empty State Card (Directly flows with exact 8px uniform rhythm) */}
+        {/* Empty State Card */}
         {filteredSpots.length === 0 && !loading && (
           <EmptyState
             category={selectedCategory}
@@ -2827,7 +2863,7 @@ export default function Home() {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
         const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
         
-        const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'Philippines');
+        const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'United States');
 
         const filteredProfileSpots = profileCityFilter === 'All' 
           ? viewingProfileSpots 
@@ -2875,6 +2911,7 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Passport Stats Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px 10px', marginBottom: '14px', textAlign: 'center' }}>
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
@@ -2887,6 +2924,27 @@ export default function Home() {
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
+                </div>
+              </div>
+
+              {/* Passport Stamps & Badges Section */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Award style={{ width: '13px', height: '13px', color: '#d97706' }} /> Passport Stamps & Badges
+                </div>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '6px 2px', scrollbarWidth: 'none' }}>
+                  {uniqueCountries.map((c, i) => (
+                    <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -5 : 4} />
+                  ))}
+                  {viewingProfileSpots.length >= 1 && (
+                    <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={3} />
+                  )}
+                  {viewingProfileSpots.length >= 5 && (
+                    <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-4} />
+                  )}
+                  {uniqueCountries.length >= 2 && (
+                    <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={6} />
+                  )}
                 </div>
               </div>
 
@@ -3131,7 +3189,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tabs (Export buttons removed for future Bywayr Plus release) */}
+            {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
                 <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
@@ -3265,7 +3323,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Profile Modal */}
+      {/* Profile Modal (Own Profile) */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
@@ -3297,6 +3355,7 @@ export default function Home() {
               <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{currentUser.email}</p>
             </div>
             
+            {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
@@ -3309,6 +3368,27 @@ export default function Home() {
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+              </div>
+            </div>
+
+            {/* Passport Stamps & Badges */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Award style={{ width: '13px', height: '13px', color: '#d97706' }} /> Passport Stamps & Badges
+              </div>
+              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '6px 2px', scrollbarWidth: 'none' }}>
+                {myCountriesList.map((c, i) => (
+                  <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -5 : 4} />
+                ))}
+                {mySpotsCount >= 1 && (
+                  <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={3} />
+                )}
+                {mySpotsCount >= 5 && (
+                  <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-4} />
+                )}
+                {myCountriesList.length >= 2 && (
+                  <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={6} />
+                )}
               </div>
             </div>
 
