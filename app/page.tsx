@@ -1502,6 +1502,21 @@ export default function Home() {
       zoom: initialZoom,
     });
 
+    // Bulletproof anti-privacy tracker shield listener on container
+    const containerEl = mapContainer.current;
+    if (containerEl) {
+      const preventDefaultTouch = (e: TouchEvent) => {
+        // Prevent default only if touch started on the map canvas itself
+        if ((e.target as HTMLElement)?.closest('.maplibregl-canvas, .maplibregl-map')) {
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+        }
+      };
+      containerEl.addEventListener('touchstart', preventDefaultTouch, { passive: false });
+      containerEl.addEventListener('touchmove', preventDefaultTouch, { passive: false });
+    }
+
     initializedMap.on('moveend', () => {
       const center = initializedMap.getCenter();
       const zoom = initializedMap.getZoom();
@@ -1815,9 +1830,11 @@ export default function Home() {
           inset: 0;
           overflow: hidden;
           touch-action: none;
+          overscroll-behavior: none;
         }
         .maplibregl-map {
           touch-action: none !important;
+          overscroll-behavior: none !important;
         }
         input, textarea {
           user-select: text;
