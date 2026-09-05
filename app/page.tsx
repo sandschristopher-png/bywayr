@@ -345,6 +345,26 @@ export default function Home() {
   });
   const [isInteracting, setIsInteracting] = useState(false);
 
+  // Floating map controls fade out / slide state during map interaction
+  const [isControlsHidden, setIsControlsHidden] = useState(false);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-hide floating map controls during map drag/zoom interaction
+  useEffect(() => {
+    if (isInteracting) {
+      setIsControlsHidden(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    } else {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = setTimeout(() => {
+        setIsControlsHidden(false);
+      }, 400);
+    }
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [isInteracting]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('bywayr_dark_mode', isDarkMode.toString());
@@ -2369,7 +2389,10 @@ export default function Home() {
         padding: '6px', 
         boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.18), 0 0 1px 1px rgba(28, 25, 23, 0.04)', 
         gap: '6px', 
-        pointerEvents: 'auto' 
+        pointerEvents: 'auto',
+        opacity: isControlsHidden ? 0.35 : 1,
+        transform: isControlsHidden ? 'translateX(10px) scale(0.96)' : 'translateX(0) scale(1)',
+        transition: 'opacity 0.25s ease, transform 0.25s ease',
       }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '18px', height: '18px' }} />}
