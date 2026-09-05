@@ -70,6 +70,7 @@ import {
   Cpu,
   Download,
   MessageSquare,
+  WifiOff,
 } from 'lucide-react';
 
 interface Spot {
@@ -389,11 +390,55 @@ export default function Home() {
     return false;
   });
 
+  // Offline detection state
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
+  // PWA Status Bar & Theme Meta Polish
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('bywayr_dark_mode', isDarkMode.toString());
+      let metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (!metaTheme) {
+        metaTheme = document.createElement('meta');
+        metaTheme.setAttribute('name', 'theme-color');
+        document.head.appendChild(metaTheme);
+      }
+      metaTheme.setAttribute('content', isDarkMode ? '#262421' : '#f5f5f4');
+
+      let metaApple = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (!metaApple) {
+        metaApple = document.createElement('meta');
+        metaApple.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
+        document.head.appendChild(metaApple);
+      }
+      metaApple.setAttribute('content', isDarkMode ? 'black-translucent' : 'default');
     }
   }, [isDarkMode]);
+
+  // Google AdSense Script Injection
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX";
+      script.crossOrigin = "anonymous";
+      document.head.appendChild(script);
+    }
+  }, []);
 
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
@@ -405,6 +450,42 @@ export default function Home() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const [onlyMySpots, setOnlyMySpots] = useState(false);
+  const [maxRadiusKm, setMaxRadiusKm] = useState<number | null>(null);
+
+  // Dynamic OpenGraph Social Sharing Meta Tags Updater
+  useEffect(() => {
+    if (viewingSpot) {
+      document.title = `Bywayr — ${viewingSpot.name} in ${viewingSpot.city}`;
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+      }
+      ogTitle.setAttribute('content', `Bywayr — ${viewingSpot.name}`);
+
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (!ogDesc) {
+        ogDesc = document.createElement('meta');
+        ogDesc.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDesc);
+      }
+      ogDesc.setAttribute('content', viewingSpot.description || `Check out ${viewingSpot.name} in ${viewingSpot.city} on Bywayr!`);
+
+      if (viewingSpot.image_url) {
+        let ogImg = document.querySelector('meta[property="og:image"]');
+        if (!ogImg) {
+          ogImg = document.createElement('meta');
+          ogImg.setAttribute('property', 'og:image');
+          document.head.appendChild(ogImg);
+        }
+        ogImg.setAttribute('content', viewingSpot.image_url);
+      }
+    } else {
+      document.title = 'Bywayr — Pocket Field Guide';
+    }
+  }, [viewingSpot]);
+
   const [spots, setSpots] = useState<Spot[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('bywayr_cached_spots');
@@ -1379,6 +1460,12 @@ export default function Home() {
   const filteredSpots = spots
     .filter((spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
+      if (maxRadiusKm !== null) {
+        const anchorLat = userCoords ? userCoords.lat : mapCenter.lat;
+        const anchorLng = userCoords ? userCoords.lng : mapCenter.lng;
+        const dist = getDistanceFromLatLonInKm(anchorLat, anchorLng, spot.latitude, spot.longitude);
+        if (dist > maxRadiusKm) return false;
+      }
       if (selectedCategory === 'All') return true;
       return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
     })
@@ -1842,6 +1929,16 @@ export default function Home() {
             box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
           }
         }
+        @keyframes pulseSkeleton {
+          0% { opacity: 0.5; }
+          50% { opacity: 1; }
+          100% { opacity: 0.5; }
+        }
+        .skeleton-pulse {
+          animation: pulseSkeleton 1.4s ease-in-out infinite;
+          background-color: #e7e5e4;
+          border-radius: 12px;
+        }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
@@ -1897,6 +1994,13 @@ export default function Home() {
 
       {/* 2. Top Header & Search Bar */}
       <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+        {/* Offline Status Banner */}
+        {!isOnline && (
+          <div className="animate-fade-in" style={{ backgroundColor: '#d97706', color: '#ffffff', fontSize: '11.5px', fontWeight: 600, padding: '7px 12px', borderRadius: '14px', textAlign: 'center', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <WifiOff style={{ width: '13px', height: '13px' }} /> Offline Mode — Browsing cached field notes
+          </div>
+        )}
+
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -1905,7 +2009,7 @@ export default function Home() {
             <div style={{ minWidth: 0 }}>
               <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.03em', lineHeight: 1.2 }}>Bywayr</h1>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {loading ? 'Connecting...' : selectedCategory === 'All' && !onlyMySpots ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
+                {loading ? 'Connecting...' : selectedCategory === 'All' && !onlyMySpots && maxRadiusKm === null ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
               </p>
             </div>
           </div>
@@ -2049,7 +2153,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categories Bar */}
+        {/* Categories Bar & Proximity Filter */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -2096,6 +2200,36 @@ export default function Home() {
               My Pins ({mySpotsCount})
             </button>
           )}
+
+          <button
+            onClick={() => {
+              triggerHaptic(6);
+              if (maxRadiusKm === null) setMaxRadiusKm(5);
+              else if (maxRadiusKm === 5) setMaxRadiusKm(25);
+              else setMaxRadiusKm(null);
+            }}
+            style={{
+              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : 'rgba(255, 255, 255, 0.88)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              color: maxRadiusKm !== null ? '#0284c7' : '#57534e',
+              border: maxRadiusKm !== null ? '1px solid #bae6fd' : '1px solid #e7e5e4',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              flexShrink: 0
+            }}
+          >
+            <Compass style={{ width: '13px', height: '13px' }} />
+            {maxRadiusKm === null ? 'Radius: Any' : `Within ${maxRadiusKm}km`}
+          </button>
 
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
@@ -2197,7 +2331,7 @@ export default function Home() {
         }}>
           <EmptyState
             category={selectedCategory}
-            onResetFilter={() => setSelectedCategory('All')}
+            onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
             onAddSpot={() => {
               if (!currentUserRef.current) {
                 setIsAuthModalOpen(true);
@@ -2974,7 +3108,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer with Live Distance Badges & Offline Export */}
+      {/* Slide-Out Drawer with Live Distance Badges & Skeleton Loaders */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
@@ -3002,80 +3136,86 @@ export default function Home() {
               </button>
             </div>
             
-            {/* Scrollable Spot List with Distance Badges */}
+            {/* Scrollable Spot List with Skeleton Loaders */}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
-              {displayedDrawerSpots.map((spot) => {
-                const color = getCategoryColor(spot.category);
-                const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
-                const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
+              {loading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <div key={`skel-${idx}`} className="skeleton-pulse" style={{ height: '64px', width: '100%', flexShrink: 0 }} />
+                ))
+              ) : (
+                displayedDrawerSpots.map((spot) => {
+                  const color = getCategoryColor(spot.category);
+                  const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
+                  const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
 
-                return (
-                  <div
-                    key={spot.id || spot.name}
-                    onClick={() => {
-                      triggerHaptic(8);
-                      dismissModalWithHistory(() => setIsDrawerOpen(false));
-                      flyToSpot(spot);
-                    }}
-                    className="spot-card-hover"
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '14px',
-                      border: '1px solid #e7e5e4',
-                      borderLeft: `4px solid ${color}`,
-                      backgroundColor: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {spot.image_url && (
-                      <img
-                        src={spot.image_url}
-                        alt={spot.name}
-                        style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
-                      />
-                    )}
+                  return (
+                    <div
+                      key={spot.id || spot.name}
+                      onClick={() => {
+                        triggerHaptic(8);
+                        dismissModalWithHistory(() => setIsDrawerOpen(false));
+                        flyToSpot(spot);
+                      }}
+                      className="spot-card-hover"
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '14px',
+                        border: '1px solid #e7e5e4',
+                        borderLeft: `4px solid ${color}`,
+                        backgroundColor: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {spot.image_url && (
+                        <img
+                          src={spot.image_url}
+                          alt={spot.name}
+                          style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      )}
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <h4
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <h4
+                            style={{
+                              margin: 0,
+                              fontSize: '13.5px',
+                              fontWeight: 700,
+                              color: '#1c1917',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {spot.name}
+                          </h4>
+                          {distanceText && (
+                            <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>
+                              {distanceText}
+                            </span>
+                          )}
+                        </div>
+                        <p
                           style={{
                             margin: 0,
-                            fontSize: '13.5px',
-                            fontWeight: 700,
-                            color: '#1c1917',
+                            fontSize: '11px',
+                            color: '#78716c',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}
                         >
-                          {spot.name}
-                        </h4>
-                        {distanceText && (
-                          <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>
-                            {distanceText}
-                          </span>
-                        )}
+                          {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                        </p>
                       </div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: '11px',
-                          color: '#78716c',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
-                      </p>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
             {/* Sticky Travel Essentials Footer */}
@@ -3107,18 +3247,7 @@ export default function Home() {
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
 
-                {/* 3. Saily */}
-                <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/saily.svg" alt="Saily" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                    </div>
-                    <span>eSIM Data — Saily</span>
-                  </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-                </a>
-
-                {/* 4. Yesim */}
+                {/* 3. Yesim */}
                 <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
