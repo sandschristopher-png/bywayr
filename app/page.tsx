@@ -383,6 +383,8 @@ export default function Home() {
     longitude: number;
   } | null>(null);
 
+  const [viewingSpot, setViewingSpot] = useState<Spot | null>(null);
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_dark_mode') === 'true';
@@ -522,7 +524,6 @@ export default function Home() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isModalLocating, setIsModalLocating] = useState(false);
-  const [viewingSpot, setViewingSpot] = useState<Spot | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1819,30 +1820,11 @@ export default function Home() {
     setSaving(false);
   };
 
-  const flyToSpot = (spot: Spot) => {
-    if (!map.current || !spot.latitude || !spot.longitude) return;
-    map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
-    setViewingSpot(spot);
-    setActiveSearchedSpot(null);
-    setIsDrawerOpen(false);
-    pushModalHistoryState('viewingSpot');
-    if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
-  };
-
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
   const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
-
-  const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-  const proximitySortedSpots: Spot[] = [...spots]
-    .filter((s) => s.latitude && s.longitude)
-    .map((spot) => ({
-      ...spot,
-      distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
-    }))
-    .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
 
   useEffect(() => {
     const query = walkSearchQuery.trim();
@@ -3108,7 +3090,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer with Live Distance Badges & Skeleton Loaders */}
+      {/* Slide-Out Drawer with Live Distance Badges & Offline Export */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
