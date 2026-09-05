@@ -2262,81 +2262,61 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Close X Button */}
+      {/* Empty State Card (Properly Centered and Cleanly Positioned without random wrapper pill) */}
       {filteredSpots.length === 0 && !loading && (
         <div 
-          className="animate-fade-in" 
-          onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+          className="animate-scale-up" 
           style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(28, 25, 23, 0.45)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 99998,
-            padding: '16px',
-            cursor: 'pointer'
+            position: 'absolute',
+            top: '210px',
+            left: '16px',
+            right: '16px',
+            maxWidth: '440px',
+            margin: '0 auto',
+            backgroundColor: '#ffffff',
+            borderRadius: '24px',
+            boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
+            border: '1px solid #e7e5e4',
+            padding: '24px',
+            boxSizing: 'border-box',
+            zIndex: 99998
           }}
         >
-          <div 
-            className="animate-scale-up" 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'fixed',
-              top: '120px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '100%',
-              maxWidth: '380px',
-              backgroundColor: '#ffffff',
-              borderRadius: '24px',
-              boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
-              border: '1px solid #e7e5e4',
-              padding: '24px',
-              boxSizing: 'border-box',
-              cursor: 'default',
-              zIndex: 99999
+          <button 
+            onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
+            style={{ 
+              position: 'absolute', 
+              top: '16px', 
+              right: '16px', 
+              border: 'none', 
+              background: '#f5f5f4', 
+              borderRadius: '50%', 
+              width: '32px', 
+              height: '32px', 
+              cursor: 'pointer', 
+              color: '#78716c', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
             }}
+            title="Dismiss / Show All"
           >
-            <button 
-              onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
-              style={{ 
-                position: 'absolute', 
-                top: '16px', 
-                right: '16px', 
-                border: 'none', 
-                background: '#f5f5f4', 
-                borderRadius: '50%', 
-                width: '32px', 
-                height: '32px', 
-                cursor: 'pointer', 
-                color: '#78716c', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}
-              title="Dismiss / Show All"
-            >
-              <X style={{ width: '16px', height: '16px' }} />
-            </button>
-            
-            <EmptyState
-              category={selectedCategory}
-              onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
-              onAddSpot={() => {
-                if (!currentUserRef.current) {
-                  setIsAuthModalOpen(true);
-                  pushModalHistoryState('auth');
-                  return;
-                }
-                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-                dropPreviewAndOpenModal(center.lat, center.lng);
-              }}
-            />
-          </div>
+            <X style={{ width: '16px', height: '16px' }} />
+          </button>
+          
+          <EmptyState
+            category={selectedCategory}
+            onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
+            onAddSpot={() => {
+              if (!currentUserRef.current) {
+                setIsAuthModalOpen(true);
+                pushModalHistoryState('auth');
+                return;
+              }
+              const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+              dropPreviewAndOpenModal(center.lat, center.lng);
+            }}
+          />
         </div>
       )}
 
