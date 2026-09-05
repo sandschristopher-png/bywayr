@@ -1893,7 +1893,8 @@ export default function Home() {
 
     if (codeMatch) {
       const codePart = codeMatch[1].toUpperCase();
-      const localityHint = rawQuery.replace(codeMatch[0], '').replace(/plus\s*code/gi, '').replace(/[()]/g, '').trim();
+      const rawLocality = rawQuery.replace(codeMatch[0], '').replace(/plus\s*code/gi, '').replace(/[()]/g, '').trim();
+      const localityHint = rawLocality.replace(/^in\s+/i, '').trim();
 
       if (isValid(codePart)) {
         if (isFull(codePart)) {
