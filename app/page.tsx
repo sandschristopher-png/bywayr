@@ -70,7 +70,6 @@ import {
   WifiOff,
   Mic2,
   Award,
-  Globe,
 } from 'lucide-react';
 
 interface Spot {
@@ -281,31 +280,63 @@ const compressImageToWebP = async (file: File, maxDimension = 1200, quality = 0.
   });
 };
 
-const PassportStamp = ({ label, subtext, color = '#e05a47', rotation = -4 }: { label: string; subtext?: string; color?: string; rotation?: number }) => (
+// Compact, cleanly-spaced ink stamp badge
+const PassportStamp = ({
+  label,
+  subtext,
+  color = '#e05a47',
+  rotation = -4,
+}: {
+  label: string;
+  subtext?: string;
+  color?: string;
+  rotation?: number;
+}) => (
   <div
     style={{
       display: 'inline-flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      border: `2px dashed ${color}`,
+      border: `1.5px dashed ${color}`,
       borderRadius: '50%',
-      width: '74px',
-      height: '74px',
-      padding: '6px',
+      width: '58px',
+      height: '58px',
+      padding: '3px',
       boxSizing: 'border-box',
       transform: `rotate(${rotation}deg)`,
       color: color,
-      backgroundColor: `${color}08`,
+      backgroundColor: `${color}0A`,
       flexShrink: 0,
       userSelect: 'none',
     }}
   >
-    <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.1 }}>
+    <span
+      style={{
+        fontSize: '7.5px',
+        fontWeight: 800,
+        textTransform: 'uppercase',
+        letterSpacing: '0.03em',
+        textAlign: 'center',
+        lineHeight: 1.05,
+        maxWidth: '48px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
       {label}
     </span>
     {subtext && (
-      <span style={{ fontSize: '7.5px', fontWeight: 700, opacity: 0.85, marginTop: '2px', textTransform: 'uppercase' }}>
+      <span
+        style={{
+          fontSize: '6px',
+          fontWeight: 700,
+          opacity: 0.85,
+          marginTop: '1px',
+          textTransform: 'uppercase',
+        }}
+      >
         {subtext}
       </span>
     )}
@@ -339,14 +370,6 @@ export default function Home() {
     }
     return null;
   });
-
-  const [editBio, setEditBio] = useState('');
-  const [editCountry, setEditCountry] = useState('United States');
-  const [isSavingProfileDetails, setIsSavingProfileDetails] = useState(false);
-  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
-
-  const [passportCopied, setPassportCopied] = useState(false);
-  const [publicPassportCopied, setPublicPassportCopied] = useState(false);
 
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -384,13 +407,6 @@ export default function Home() {
     return false;
   });
   const [isInteracting, setIsInteracting] = useState(false);
-
-  useEffect(() => {
-    if (userProfile) {
-      setEditBio(userProfile.bio || '');
-      setEditCountry(userProfile.country || 'United States');
-    }
-  }, [userProfile]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -439,7 +455,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Drawer state
+  // Drawer state for smooth slide-in/slide-out
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
@@ -767,50 +783,6 @@ export default function Home() {
     setProfileCityFilter('All');
     setViewingSpot(null);
     pushModalHistoryState('publicProfile');
-  };
-
-  const handleSharePassport = async (username?: string, userId?: string) => {
-    triggerHaptic(8);
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const shareUrl = username ? `${origin}/?user=${username}` : `${origin}/?curator=${userId}`;
-    const shareText = `Explore @${username || 'wanderer'}'s curated local field notes & passport on Bywayr!`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Bywayr Passport — @${username || 'wanderer'}`, text: shareText, url: shareUrl });
-        return;
-      } catch {}
-    }
-
-    await navigator.clipboard.writeText(shareUrl);
-    setPassportCopied(true);
-    setTimeout(() => setPassportCopied(false), 2000);
-  };
-
-  const handleSaveProfileDetails = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const activeUser = currentUserRef.current;
-    if (!activeUser) return;
-
-    setIsSavingProfileDetails(true);
-    triggerHaptic(10);
-
-    const { error } = await supabase.from('profiles').upsert({
-      id: activeUser.id,
-      bio: editBio.trim(),
-      country: editCountry.trim(),
-      updated_at: new Date().toISOString(),
-    });
-
-    if (!error) {
-      const updated = { ...userProfile, id: activeUser.id, bio: editBio.trim(), country: editCountry.trim() };
-      setUserProfile(updated);
-      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
-      fetchProfiles();
-      setProfileSaveSuccess(true);
-      setTimeout(() => setProfileSaveSuccess(false), 2000);
-    }
-    setIsSavingProfileDetails(false);
   };
 
   const handleCategoryMouseDown = (e: React.MouseEvent) => {
@@ -1353,26 +1325,6 @@ export default function Home() {
     }
   }, [viewingSpot]);
 
-  // Deep-linking URL handler for ?user= and ?curator=
-  useEffect(() => {
-    if (!loading && typeof window !== 'undefined' && Object.keys(profilesMap).length > 0) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const targetUsername = urlParams.get('user')?.toLowerCase().replace('@', '');
-      const targetCuratorId = urlParams.get('curator');
-
-      let matchedUserId = '';
-      if (targetUsername) {
-        matchedUserId = Object.keys(profilesMap).find(id => profilesMap[id].username?.toLowerCase() === targetUsername) || '';
-      } else if (targetCuratorId && profilesMap[targetCuratorId]) {
-        matchedUserId = targetCuratorId;
-      }
-
-      if (matchedUserId) {
-        handleOpenPublicProfile(matchedUserId);
-      }
-    }
-  }, [loading, profilesMap]);
-
   const handleGoogleSignIn = async () => {
     triggerHaptic(10);
     await supabase.auth.signInWithOAuth({
@@ -1730,7 +1682,7 @@ export default function Home() {
           setIsSearching(true);
           (async () => {
             try {
-              let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
+              let anchorLat = map.current ? map.current.getCenter() : 36.1699;
               let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
 
               if (localityHint) {
@@ -2949,28 +2901,28 @@ export default function Home() {
 
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X style={{ width: '18px', height: '18px' }} />
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '22px 20px', position: 'relative', boxSizing: 'border-box' }}>
+              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: '16px', height: '16px' }} />
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingRight: '28px' }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
                   {viewingProfile.avatar_url ? (
                     <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <Compass style={{ width: '28px', height: '28px' }} />
+                    <Compass style={{ width: '24px', height: '24px' }} />
                   )}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span>@{viewingProfile.username || 'wanderer'}</span>
                     <span style={{ 
-                      fontSize: '10.5px', 
+                      fontSize: '10px', 
                       fontWeight: 600, 
                       color: '#78716c', 
                       backgroundColor: '#f5f5f4', 
-                      padding: '3px 8px', 
+                      padding: '2px 7px', 
                       borderRadius: '6px', 
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
@@ -2983,75 +2935,52 @@ export default function Home() {
                       {resolvedCountry}
                     </span>
                   </h3>
-                  <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
                     {viewingProfile.bio || 'Wanderer & local spot hunter'}
                   </p>
                 </div>
               </div>
 
-              {/* Passport Stats Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px 10px', marginBottom: '14px', textAlign: 'center' }}>
+              {/* Compact Stats Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 8px', marginBottom: '12px', textAlign: 'center' }}>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Total Pins</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
+                  <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Total Pins</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{uniqueCities.length}</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#0284c7' }}>{uniqueCities.length}</div>
+                  <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Cities</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
+                  <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Countries</div>
                 </div>
               </div>
 
-              {/* Passport Stamps & Badges Section */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Award style={{ width: '13px', height: '13px', color: '#d97706' }} /> Passport Stamps & Badges
+              {/* Passport Stamps Tray */}
+              <div style={{ marginBottom: '12px', backgroundColor: '#fafaf9', borderRadius: '14px', border: '1px solid #e7e5e4', padding: '8px 10px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Award style={{ width: '12px', height: '12px', color: '#d97706' }} /> Passport Stamps & Badges
                 </div>
-                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '6px 2px', scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '2px 0 4px 0', scrollbarWidth: 'none' }}>
                   {uniqueCountries.map((c, i) => (
-                    <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -5 : 4} />
+                    <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -4 : 3} />
                   ))}
                   {viewingProfileSpots.length >= 1 && (
-                    <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={3} />
+                    <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={2} />
                   )}
                   {viewingProfileSpots.length >= 5 && (
-                    <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-4} />
+                    <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-3} />
                   )}
                   {uniqueCountries.length >= 2 && (
-                    <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={6} />
+                    <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={5} />
                   )}
                 </div>
               </div>
 
-              {/* Share Passport Link Button */}
-              <button
-                type="button"
-                onClick={() => handleSharePassport(viewingProfile.username, viewingProfile.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  backgroundColor: publicPassportCopied ? '#ecfdf5' : '#fafaf9',
-                  color: publicPassportCopied ? '#059669' : '#1c1917',
-                  border: publicPassportCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
-                  borderRadius: '12px',
-                  padding: '9px',
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  marginBottom: '14px',
-                }}
-              >
-                {publicPassportCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Share2 style={{ width: '14px', height: '14px' }} />}
-                {publicPassportCopied ? 'Passport Link Copied!' : `Share @${viewingProfile.username || 'wanderer'}'s Passport`}
-              </button>
-
+              {/* City Filter Pills */}
               {uniqueCities.length > 1 && (
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px', scrollbarWidth: 'none' }}>
                   <button
                     onClick={() => {
                       triggerHaptic(6);
@@ -3061,9 +2990,9 @@ export default function Home() {
                       backgroundColor: profileCityFilter === 'All' ? '#1c1917' : '#f5f5f4',
                       color: profileCityFilter === 'All' ? '#fafaf9' : '#57534e',
                       border: 'none',
-                      borderRadius: '12px',
-                      padding: '5px 10px',
-                      fontSize: '11px',
+                      borderRadius: '10px',
+                      padding: '4px 8px',
+                      fontSize: '10.5px',
                       fontWeight: 600,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
@@ -3082,9 +3011,9 @@ export default function Home() {
                         backgroundColor: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#1c1917' : '#f5f5f4',
                         color: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#fafaf9' : '#57534e',
                         border: 'none',
-                        borderRadius: '12px',
-                        padding: '5px 10px',
-                        fontSize: '11px',
+                        borderRadius: '10px',
+                        padding: '4px 8px',
+                        fontSize: '10.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
@@ -3096,39 +3025,39 @@ export default function Home() {
                 </div>
               )}
 
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#57534e', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#57534e', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Curated Field Notes
               </div>
 
-              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
+              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '2px' }}>
                 {filteredProfileSpots.length === 0 ? (
-                  <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
+                  <p style={{ margin: '16px 0', fontSize: '12px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
                 ) : (
                   filteredProfileSpots.map((s) => (
                     <div
                       key={s.id || s.name}
                       className="spot-card-hover"
-                      style={{ padding: '12px 14px', borderRadius: '16px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 2px 8px rgba(28, 25, 23, 0.03)' }}
+                      style={{ padding: '10px 12px', borderRadius: '14px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '10px', alignItems: 'center', boxShadow: '0 2px 8px rgba(28, 25, 23, 0.03)' }}
                     >
                       {s.image_url ? (
-                        <img src={s.image_url} alt={s.name} style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }} />
+                        <img src={s.image_url} alt={s.name} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
-                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
-                          <MapPin style={{ width: '22px', height: '22px' }} />
+                        <div style={{ width: '48px', height: '48px', borderRadius: '10px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
+                          <MapPin style={{ width: '18px', height: '18px' }} />
                         </div>
                       )}
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
-                          <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '9.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>
                             {s.category}
                           </span>
-                          <span style={{ fontSize: '10.5px', color: '#a8a29e', fontWeight: 500 }}>
+                          <span style={{ fontSize: '10px', color: '#a8a29e', fontWeight: 500 }}>
                             {formatRelativeTime(s.created_at)}
                           </span>
                         </div>
-                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
-                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>{s.city}</p>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '10.5px', color: '#78716c' }}>{s.city}</p>
                       </div>
 
                       <button
@@ -3142,18 +3071,18 @@ export default function Home() {
                           color: '#1c1917',
                           border: '1px solid #d6d3d1',
                           borderRadius: '10px',
-                          padding: '7px 10px',
-                          fontSize: '11px',
+                          padding: '6px 8px',
+                          fontSize: '10.5px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '3px',
                           flexShrink: 0,
                         }}
                         title="View on Map"
                       >
-                        Map <ExternalLink style={{ width: '10px', height: '10px' }} />
+                        Map <ExternalLink style={{ width: '9px', height: '9px' }} />
                       </button>
                     </div>
                   ))
@@ -3394,7 +3323,7 @@ export default function Home() {
                     </div>
                     <span>Flight Search | Aviasales</span>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
 
                 {/* 2. Klook */}
@@ -3405,7 +3334,7 @@ export default function Home() {
                     </div>
                     <span>Tickets & Hotels | Klook</span>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
 
                 {/* 3. Yesim */}
@@ -3416,7 +3345,7 @@ export default function Home() {
                     </div>
                     <span>eSIM Data | Yesim</span>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
               </div>
             </div>
@@ -3425,174 +3354,98 @@ export default function Home() {
         </div>
       )}
 
-      {/* Profile Modal (Own Profile Customization) */}
+      {/* Profile Modal (Own Profile) */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '22px 20px', position: 'relative', boxSizing: 'border-box' }}>
             <button onClick={() => dismissModalWithHistory(() => setIsProfileModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '14px' }}>
-              <label style={{ width: '72px', height: '72px', borderRadius: '24px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
+              <label style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '8px', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
-                  <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
+                  <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
                 ) : userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <User style={{ width: '30px', height: '30px', color: '#78716c' }} />
+                  <User style={{ width: '26px', height: '26px', color: '#78716c' }} />
                 )}
                 <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
-                  <Camera style={{ width: '20px', height: '20px' }} />
+                  <Camera style={{ width: '18px', height: '18px' }} />
                 </div>
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
               </label>
 
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
                 {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
                 <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
-                  <Pencil style={{ width: '13px', height: '13px' }} />
+                  <Pencil style={{ width: '12px', height: '12px' }} />
                 </button>
               </h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{currentUser.email}</p>
+              <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>{currentUser.email}</p>
             </div>
             
             {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 8px', marginBottom: '12px', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
-                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
+                <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Pins</div>
               </div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
-                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
+                <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
               </div>
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
-                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
+                <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Cities</div>
               </div>
             </div>
 
-            {/* Passport Stamps & Badges */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Award style={{ width: '13px', height: '13px', color: '#d97706' }} /> Passport Stamps & Badges
+            {/* Passport Stamps Tray */}
+            <div style={{ marginBottom: '12px', backgroundColor: '#fafaf9', borderRadius: '14px', border: '1px solid #e7e5e4', padding: '8px 10px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Award style={{ width: '12px', height: '12px', color: '#d97706' }} /> Passport Stamps & Badges
               </div>
-              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '6px 2px', scrollbarWidth: 'none' }}>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '2px 0 4px 0', scrollbarWidth: 'none' }}>
                 {myCountriesList.map((c, i) => (
-                  <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -5 : 4} />
+                  <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -4 : 3} />
                 ))}
                 {mySpotsCount >= 1 && (
-                  <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={3} />
+                  <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={2} />
                 )}
                 {mySpotsCount >= 5 && (
-                  <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-4} />
+                  <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-3} />
                 )}
                 {myCountriesList.length >= 2 && (
-                  <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={6} />
+                  <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={5} />
                 )}
               </div>
             </div>
 
-            {/* Share Passport Link Button */}
-            <button
-              type="button"
-              onClick={() => handleSharePassport(userProfile?.username, currentUser.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                width: '100%',
-                boxSizing: 'border-box',
-                backgroundColor: passportCopied ? '#ecfdf5' : '#fafaf9',
-                color: passportCopied ? '#059669' : '#1c1917',
-                border: passportCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
-                borderRadius: '12px',
-                padding: '9px',
-                fontSize: '11.5px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginBottom: '14px',
-              }}
-            >
-              {passportCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Share2 style={{ width: '14px', height: '14px' }} />}
-              {passportCopied ? 'Passport Link Copied to Clipboard!' : 'Share My Public Passport'}
-            </button>
-
-            {/* Passport Profile Bio & Country Edit Form */}
-            <form onSubmit={handleSaveProfileDetails} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Globe style={{ width: '13px', height: '13px', color: '#e05a47' }} /> Passport Identity
-              </div>
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Base Country</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Philippines, United States"
-                  value={editCountry}
-                  onChange={(e) => setEditCountry(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d6d3d1', outline: 'none' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Bio / Travel Tagline</label>
-                <input
-                  type="text"
-                  maxLength={100}
-                  placeholder="e.g. Local food hunter & night walker"
-                  value={editBio}
-                  onChange={(e) => setEditBio(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d6d3d1', outline: 'none' }}
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isSavingProfileDetails}
-                style={{
-                  width: '100%',
-                  backgroundColor: profileSaveSuccess ? '#059669' : '#1c1917',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '11.5px',
-                  padding: '9px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  transition: 'background-color 0.2s',
-                }}
-              >
-                {isSavingProfileDetails ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : profileSaveSuccess ? 'Saved to Passport!' : 'Save Passport Info'}
-              </button>
-            </form>
-
-            {/* Bywayr Plus Coming Soon Section */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Bywayr Plus Section */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Crown style={{ width: '15px', height: '15px', color: '#d97706' }} /> Bywayr Plus
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
                 </span>
-                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>Coming soon</span>
+                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '9.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>Coming soon</span>
               </div>
-              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
+              <p style={{ margin: 0, fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>
                 Unlock custom categories, custom icons, and JSON/GPX backups via Google Play & App Store billing.
               </p>
             </div>
 
-            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
+            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '12px', cursor: 'pointer', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
+                <MapPin style={{ width: '15px', height: '15px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
+                <span style={{ fontSize: '12px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '15px', height: '15px', color: '#e05a47' }} /> : <Square style={{ width: '15px', height: '15px', color: '#a8a29e' }} />}
             </div>
 
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '12px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <LogOut style={{ width: '13px', height: '13px' }} /> Sign Out
             </button>
 
             <button
@@ -3603,11 +3456,11 @@ export default function Home() {
                 pushModalHistoryState('deleteAccount');
               }}
               style={{
-                marginTop: '12px',
+                marginTop: '10px',
                 background: 'none',
                 border: 'none',
                 color: '#a8a29e',
-                fontSize: '11px',
+                fontSize: '10.5px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 textAlign: 'center',
@@ -3914,7 +3767,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', border: '1.5px dashed #d6d3d1', borderRadius: '12px', backgroundColor: '#fafaf9', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#78716c' }}>
-                    <Camera style={{ width: '16px', height: '16px', color: '#e05a47' }} />
+                    <Camera style={{ width: '16px', height: '16px' }} />
                     <span>Upload or snap photo</span>
                     <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
                   </label>
