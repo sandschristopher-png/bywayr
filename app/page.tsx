@@ -1838,7 +1838,7 @@ export default function Home() {
           to { opacity: 0; }
         }
         @keyframes scaleUp {
-          from { transform: scale(0.95) translateZ(0); opacity: 0; }
+          from { transform: scale(0.85) translateZ(0); opacity: 0; }
           to { transform: scale(1) translateZ(0); opacity: 1; }
         }
         @keyframes gpsRadarPulse {
@@ -1870,7 +1870,7 @@ export default function Home() {
           will-change: opacity;
         }
         .animate-scale-up {
-          animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: scaleUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
           will-change: transform, opacity;
           backface-visibility: hidden;
         }
@@ -2257,32 +2257,67 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay */}
+      {/* Empty State Overlay with Backdrop Blur, Zoom-In Animation, and Close Button */}
       {filteredSpots.length === 0 && !loading && (
-        <div style={{ 
-          position: 'fixed', 
-          top: isOffline ? '195px' : '155px',
-          left: '16px', 
-          right: '16px', 
-          maxWidth: '440px', 
-          margin: '0 auto',
-          zIndex: 9998, 
-          pointerEvents: 'auto',
-          transition: 'top 0.2s ease'
+        <div className="animate-fade-in" style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(28, 25, 23, 0.45)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99998,
+          padding: '16px',
         }}>
-          <EmptyState
-            category={selectedCategory}
-            onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
-            onAddSpot={() => {
-              if (!currentUserRef.current) {
-                setIsAuthModalOpen(true);
-                pushModalHistoryState('auth');
-                return;
-              }
-              const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-              dropPreviewAndOpenModal(center.lat, center.lng);
-            }}
-          />
+          <div className="animate-scale-up" style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '390px',
+            backgroundColor: '#ffffff',
+            borderRadius: '24px',
+            boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
+            border: '1px solid #e7e5e4',
+            padding: '24px',
+            boxSizing: 'border-box'
+          }}>
+            <button 
+              onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
+              style={{ 
+                position: 'absolute', 
+                top: '16px', 
+                right: '16px', 
+                border: 'none', 
+                background: '#f5f5f4', 
+                borderRadius: '50%', 
+                width: '32px', 
+                height: '32px', 
+                cursor: 'pointer', 
+                color: '#78716c', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}
+              title="Dismiss / Show All"
+            >
+              <X style={{ width: '16px', height: '16px' }} />
+            </button>
+            
+            <EmptyState
+              category={selectedCategory}
+              onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
+              onAddSpot={() => {
+                if (!currentUserRef.current) {
+                  setIsAuthModalOpen(true);
+                  pushModalHistoryState('auth');
+                  return;
+                }
+                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                dropPreviewAndOpenModal(center.lat, center.lng);
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -3748,7 +3783,6 @@ export default function Home() {
             zIndex: 100010,
             boxShadow: '0 8px 24px rgba(224, 90, 71, 0.35)',
             pointerEvents: 'none',
-            imageRendering: 'pixelated',
           }}
         >
           Press back again to exit Bywayr
