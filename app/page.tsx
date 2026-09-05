@@ -2353,10 +2353,26 @@ export default function Home() {
         </div>
       )}
 
-      {/* 3. Floating Map Controls */}
-      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
-          {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
+      {/* 3. Unified Floating Map Controls Pill */}
+      <div style={{ 
+        position: 'fixed', 
+        bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
+        right: '20px', 
+        zIndex: 99999, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        backgroundColor: isDarkMode ? 'rgba(28, 25, 23, 0.92)' : 'rgba(255, 255, 255, 0.92)', 
+        backdropFilter: 'blur(12px)', 
+        WebkitBackdropFilter: 'blur(12px)', 
+        border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4', 
+        borderRadius: '22px', 
+        padding: '6px', 
+        boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.18), 0 0 1px 1px rgba(28, 25, 23, 0.04)', 
+        gap: '6px', 
+        pointerEvents: 'auto' 
+      }}>
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
+          {isLocating ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '18px', height: '18px' }} />}
         </button>
 
         <button
@@ -2366,15 +2382,12 @@ export default function Home() {
             pushModalHistoryState('walkModal');
           }}
           style={{
-            width: '46px',
-            height: '46px',
-            backgroundColor: walkTargetSpot ? '#e05a47' : 'rgba(255, 255, 255, 0.92)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            color: walkTargetSpot ? '#ffffff' : '#44403c',
-            border: walkTargetSpot ? '1px solid #e05a47' : '1px solid #e7e5e4',
+            width: '42px',
+            height: '42px',
+            backgroundColor: walkTargetSpot ? '#e05a47' : 'transparent',
+            color: walkTargetSpot ? '#ffffff' : (isDarkMode ? '#fafaf9' : '#44403c'),
+            border: 'none',
             borderRadius: '16px',
-            boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2382,78 +2395,41 @@ export default function Home() {
           }}
           title="Choose a destination to walk to"
         >
-          <Footprints style={{ width: '20px', height: '20px' }} />
+          <Footprints style={{ width: '18px', height: '18px' }} />
         </button>
 
-        {/* Vertical Capsule Day / Night Switch */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: isDarkMode ? '#1c1917' : 'rgba(255, 255, 255, 0.92)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4',
-            borderRadius: '24px',
-            padding: '3px',
-            boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
-            gap: '2px',
-          }}
-        >
-          <button
-            onClick={() => {
-              triggerHaptic(6);
-              setIsDarkMode(false);
-            }}
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              border: 'none',
-              backgroundColor: !isDarkMode ? '#e05a47' : 'transparent',
-              color: !isDarkMode ? '#ffffff' : '#a8a29e',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: !isDarkMode ? '0 2px 8px rgba(224, 90, 71, 0.35)' : 'none',
-            }}
-            title="Day Mode"
-          >
-            <Sun style={{ width: '18px', height: '18px' }} />
-          </button>
-          <button
-            onClick={() => {
-              triggerHaptic(6);
-              setIsDarkMode(true);
-            }}
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              border: 'none',
-              backgroundColor: isDarkMode ? '#e05a47' : 'transparent',
-              color: isDarkMode ? '#ffffff' : '#78716c',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: isDarkMode ? '0 2px 8px rgba(224, 90, 71, 0.35)' : 'none',
-            }}
-            title="Dark Mode"
-          >
-            <MoonStar style={{ width: '18px', height: '18px' }} />
-          </button>
-        </div>
+        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <button onClick={() => map.current?.zoomIn()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom In">
-            <Plus style={{ width: '20px', height: '20px' }} />
-          </button>
-          <button onClick={() => map.current?.zoomOut()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom Out">
-            <Minus style={{ width: '20px', height: '20px' }} />
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            triggerHaptic(6);
+            setIsDarkMode(!isDarkMode);
+          }}
+          style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '16px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: isDarkMode ? '#e05a47' : '#78716c',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+          title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
+        >
+          {isDarkMode ? <MoonStar style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px' }} />}
+        </button>
+
+        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
+
+        <button onClick={() => map.current?.zoomIn()} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917' }} title="Zoom In">
+          <Plus style={{ width: '18px', height: '18px' }} />
+        </button>
+        <button onClick={() => map.current?.zoomOut()} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917' }} title="Zoom Out">
+          <Minus style={{ width: '18px', height: '18px' }} />
+        </button>
       </div>
 
       {/* Active Search Result Bottom Action Sheet */}
@@ -2876,7 +2852,7 @@ export default function Home() {
 
                   return (
                     <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 12px', fontSize: '12.5px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-system', alignItems: 'center', marginBottom: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
                           <span style={{ fontSize: '10px', fontWeight: 700, color: tagColor, backgroundColor: `${tagColor}15`, padding: '1px 6px', borderRadius: '4px' }}>
@@ -2958,7 +2934,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Add / Edit Spot Modal (`isModalOpen` — Compact & Streamlined) */}
+      {/* Add / Edit Spot Modal (`isModalOpen`) */}
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px' }}>
