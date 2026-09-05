@@ -68,7 +68,6 @@ import {
   Cpu,
   Download,
   MessageSquare,
-  WifiOff,
 } from 'lucide-react';
 
 interface Spot {
@@ -1086,6 +1085,255 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (map.current || !mapContainer.current) return;
+
+    let initialCenter: [number, number] = [-115.1398, 36.1699];
+    let initialZoom = 13.5;
+
+    try {
+      const savedCenterStr = localStorage.getItem('bywayr_map_center');
+      const savedZoomStr = localStorage.getItem('bywayr_map_zoom');
+      if (savedCenterStr) initialCenter = JSON.parse(savedCenterStr);
+      if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
+    } catch {}
+
+    const initializedMap = new maplibregl.Map({
+      container: mapContainer.current,
+      style: {
+        version: 8,
+        sources: {
+          'osm-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+          },
+        },
+        layers: [
+          {
+            id: 'osm-layer',
+            type: 'raster',
+            source: 'osm-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      },
+      center: initialCenter,
+      zoom: initialZoom,
+    });
+
+    initializedMap.on('moveend', () => {
+      const center = initializedMap.getCenter();
+      const zoom = initializedMap.getZoom();
+      localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
+      localStorage.setItem('bywayr_map_zoom', zoom.toString());
+    });
+
+    initializedMap.on('load', () => {
+      const hasSavedPosition = localStorage.getItem('bywayr_map_center');
+      if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            setUserCoords({ lat: latitude, lng: longitude });
+            initializedMap.jumpTo({ center: [longitude, latitude], zoom: 15 });
+
+            if (userLocationMarkerRef.current) {
+              userLocationMarkerRef.current.setLngLat([longitude, latitude]);
+            } else {
+              const el = document.createElement('div');
+              el.style.width = '16px';
+              el.style.height = '16px';
+              el.style.borderRadius = '50%';
+              el.style.backgroundColor = '#0284c7';
+              el.style.border = '3px solid #ffffff';
+              el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
+              el.className = 'user-location-pulse';
+
+              userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
+                .setLngLat([longitude, latitude])
+                .addTo(initializedMap);
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      }
+    });
+
+    initializedMap.on('click', (e) => {
+      setShowDropdown(false);
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      const originalTarget = e.originalEvent.target as HTMLElement;
+      if (originalTarget?.closest('.maplibregl-marker')) return;
+      const lat = parseFloat(e.lngLat.lat.toFixed(6));
+      const lng = parseFloat(e.lngLat.lng.toFixed(6));
+      dropPreviewAndOpenModal(lat, lng);
+    });
+
+    initializedMap.on('dragstart', () => {
+      setShowDropdown(false);
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
+
+    map.current = initializedMap;
+
+    return () => {
+      initializedMap.remove();
+      map.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loading && spots.length > 0 && map.current) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const spotId = urlParams.get('spot');
+      if (spotId) {
+        const target = spots.find((s) => s.id === spotId);
+        if (target && target.latitude && target.longitude) flyToSpot(target);
+      }
+    }
+  }, [loading, spots]);
+
+  useEffect(() => {
+    const rawQuery = searchQuery.trim();
+    if (rawQuery.length < 3) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const codeMatch = rawQuery.match(/([2-9CFGHJMPQRVWX+]{4,8}\+[2-9CFGHJMPQRVWX+]{2,})/i);
+
+    if (codeMatch) {
+      const codePart = codeMatch[1].toUpperCase();
+      const localityHint = rawQuery.replace(codeMatch[0], '').replace(/plus\s*code/gi, '').replace(/[()]/g, '').trim();
+
+      if (isValid(codePart)) {
+        if (isFull(codePart)) {
+          try {
+            const decoded = decode(codePart);
+            const lat = decoded.latitudeCenter;
+            const lon = decoded.longitudeCenter;
+            setSearchResults([{
+              lat: lat.toString(),
+              lon: lon.toString(),
+              display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
+            }]);
+            setShowDropdown(true);
+            return;
+          } catch (err) {
+            console.error('Full code decode error:', err);
+          }
+        } else if (isShort(codePart)) {
+          let isCancelled = false;
+          setIsSearching(true);
+          (async () => {
+            try {
+              let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
+              let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
+
+              if (localityHint) {
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localityHint)}&limit=1`);
+                const geoData = await geoRes.json();
+                if (!isCancelled && geoData && geoData.length > 0) {
+                  anchorLat = parseFloat(geoData[0].lat);
+                  anchorLon = parseFloat(geoData[0].lon);
+                }
+              }
+
+              const fullCode = recoverNearest(codePart, anchorLat, anchorLon);
+              if (!isCancelled && isFull(fullCode)) {
+                const decoded = decode(fullCode);
+                const lat = decoded.latitudeCenter;
+                const lon = decoded.longitudeCenter;
+                setSearchResults([{
+                  lat: lat.toString(),
+                  lon: lon.toString(),
+                  display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
+                }]);
+                setShowDropdown(true);
+              }
+            } catch (err) {
+              console.error('Short Plus Code resolution error:', err);
+            } finally {
+              if (!isCancelled) setIsSearching(false);
+            }
+          })();
+
+          return () => {
+            isCancelled = true;
+          };
+        }
+      }
+    }
+
+    const coordMatch = rawQuery.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lon = parseFloat(coordMatch[3]);
+      setSearchResults([{ lat: lat.toString(), lon: lon.toString(), display_name: `GPS Coordinates: ${lat}, ${lon}` }]);
+      setShowDropdown(true);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}&lat=${center.lat}&lon=${center.lng}&limit=6`);
+        const data = await res.json();
+        setSearchResults(data || []);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error('Search error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSelectSearchResult = (item: any) => {
+    triggerHaptic(8);
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    setShowDropdown(false);
+    setSearchQuery(item.display_name);
+
+    const placeName = item.name || item.display_name.split(',')[0];
+    const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
+
+    setActiveSearchedSpot({
+      name: placeName,
+      city: placeCity,
+      latitude: lat,
+      longitude: lon,
+    });
+    setViewingSpot(null);
+    pushModalHistoryState('activeSearchedSpot');
+
+    if (map.current) {
+      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+
+      if (previewMarkerRef.current) previewMarkerRef.current.remove();
+      previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
+        .setLngLat([lon, lat])
+        .addTo(map.current);
+    }
+  };
+
   const handleLocateMe = () => {
     triggerHaptic(8);
     if (!navigator.geolocation) {
@@ -1402,6 +1650,112 @@ export default function Home() {
   
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
+  useEffect(() => {
+    if (!map.current) return;
+    spotMarkersRef.current.forEach((marker) => marker.remove());
+    spotMarkersRef.current = [];
+
+    filteredSpots.forEach((spot) => {
+      if (!spot.latitude || !spot.longitude) return;
+      const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
+      const isWalkTarget = walkTargetSpot?.id === spot.id;
+      const color = getCategoryColor(spot.category);
+
+      const el = document.createElement('div');
+      el.style.width = '32px';
+      el.style.height = '32px';
+      el.style.borderRadius = '50%';
+      el.style.backgroundColor = isWalkTarget ? '#e05a47' : '#ffffff';
+      el.style.border = isMustTry
+        ? '3px solid #d97706'
+        : isWalkTarget
+        ? '3px solid #ffffff'
+        : `2.5px solid ${color}`;
+      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
+      el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.title = spot.name;
+
+      if (isWalkTarget) {
+        const iconDiv = document.createElement('div');
+        iconDiv.style.display = 'flex';
+        iconDiv.style.color = '#ffffff';
+        iconDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+        el.appendChild(iconDiv);
+      } else {
+        const svgIcon = document.createElement('div');
+        svgIcon.style.display = 'flex';
+        svgIcon.style.alignItems = 'center';
+        svgIcon.style.justifyContent = 'center';
+        svgIcon.style.color = color;
+        svgIcon.innerHTML = getCategorySvg(spot.category, color);
+        el.appendChild(svgIcon);
+      }
+
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerHaptic(8);
+        setActiveSearchedSpot(null);
+        flyToSpot(spot);
+      });
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([spot.longitude, spot.latitude])
+        .addTo(map.current!);
+
+      spotMarkersRef.current.push(marker);
+    });
+  }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
+
+  useEffect(() => {
+    const query = walkSearchQuery.trim();
+    if (query.length < 2) {
+      setLiveOsmResults([]);
+      setIsSearchingOsm(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingOsm(true);
+      try {
+        const center = map.current ? map.current.getCenter() : { lng: -115.1398, lat: 36.1699 };
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=5`
+        );
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+          const mapped: Spot[] = data.map((item: any) => {
+            const lat = parseFloat(item.lat);
+            const lon = parseFloat(item.lon);
+            return {
+              name: item.name || item.display_name.split(',')[0],
+              city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
+              country: item.address?.country || '',
+              category: 'Map Location',
+              description: item.display_name,
+              latitude: lat,
+              longitude: lon,
+              isLiveOsm: true,
+            };
+          });
+
+          setLiveOsmResults(mapped);
+        } else {
+          setLiveOsmResults([]);
+        }
+      } catch (err) {
+        console.error('OSM search error:', err);
+      } finally {
+        setIsSearchingOsm(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [walkSearchQuery]);
+
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
@@ -1439,11 +1793,6 @@ export default function Home() {
           100% {
             box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
           }
-        }
-        @keyframes pulseSkeleton {
-          0% { opacity: 0.5; }
-          50% { opacity: 1; }
-          100% { opacity: 0.5; }
         }
         .skeleton-pulse {
           animation: pulseSkeleton 1.4s ease-in-out infinite;
@@ -2730,7 +3079,7 @@ export default function Home() {
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>Flight Search: Aviasales</span>
+                    <span>Flight Search | Aviasales</span>
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
@@ -2741,7 +3090,7 @@ export default function Home() {
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
                     </div>
-                    <span>Tours, Hotels & Tickets: Klook</span>
+                    <span>Tours, Hotels & Tickets | Klook</span>
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
@@ -2752,7 +3101,7 @@ export default function Home() {
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>eSIM Data: Yesim</span>
+                    <span>eSIM Data | Yesim</span>
                   </div>
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
