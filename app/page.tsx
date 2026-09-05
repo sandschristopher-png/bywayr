@@ -390,6 +390,7 @@ export default function Home() {
     }
     return false;
   });
+    const [isInteracting, setIsInteracting] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
