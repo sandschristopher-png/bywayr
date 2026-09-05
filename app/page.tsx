@@ -5,7 +5,6 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
-import { EmptyState } from './src/main/components/EmptyState';
 import { PwaInstallBanner } from './src/main/components/PwaInstallBanner';
 import {
   MapPin,
@@ -2273,7 +2272,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Close X Button */}
+      {/* Empty State Popup (Cleaned up: No bulky outer frame, single integrated X button) */}
       {filteredSpots.length === 0 && !loading && (
         <div 
           className="animate-fade-in" 
@@ -2298,51 +2297,57 @@ export default function Home() {
             style={{
               position: 'relative',
               width: '100%',
-              maxWidth: '380px',
+              maxWidth: '360px',
               backgroundColor: '#ffffff',
               borderRadius: '24px',
               boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
-              border: '1px solid #e7e5e4',
               padding: '24px',
               boxSizing: 'border-box',
-              cursor: 'default'
+              cursor: 'default',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
             }}
           >
-            <button 
-              onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
-              style={{ 
-                position: 'absolute', 
-                top: '16px', 
-                right: '16px', 
-                border: 'none', 
-                background: '#f5f5f4', 
-                borderRadius: '50%', 
-                width: '32px', 
-                height: '32px', 
-                cursor: 'pointer', 
-                color: '#78716c', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}
-              title="Dismiss / Show All"
-            >
-              <X style={{ width: '16px', height: '16px' }} />
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                No unmapped spots here yet
+              </h3>
+              <button 
+                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
+                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                title="Dismiss"
+              >
+                <X style={{ width: '16px', height: '16px' }} />
+              </button>
+            </div>
             
-            <EmptyState
-              category={selectedCategory}
-              onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
-              onAddSpot={() => {
-                if (!currentUserRef.current) {
-                  setIsAuthModalOpen(true);
-                  pushModalHistoryState('auth');
-                  return;
-                }
-                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-                dropPreviewAndOpenModal(center.lat, center.lng);
-              }}
-            />
+            <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.4 }}>
+              No spots in "{selectedCategory}" nearby.
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button
+                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+                style={{ flex: 1, padding: '11px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Show All Spots
+              </button>
+              <button
+                onClick={() => {
+                  if (!currentUserRef.current) {
+                    setIsAuthModalOpen(true);
+                    pushModalHistoryState('auth');
+                    return;
+                  }
+                  const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                  dropPreviewAndOpenModal(center.lat, center.lng);
+                }}
+                style={{ flex: 1, padding: '11px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+              >
+                + Drop a Pin
+              </button>
+            </div>
           </div>
         </div>
       )}
