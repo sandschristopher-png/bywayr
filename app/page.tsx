@@ -69,6 +69,7 @@ import {
   Download,
   MessageSquare,
   WifiOff,
+  GlassWater,
 } from 'lucide-react';
 
 interface Spot {
@@ -113,7 +114,7 @@ const CATEGORIES = [
   { label: 'Local Eats', desc: 'Hole-in-the-wall diners & neighborhood restaurants', color: '#d97706', icon: Store },
   { label: 'Cafes & Workspaces', desc: 'Nomad-friendly spots with reliable Wi-Fi & power outlets', color: '#2563eb', icon: Laptop },
   { label: 'Bars & Nightlife', desc: 'Local watering holes, concept bars & neighborhood pubs', color: '#db2777', icon: Beer },
-  { label: 'Social & Host Bars', desc: 'Girls bars, hostess lounges, izakayas & social nightlife spots', color: '#7c3aed', icon: Wine },
+  { label: 'Social & Host Bars', desc: 'Girls bars, hostess lounges, izakayas & social nightlife spots', color: '#7c3aed', icon: GlassWater },
   { label: 'Entertainment & Play', desc: 'Retro arcades, game centers, batting cages & local amusement', color: '#6366f1', icon: Gamepad2 },
   { label: 'Markets & Shops', desc: 'Local produce alleys, thrift stalls & independent markets', color: '#b45309', icon: Disc },
   { label: 'Nature & Trails', desc: 'Trailheads, hidden beaches, waterfalls & green pockets', color: '#0d9488', icon: Trees },
