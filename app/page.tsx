@@ -2224,20 +2224,11 @@ export default function Home() {
 
         {/* Category Description Banner */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
-              </span>
-            </div>
-            <button
-              onClick={() => { triggerHaptic(6); setSelectedCategory('All'); }}
-              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '2px', flexShrink: 0 }}
-              title="Close Category Description"
-            >
-              <X style={{ width: '14px', height: '14px' }} />
-            </button>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
+            </span>
           </div>
         )}
 
@@ -2282,7 +2273,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Prominent Close X Button */}
+      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Close X Button */}
       {filteredSpots.length === 0 && !loading && (
         <div 
           className="animate-fade-in" 
@@ -2312,7 +2303,7 @@ export default function Home() {
               borderRadius: '24px',
               boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
               border: '1px solid #e7e5e4',
-              padding: '28px 24px 24px 24px',
+              padding: '24px',
               boxSizing: 'border-box',
               cursor: 'default'
             }}
@@ -2321,8 +2312,8 @@ export default function Home() {
               onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
               style={{ 
                 position: 'absolute', 
-                top: '14px', 
-                right: '14px', 
+                top: '16px', 
+                right: '16px', 
                 border: 'none', 
                 background: '#f5f5f4', 
                 borderRadius: '50%', 
@@ -2332,11 +2323,9 @@ export default function Home() {
                 color: '#78716c', 
                 display: 'flex', 
                 alignItems: 'center', 
-                justifyContent: 'center',
-                zIndex: 10,
-                boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+                justifyContent: 'center' 
               }}
-              title="Close"
+              title="Dismiss / Show All"
             >
               <X style={{ width: '16px', height: '16px' }} />
             </button>
@@ -2358,33 +2347,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* 3. Unified Floating Map Controls Capsule with Smart Docking & Fade-Out */}
-      <div style={{ 
-        position: 'fixed', 
-        bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
-        right: '20px', 
-        zIndex: 99999, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        backgroundColor: isDarkMode ? '#1c1917' : 'rgba(255, 255, 255, 0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4',
-        borderRadius: '24px',
-        padding: '6px',
-        boxShadow: '0 16px 40px -10px rgba(28, 25, 23, 0.2), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
-        gap: '6px',
-        pointerEvents: isAnyOverlayActive ? 'none' : 'auto',
-        opacity: isAnyOverlayActive ? 0 : 1,
-        transform: isAnyOverlayActive ? 'translateX(70px) scale(0.95)' : 'translateX(0) scale(1)',
-        transition: 'opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}>
-        {/* Locate Me */}
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '40px', height: '40px', backgroundColor: 'transparent', border: 'none', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
-          {isLocating ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '18px', height: '18px' }} />}
+      {/* 3. Floating Map Controls */}
+      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
+          {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
 
-        {/* Walk Destination */}
         <button
           onClick={() => {
             triggerHaptic(8);
@@ -2392,57 +2360,94 @@ export default function Home() {
             pushModalHistoryState('walkModal');
           }}
           style={{
-            width: '40px',
-            height: '40px',
-            backgroundColor: walkTargetSpot ? '#e05a47' : 'transparent',
-            color: walkTargetSpot ? '#ffffff' : (isDarkMode ? '#fafaf9' : '#44403c'),
-            border: 'none',
-            borderRadius: '20px',
+            width: '46px',
+            height: '46px',
+            backgroundColor: walkTargetSpot ? '#e05a47' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            color: walkTargetSpot ? '#ffffff' : '#44403c',
+            border: walkTargetSpot ? '1px solid #e05a47' : '1px solid #e7e5e4',
+            borderRadius: '16px',
+            boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: walkTargetSpot ? '0 2px 8px rgba(224, 90, 71, 0.35)' : 'none',
           }}
           title="Choose a destination to walk to"
         >
-          <Footprints style={{ width: '18px', height: '18px' }} />
+          <Footprints style={{ width: '20px', height: '20px' }} />
         </button>
 
-        {/* Day / Night Toggle */}
-        <button
-          onClick={() => {
-            triggerHaptic(6);
-            setIsDarkMode(!isDarkMode);
-          }}
+        {/* Vertical Capsule Day / Night Switch */}
+        <div
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '20px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#f59e0b' : '#78716c',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
+            flexDirection: 'column',
+            backgroundColor: isDarkMode ? '#1c1917' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4',
+            borderRadius: '24px',
+            padding: '3px',
+            boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+            gap: '2px',
           }}
-          title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
         >
-          {isDarkMode ? <Sun style={{ width: '18px', height: '18px' }} /> : <MoonStar style={{ width: '18px', height: '18px' }} />}
-        </button>
+          <button
+            onClick={() => {
+              triggerHaptic(6);
+              setIsDarkMode(false);
+            }}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: !isDarkMode ? '#e05a47' : 'transparent',
+              color: !isDarkMode ? '#ffffff' : '#a8a29e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: !isDarkMode ? '0 2px 8px rgba(224, 90, 71, 0.35)' : 'none',
+            }}
+            title="Day Mode"
+          >
+            <Sun style={{ width: '18px', height: '18px' }} />
+          </button>
+          <button
+            onClick={() => {
+              triggerHaptic(6);
+              setIsDarkMode(true);
+            }}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '20px',
+              border: 'none',
+              backgroundColor: isDarkMode ? '#e05a47' : 'transparent',
+              color: isDarkMode ? '#ffffff' : '#78716c',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: isDarkMode ? '0 2px 8px rgba(224, 90, 71, 0.35)' : 'none',
+            }}
+            title="Dark Mode"
+          >
+            <MoonStar style={{ width: '18px', height: '18px' }} />
+          </button>
+        </div>
 
-        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
-
-        {/* Zoom In */}
-        <button onClick={() => map.current?.zoomIn()} style={{ width: '40px', height: '40px', backgroundColor: 'transparent', border: 'none', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917' }} title="Zoom In">
-          <Plus style={{ width: '18px', height: '18px' }} />
-        </button>
-
-        {/* Zoom Out */}
-        <button onClick={() => map.current?.zoomOut()} style={{ width: '40px', height: '40px', backgroundColor: 'transparent', border: 'none', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917' }} title="Zoom Out">
-          <Minus style={{ width: '18px', height: '18px' }} />
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <button onClick={() => map.current?.zoomIn()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom In">
+            <Plus style={{ width: '20px', height: '20px' }} />
+          </button>
+          <button onClick={() => map.current?.zoomOut()} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1c1917' }} title="Zoom Out">
+            <Minus style={{ width: '20px', height: '20px' }} />
+          </button>
+        </div>
       </div>
 
       {/* Active Search Result Bottom Action Sheet */}
@@ -2693,143 +2698,145 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet */}
+      {/* 4. Spot Details Bottom Sheet with Background Blur */}
       {viewingSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Top Row: Category Badge & Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '2px' }}>
-            <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>
-              {viewingSpot.category}
-            </span>
+        <div className="animate-fade-in" onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 99999, padding: '16px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px))' }}>
+          <div className="animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '410px', maxHeight: '78vh', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', border: '1px solid #e7e5e4', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Top Row: Category Badge & Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '10.5px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>
+                {viewingSpot.category}
+              </span>
+              
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  onClick={() => toggleVouch(viewingSpot.id)}
+                  disabled={savingVouch}
+                  style={{
+                    border: 'none',
+                    background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f5f5f4',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
+                    padding: '6px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                  title="Vouch for this spot"
+                >
+                  <ThumbsUp style={{ width: '14px', height: '14px' }} />
+                  <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
+                </button>
+
+                <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Save to Must-Try">
+                  {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '15px', height: '15px' }} /> : <Bookmark style={{ width: '15px', height: '15px' }} />}
+                </button>
+
+                <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} title="Share spot">
+                  <Share2 style={{ width: '15px', height: '15px' }} />
+                </button>
+
+                {currentUser && viewingSpot.user_id === currentUser.id && (
+                  <>
+                    <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Edit Spot">
+                      <Pencil style={{ width: '14px', height: '14px' }} />
+                    </button>
+                    <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '6px', display: 'flex', flexShrink: 0 }} title="Delete Spot">
+                      {deleting ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '14px', height: '14px' }} />}
+                    </button>
+                  </>
+                )}
+                <button onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px', flexShrink: 0 }}>
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Full-Width Title and Subtitle Block */}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word', width: '100%' }}>
+                {viewingSpot.name}
+              </h3>
+              <p style={{ margin: 0, fontSize: '12px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
+                {viewingSpot.city}
+                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
+                  <>
+                    {' · '}
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenPublicProfile(viewingSpot.user_id!);
+                      }}
+                      style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      @{profilesMap[viewingSpot.user_id].username}
+                    </span>
+                  </>
+                ) : ''}
+              </p>
+            </div>
+
+            {viewingSpot.image_url && (
+              <div style={{ width: '100%', height: '130px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f5f5f4' }}>
+                <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              </div>
+            )}
+
+            {viewingSpot.description && (
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{viewingSpot.description}</p>
+            )}
             
-            <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <button
-                onClick={() => toggleVouch(viewingSpot.id)}
-                disabled={savingVouch}
+                onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
+              >
+                <Navigation2 style={{ width: '14px', height: '14px' }} /> Get Directions
+              </button>
+
+              <button
+                onClick={() => handleCopyCoordinates(viewingSpot.latitude, viewingSpot.longitude)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '9px', backgroundColor: coordsCopied ? '#ecfdf5' : '#f5f5f4', color: coordsCopied ? '#059669' : '#1c1917', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {coordsCopied ? <Check style={{ width: '13px', height: '13px' }} /> : <Copy style={{ width: '13px', height: '13px' }} />}
+                {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
+              </button>
+            </div>
+
+            {/* Field Notes Discussion Button to Open Separate Window */}
+            <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '10px' }}>
+              <button
+                onClick={() => {
+                  triggerHaptic(8);
+                  setIsDiscussionModalOpen(true);
+                  pushModalHistoryState('discussionModal');
+                }}
                 style={{
-                  border: 'none',
-                  background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f5f5f4',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
-                  padding: '7px 9px',
+                  width: '100%',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  backgroundColor: '#fafaf9',
+                  border: '1px solid #e7e5e4',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  color: '#1c1917',
                   fontSize: '12px',
                   fontWeight: 600,
-                  flexShrink: 0,
                 }}
-                title="Vouch for this spot"
               >
-                <ThumbsUp style={{ width: '15px', height: '15px' }} />
-                <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
-              </button>
-
-              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex', flexShrink: 0 }} title="Save to Must-Try">
-                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '16px', height: '16px' }} /> : <Bookmark style={{ width: '16px', height: '16px' }} />}
-              </button>
-
-              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} title="Share spot">
-                <Share2 style={{ width: '16px', height: '16px' }} />
-              </button>
-
-              {currentUser && viewingSpot.user_id === currentUser.id && (
-                <>
-                  <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', flexShrink: 0 }} title="Edit Spot">
-                    <Pencil style={{ width: '15px', height: '15px' }} />
-                  </button>
-                  <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '12px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex', flexShrink: 0 }} title="Delete Spot">
-                    {deleting ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '15px', height: '15px' }} />}
-                  </button>
-                </>
-              )}
-              <button onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px', flexShrink: 0 }}>
-                <X style={{ width: '19px', height: '19px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquare style={{ width: '14px', height: '14px', color: '#e05a47' }} />
+                  <span>Field Notes Discussion ({spotComments.length})</span>
+                </div>
+                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
               </button>
             </div>
-          </div>
-
-          {/* Full-Width Title and Subtitle Block */}
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word', width: '100%' }}>
-              {viewingSpot.name}
-            </h3>
-            <p style={{ margin: 0, fontSize: '13px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
-              {viewingSpot.city}
-              {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
-                <>
-                  {' · '}
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenPublicProfile(viewingSpot.user_id!);
-                    }}
-                    style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    @{profilesMap[viewingSpot.user_id].username}
-                  </span>
-                </>
-              ) : ''}
-            </p>
-          </div>
-
-          {viewingSpot.image_url && (
-            <div style={{ width: '100%', height: '160px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f5f5f4' }}>
-              <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            </div>
-          )}
-
-          {viewingSpot.description && (
-            <p style={{ margin: 0, fontSize: '13px', color: '#44403c', lineHeight: 1.45, wordBreak: 'break-word' }}>{viewingSpot.description}</p>
-          )}
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
-            <button
-              onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
-            >
-              <Navigation2 style={{ width: '14px', height: '14px' }} /> Get Directions
-            </button>
-
-            <button
-              onClick={() => handleCopyCoordinates(viewingSpot.latitude, viewingSpot.longitude)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: coordsCopied ? '#ecfdf5' : '#f5f5f4', color: coordsCopied ? '#059669' : '#1c1917', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-            >
-              {coordsCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
-              {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
-            </button>
-          </div>
-
-          {/* Field Notes Discussion Button to Open Separate Window */}
-          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px', marginTop: '2px' }}>
-            <button
-              onClick={() => {
-                triggerHaptic(8);
-                setIsDiscussionModalOpen(true);
-                pushModalHistoryState('discussionModal');
-              }}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 14px',
-                backgroundColor: '#fafaf9',
-                border: '1px solid #e7e5e4',
-                borderRadius: '14px',
-                cursor: 'pointer',
-                color: '#1c1917',
-                fontSize: '12.5px',
-                fontWeight: 600,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MessageSquare style={{ width: '15px', height: '15px', color: '#e05a47' }} />
-                <span>Field Notes Discussion ({spotComments.length})</span>
-              </div>
-              <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
-            </button>
           </div>
         </div>
       )}
