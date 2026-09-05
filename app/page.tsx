@@ -2252,6 +2252,69 @@ export default function Home() {
           </div>
         )}
 
+        {/* Empty State Popup (Placed neatly under category description with matching width/padding) */}
+        {filteredSpots.length === 0 && !loading && (
+          <div 
+            className="animate-fade-in" 
+            style={{
+              position: 'relative',
+              width: '100%',
+              backgroundColor: 'rgba(255, 255, 255, 0.94)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderRadius: '20px',
+              boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+              border: '1px solid #e7e5e4',
+              padding: '16px',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              marginTop: '2px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                No unmapped spots here yet
+              </h3>
+              <button 
+                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
+                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                title="Dismiss"
+              >
+                <X style={{ width: '14px', height: '14px' }} />
+              </button>
+            </div>
+            
+            <p style={{ margin: 0, fontSize: '12px', color: '#78716c', lineHeight: 1.4 }}>
+              No spots in "{selectedCategory}" nearby.
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+              <button
+                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+                style={{ flex: 1, padding: '9px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Show All Spots
+              </button>
+              <button
+                onClick={() => {
+                  if (!currentUserRef.current) {
+                    setIsAuthModalOpen(true);
+                    pushModalHistoryState('auth');
+                    return;
+                  }
+                  const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                  dropPreviewAndOpenModal(center.lat, center.lng);
+                }}
+                style={{ flex: 1, padding: '9px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+              >
+                + Drop a Pin
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Active Walk HUD Banner */}
         {walkTargetSpot && (
           <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '12.5px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)', gap: '10px' }}>
@@ -2292,86 +2355,6 @@ export default function Home() {
           </div>
         )}
       </div>
-
-      {/* Empty State Popup */}
-      {filteredSpots.length === 0 && !loading && (
-        <div 
-          className="animate-fade-in" 
-          onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(28, 25, 23, 0.45)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 99998,
-            padding: '16px',
-            cursor: 'pointer'
-          }}
-        >
-          <div 
-            className="animate-scale-up" 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: '360px',
-              backgroundColor: '#ffffff',
-              borderRadius: '24px',
-              boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
-              padding: '24px',
-              boxSizing: 'border-box',
-              cursor: 'default',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
-                No unmapped spots here yet
-              </h3>
-              <button 
-                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
-                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                title="Dismiss"
-              >
-                <X style={{ width: '16px', height: '16px' }} />
-              </button>
-            </div>
-            
-            <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.4 }}>
-              No spots in "{selectedCategory}" nearby.
-            </p>
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <button
-                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
-                style={{ flex: 1, padding: '11px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Show All Spots
-              </button>
-              <button
-                onClick={() => {
-                  if (!currentUserRef.current) {
-                    setIsAuthModalOpen(true);
-                    pushModalHistoryState('auth');
-                    return;
-                  }
-                  const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-                  dropPreviewAndOpenModal(center.lat, center.lng);
-                }}
-                style={{ flex: 1, padding: '11px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
-              >
-                + Drop a Pin
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 3. Unified Floating Map Controls Pill */}
       <div style={{ 
