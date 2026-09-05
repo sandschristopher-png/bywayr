@@ -3125,6 +3125,19 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Passport Stamps Section */}
+              <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
+                  </span>
+                  <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)} Countries</span>
+                </div>
+                <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
+                  Track your global footprint across unique cities and unmapped field notes.
+                </p>
+              </div>
+
               {uniqueCities.length > 1 && (
                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
                   <button
