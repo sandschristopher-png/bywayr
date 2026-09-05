@@ -515,6 +515,9 @@ export default function Home() {
   const [submittingComment, setSubmittingComment] = useState(false);
 
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
+  const [shareDialogCustomText, setShareDialogCustomText] = useState<string>('');
+  const [shareDialogCustomTitle, setShareDialogCustomTitle] = useState<string>('');
+  const [shareDialogCustomUrl, setShareDialogCustomUrl] = useState<string>('');
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
   const [coordsCopied, setCoordsCopied] = useState(false);
 
@@ -605,6 +608,7 @@ export default function Home() {
     viewingProfile ||
     isWalkModalOpen ||
     shareDialogSpot ||
+    shareDialogCustomUrl ||
     isAuthModalOpen ||
     isClaimUsernameModalOpen ||
     isDeleteAccountModalOpen ||
@@ -664,7 +668,7 @@ export default function Home() {
     if (isClaimUsernameModalOpen) { setIsClaimUsernameModalOpen(false); return; }
     if (isProfileModalOpen) { handleCloseProfileDrawer(); return; }
     if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
-    if (shareDialogSpot) { setShareDialogSpot(null); return; }
+    if (shareDialogSpot || shareDialogCustomUrl) { setShareDialogSpot(null); setShareDialogCustomUrl(''); return; }
     if (isWalkModalOpen) { setIsWalkModalOpen(false); return; }
     if (viewingProfile) { setViewingProfile(null); return; }
     if (isDiscussionModalOpen) {
@@ -690,6 +694,7 @@ export default function Home() {
     isProfileModalOpen,
     isAuthModalOpen,
     shareDialogSpot,
+    shareDialogCustomUrl,
     isWalkModalOpen,
     viewingProfile,
     isDiscussionModalOpen,
@@ -1040,6 +1045,31 @@ export default function Home() {
     }
 
     setShareDialogSpot(spot);
+    setShareDialogCustomTitle(`Share Spot: ${spot.name}`);
+    setShareDialogCustomText(shareText);
+    setShareDialogCustomUrl(shareUrl);
+    setShareDialogCopied(false);
+    pushModalHistoryState('share');
+  };
+
+  const handleShareFieldJournal = async () => {
+    if (!currentUser) return;
+    triggerHaptic(8);
+    const handle = userProfile?.username ? `@${userProfile.username}` : 'explorer';
+    const shareUrl = `${window.location.origin}${window.location.pathname}?curator=${currentUser.id}`;
+    const shareText = `Check out ${handle}'s Field Journal on Bywayr featuring ${mySpotsCount} pinned spots across ${myCountriesCount} countries!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${handle}'s Field Journal — Bywayr`, text: shareText, url: shareUrl });
+        return;
+      } catch {}
+    }
+
+    setShareDialogSpot(null);
+    setShareDialogCustomTitle(`Share Field Journal`);
+    setShareDialogCustomText(shareText);
+    setShareDialogCustomUrl(shareUrl);
     setShareDialogCopied(false);
     pushModalHistoryState('share');
   };
@@ -2291,10 +2321,10 @@ export default function Home() {
                   }}
                   style={{
                     backgroundColor: '#f5f5f4',
-                    border: '1px solid #d6d3d1',
+                    border: '1.5px solid #d6d3d1',
                     borderRadius: '50%',
-                    width: '34px',
-                    height: '34px',
+                    width: '38px',
+                    height: '38px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -2308,7 +2338,7 @@ export default function Home() {
                   {userProfile?.avatar_url ? (
                     <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <User style={{ width: '16px', height: '16px', color: '#78716c' }} />
+                    <User style={{ width: '19px', height: '19px', color: '#78716c' }} />
                   )}
                 </button>
               ) : (
@@ -2343,7 +2373,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Dropdown */}
           {showDropdown && searchQuery.trim().length >= 3 && (
             <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
@@ -3351,11 +3380,11 @@ export default function Home() {
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)', border: '2px solid #e7e5e4' }}>
                   {viewingProfile.avatar_url ? (
                     <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <Compass style={{ width: '28px', height: '28px' }} />
+                    <User style={{ width: '28px', height: '28px' }} />
                   )}
                 </div>
                 <div>
@@ -3593,18 +3622,22 @@ export default function Home() {
       })()}
 
       {/* Universal Share Modal */}
-      {shareDialogSpot && (
+      {(shareDialogSpot || shareDialogCustomUrl) && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-            <button onClick={() => dismissModalWithHistory(() => setShareDialogSpot(null))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+            <button onClick={() => dismissModalWithHistory(() => { setShareDialogSpot(null); setShareDialogCustomUrl(''); })} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Share Spot</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Send <strong>{shareDialogSpot.name}</strong> to fellow explorers:</p>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              {shareDialogCustomTitle || (shareDialogSpot ? `Share Spot: ${shareDialogSpot.name}` : 'Share Bywayr')}
+            </h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>
+              Send to friends or across social messaging apps:
+            </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr: ${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`${shareDialogCustomText || (shareDialogSpot ? `Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr!` : 'Check out Bywayr!')} ${shareDialogCustomUrl || (shareDialogSpot ? `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}` : window.location.origin)}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
@@ -3616,7 +3649,7 @@ export default function Home() {
               </a>
 
               <a
-                href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}&text=${encodeURIComponent(`Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr!`)}`}
+                href={`https://t.me/share/url?url=${encodeURIComponent(shareDialogCustomUrl || (shareDialogSpot ? `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}` : window.location.origin))}&text=${encodeURIComponent(shareDialogCustomText || (shareDialogSpot ? `Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr!` : 'Check out Bywayr!'))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
@@ -3628,7 +3661,7 @@ export default function Home() {
               </a>
 
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr:`)}&url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareDialogCustomText || (shareDialogSpot ? `Check out ${shareDialogSpot.name} in ${shareDialogSpot.city} on Bywayr!` : 'Check out Bywayr!'))}&url=${encodeURIComponent(shareDialogCustomUrl || (shareDialogSpot ? `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}` : window.location.origin))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
@@ -3640,7 +3673,7 @@ export default function Home() {
               </a>
 
               <a
-                href={`mailto:?subject=${encodeURIComponent(`Bywayr Spot: ${shareDialogSpot.name}`)}&body=${encodeURIComponent(`Check out this spot in ${shareDialogSpot.city}: ${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`)}`}
+                href={`mailto:?subject=${encodeURIComponent(shareDialogCustomTitle || (shareDialogSpot ? `Bywayr Spot: ${shareDialogSpot.name}` : 'Bywayr Field Journal'))}&body=${encodeURIComponent(`${shareDialogCustomText || 'Check this out on Bywayr'}: ${shareDialogCustomUrl || (shareDialogSpot ? `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}` : window.location.origin)}`)}`}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
                 <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#ea4335', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
@@ -3653,7 +3686,7 @@ export default function Home() {
             <button
               onClick={async () => {
                 triggerHaptic(10);
-                const url = `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}`;
+                const url = shareDialogCustomUrl || (shareDialogSpot ? `${window.location.origin}${window.location.pathname}?spot=${shareDialogSpot.id}` : window.location.origin);
                 await navigator.clipboard.writeText(url);
                 setShareDialogCopied(true);
                 setTimeout(() => setShareDialogCopied(false), 2500);
@@ -3677,6 +3710,642 @@ export default function Home() {
               {shareDialogCopied ? <Check style={{ width: '15px', height: '15px' }} /> : <Copy style={{ width: '15px', height: '15px' }} />}
               {shareDialogCopied ? 'Link Copied to Clipboard!' : 'Copy Direct Link'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-Out Drawer (Field Notes - Left) */}
+      {(isDrawerOpen || isDrawerClosing) && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(28, 25, 23, 0.45)', 
+            backdropFilter: 'blur(3px)', 
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 100000, 
+            display: 'flex', 
+            justifyContent: 'flex-start',
+            animation: isDrawerClosing ? 'fadeOut 0.3s ease-out forwards' : 'fadeIn 0.2s ease-out forwards'
+          }}
+        >
+          <div 
+            style={{ 
+              width: '100%', 
+              maxWidth: '370px', 
+              backgroundColor: '#ffffff', 
+              height: '100%', 
+              boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              padding: '20px', 
+              boxSizing: 'border-box',
+              animation: isDrawerClosing ? 'slideOutLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
+              <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
+                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
+                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+              </div>
+            </div>
+            
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
+              {displayedDrawerSpots.map((spot: Spot) => {
+                const color = getCategoryColor(spot.category);
+                const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
+                const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
+
+                return (
+                  <div
+                    key={spot.id || spot.name}
+                    onClick={() => {
+                      triggerHaptic(8);
+                      setIsDrawerClosing(true);
+                      setTimeout(() => {
+                        setIsDrawerOpen(false);
+                        setIsDrawerClosing(false);
+                      }, 280);
+                      flyToSpot(spot);
+                    }}
+                    className="spot-card-hover"
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '14px',
+                      border: '1px solid #e7e5e4',
+                      borderLeft: `4px solid ${color}`,
+                      backgroundColor: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {spot.image_url && (
+                      <img
+                        src={spot.image_url}
+                        alt={spot.name}
+                        style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                      />
+                    )}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <h4
+                          style={{
+                            margin: 0,
+                            fontSize: '13.5px',
+                            fontWeight: 700,
+                            color: '#1c1917',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {spot.name}
+                        </h4>
+                        {distanceText && (
+                          <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>
+                            {distanceText}
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '11px',
+                          color: '#78716c',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingLeft: '4px' }}>
+                Travel Essentials
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                    </div>
+                    <span>Flight Search | Aviasales</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
+
+                <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                    </div>
+                    <span>Tickets & Hotels | Klook</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
+
+                <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                    </div>
+                    <span>eSIM Data | Yesim</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-Out Profile Drawer (Right) */}
+      {(isProfileModalOpen || isProfileClosing) && currentUser && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(28, 25, 23, 0.45)', 
+            backdropFilter: 'blur(3px)', 
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 100000, 
+            display: 'flex', 
+            justifyContent: 'flex-end',
+            animation: isProfileClosing ? 'fadeOut 0.3s ease-out forwards' : 'fadeIn 0.2s ease-out forwards'
+          }}
+        >
+          <div 
+            style={{ 
+              width: '100%', 
+              maxWidth: '380px', 
+              backgroundColor: '#ffffff', 
+              height: '100%', 
+              boxShadow: '-10px 0 35px rgba(28, 25, 23, 0.18)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              padding: '24px', 
+              boxSizing: 'border-box',
+              overflowY: 'auto',
+              animation: isProfileClosing ? 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
+              <button onClick={handleCloseProfileDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
+              <label style={{ width: '88px', height: '88px', borderRadius: '50%', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '2.5px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 24px rgba(28, 25, 23, 0.1)' }} title="Click to upload profile photo">
+                {uploadingAvatar ? (
+                  <Loader2 style={{ width: '26px', height: '26px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
+                ) : userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User style={{ width: '38px', height: '38px', color: '#78716c' }} />
+                )}
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
+                  <Camera style={{ width: '22px', height: '22px' }} />
+                </div>
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+              </label>
+
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
+                {userProfile?.username ? `@${userProfile.username}` : 'Account'}
+                <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setClaimCountry(userProfile?.country || 'United States'); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                  <Pencil style={{ width: '13px', height: '13px' }} />
+                </button>
+              </h3>
+              
+              <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {!isEditingCountry ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', color: '#78716c', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#f5f5f4', padding: '2px 8px', borderRadius: '8px', border: '1px solid #e7e5e4', fontWeight: 600 }}>
+                      <Globe style={{ width: '11px', height: '11px', color: '#e05a47' }} />
+                      {userProfile?.country || 'United States'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsEditingCountry(true);
+                        setEditCountryValue(userProfile?.country || 'United States');
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }}
+                      title="Edit Country of Origin"
+                    >
+                      <Pencil style={{ width: '11px', height: '11px' }} />
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input
+                      type="text"
+                      value={editCountryValue}
+                      onChange={(e) => setEditCountryValue(e.target.value)}
+                      placeholder="Country of Origin"
+                      style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '8px', border: '1px solid #d6d3d1', outline: 'none', width: '110px' }}
+                    />
+                    <button
+                      onClick={() => handleUpdateCountry(editCountryValue)}
+                      disabled={savingCountry}
+                      style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '8px', padding: '4px 7px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      {savingCountry ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingCountry(false)}
+                      style={{ background: 'none', border: 'none', color: '#78716c', fontSize: '11px', cursor: 'pointer', padding: '2px' }}
+                    >
+                      <X style={{ width: '13px', height: '13px' }} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>{currentUser.email}</p>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+              </div>
+            </div>
+
+            {/* Visual Scrollable Passport Stamps Section (Field Journal) */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
+                </span>
+                <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{myCountriesCount} Countries</span>
+              </div>
+
+              {myPassportStamps.length === 0 ? (
+                <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>
+                  Pin your first spot to earn your first country passport stamp!
+                </p>
+              ) : (
+                <div 
+                  ref={profileStampScrollRef}
+                  onMouseDown={(e) => handleStampMouseDown(e, profileStampScrollRef)}
+                  onMouseLeave={handleCategoryMouseLeaveOrUp}
+                  onMouseUp={handleCategoryMouseLeaveOrUp}
+                  onMouseMove={(e) => handleStampMouseMove(e, profileStampScrollRef)}
+                  onWheel={(e) => handleStampWheel(e, profileStampScrollRef)}
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    overflowX: 'auto',
+                    paddingBottom: '8px',
+                    paddingTop: '2px',
+                    scrollbarWidth: 'none',
+                    cursor: isStampDragging ? 'grabbing' : 'grab',
+                    WebkitOverflowScrolling: 'touch',
+                    transform: 'translateZ(0)',
+                  }}
+                >
+                  {myPassportStamps.map((st, idx) => (
+                    <div
+                      key={idx}
+                      className="passport-stamp-card"
+                      onClick={() => {
+                        triggerHaptic(8);
+                        setSelectedCountryFilter(st.country);
+                        handleCloseProfileDrawer();
+                      }}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: `1.8px dashed ${st.color}`,
+                        borderRadius: '14px',
+                        padding: '10px 12px',
+                        minWidth: '135px',
+                        maxWidth: '155px',
+                        boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                          ENTRY STAMP
+                        </span>
+                        <Award style={{ width: '12px', height: '12px', color: st.color }} />
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                        {st.country}
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {st.cities.join(', ') || 'Explored'}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px', paddingTop: '4px', borderTop: '1px solid #f5f5f4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 600 }}>
+                        <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
+                        <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
+              </div>
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
+            </div>
+
+            {/* Share Field Journal Action */}
+            <button
+              onClick={handleShareFieldJournal}
+              style={{
+                width: '100%',
+                backgroundColor: '#f5f5f4',
+                color: '#1c1917',
+                border: '1px solid #e7e5e4',
+                padding: '11px',
+                borderRadius: '14px',
+                fontSize: '12.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                marginBottom: '10px',
+              }}
+            >
+              <Share2 style={{ width: '14px', height: '14px' }} /> Share Field Journal
+            </button>
+
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
+            </button>
+
+            <button
+              onClick={() => {
+                triggerHaptic(8);
+                setDeleteConfirmText('');
+                setIsDeleteAccountModalOpen(true);
+                pushModalHistoryState('deleteAccount');
+              }}
+              style={{
+                marginTop: '12px',
+                background: 'none',
+                border: 'none',
+                color: '#a8a29e',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textAlign: 'center',
+                width: '100%',
+                padding: '4px',
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#e05a47')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#a8a29e')}
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Verification Dialog */}
+      {isDeleteAccountModalOpen && currentUser && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+              <AlertTriangle style={{ width: '24px', height: '24px' }} />
+            </div>
+
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Delete Account</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#78716c', lineHeight: 1.45 }}>
+              This will permanently delete your profile, handle, and bookmarks. Your public spots will remain anonymously as community field notes.
+            </p>
+
+            <div style={{ marginBottom: '14px', textAlign: 'left' }}>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: '#57534e', display: 'block', marginBottom: '5px' }}>
+                Type <span style={{ color: '#e05a47' }}>DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                autoFocus
+                placeholder="DELETE"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', textAlign: 'center', letterSpacing: '0.05em', fontWeight: 700 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE' || isDeletingAccount}
+                style={{
+                  width: '100%',
+                  backgroundColor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#e05a47' : '#f5f5f4',
+                  color: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#ffffff' : '#a8a29e',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  padding: '12px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  cursor: deleteConfirmText.trim().toUpperCase() === 'DELETE' && !isDeletingAccount ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '0 4px 12px rgba(224, 90, 71, 0.25)' : 'none',
+                }}
+              >
+                {isDeletingAccount ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Permanently Delete Account'}
+              </button>
+
+              <button
+                onClick={() => dismissModalWithHistory(() => setIsDeleteAccountModalOpen(false))}
+                disabled={isDeletingAccount}
+                style={{
+                  width: '100%',
+                  backgroundColor: 'transparent',
+                  color: '#78716c',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  padding: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Claim Handle & Country Modal */}
+      {isClaimUsernameModalOpen && currentUser && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+              <AtSign style={{ width: '24px', height: '24px' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', textAlign: 'center' }}>Set Up Profile</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a handle and confirm your country of origin for your field journal.</p>
+
+            <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
+                  <input
+                    type="text"
+                    required
+                    maxLength={20}
+                    placeholder="traveler"
+                    value={claimUsername}
+                    onChange={(e) => {
+                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setClaimUsername(clean);
+                      if (clean.length > 0 && clean.length < 3) {
+                        setClaimUsernameError('Must be at least 3 characters');
+                      } else {
+                        setClaimUsernameError('');
+                      }
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                  />
+                </div>
+                {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Country of Origin</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. United States"
+                  value={claimCountry}
+                  onChange={(e) => setClaimCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Complete Profile'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 10. Auth Modal */}
+      {isAuthModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+              <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+            
+            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              Continue with Google
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+              <span style={{ fontSize: '11px', color: '#a8a29e', fontWeight: 600 }}>OR EMAIL</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+            </div>
+
+            <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
+                <input
+                  type="text"
+                  maxLength={20}
+                  placeholder="e.g. explorer_ph"
+                  value={authUsername}
+                  onChange={(e) => {
+                    const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    setAuthUsername(clean);
+                    if (clean.length > 0 && clean.length < 3) {
+                      setAuthUsernameError('Must be at least 3 characters');
+                    } else {
+                      setAuthUsernameError('');
+                    }
+                  }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                />
+                {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
+              </div>
+
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country of Origin</label>
+                <input
+                  type="text"
+                  placeholder="e.g. United States"
+                  value={authCountry}
+                  onChange={(e) => setAuthCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
+              <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
+              </button>
+            </form>
           </div>
         </div>
       )}
