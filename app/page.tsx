@@ -705,7 +705,6 @@ export default function Home() {
     } else {
       const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
       if (!error) {
-        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
         setVouchedSpotIds((prev) => [...prev, spotId]);
         setVouchCounts((prev) => ({
           ...prev,
@@ -2702,32 +2701,11 @@ export default function Home() {
       {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '10px' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
-                {viewingSpot.category}
-              </span>
-              <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word' }}>
-                {viewingSpot.name}
-              </h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {viewingSpot.city}
-                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
-                  <>
-                    {' · '}
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenPublicProfile(viewingSpot.user_id!);
-                      }}
-                      style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      @{profilesMap[viewingSpot.user_id].username}
-                    </span>
-                  </>
-                ) : ''}
-              </p>
-            </div>
+          {/* Top Row: Category Badge & Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>
+              {viewingSpot.category}
+            </span>
             
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
               <button
@@ -2775,6 +2753,30 @@ export default function Home() {
                 <X style={{ width: '19px', height: '19px' }} />
               </button>
             </div>
+          </div>
+
+          {/* Full-Width Title and Subtitle Block */}
+          <div style={{ width: '100%' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word', width: '100%' }}>
+              {viewingSpot.name}
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#78716c', fontWeight: 500, width: '100%' }}>
+              {viewingSpot.city}
+              {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
+                <>
+                  {' · '}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPublicProfile(viewingSpot.user_id!);
+                    }}
+                    style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    @{profilesMap[viewingSpot.user_id].username}
+                  </span>
+                </>
+              ) : ''}
+            </p>
           </div>
 
           {viewingSpot.image_url && (
@@ -2942,6 +2944,128 @@ export default function Home() {
                 title="Send Comment"
               >
                 {submittingComment ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <Send style={{ width: '14px', height: '14px' }} />}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Spot Modal (`isModalOpen`) */}
+      {isModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '420px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto' }}>
+            <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X style={{ width: '18px', height: '18px' }} />
+            </button>
+
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              {isEditing ? 'Edit Curated Spot' : 'Add Curated Spot'}
+            </h3>
+
+            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ÔDELICE"
+                  value={newSpot.name}
+                  onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
+                <select
+                  value={newSpot.category}
+                  onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', backgroundColor: '#ffffff', color: '#1c1917' }}
+                >
+                  {CATEGORIES.filter((c) => c.label !== 'All').map((cat) => (
+                    <option key={cat.label} value={cat.label}>{cat.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="City"
+                    value={newSpot.city}
+                    onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Country</label>
+                  <input
+                    type="text"
+                    placeholder="Country"
+                    value={newSpot.country || ''}
+                    onChange={(e) => setNewSpot({ ...newSpot, country: e.target.value })}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Description / Field Notes</label>
+                <textarea
+                  rows={3}
+                  placeholder="Share a tip or description..."
+                  value={newSpot.description}
+                  onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917', resize: 'vertical' }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>Photo</label>
+                  <button type="button" onClick={handleModalLocate} disabled={isModalLocating} style={{ background: 'none', border: 'none', color: '#e05a47', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    {isModalLocating ? <Loader2 style={{ width: '11px', height: '11px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '11px', height: '11px' }} />}
+                    Use Current GPS
+                  </button>
+                </div>
+                
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', backgroundColor: '#f5f5f4', border: '1px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', fontSize: '12px', color: '#57534e', fontWeight: 600 }}>
+                  <Camera style={{ width: '16px', height: '16px', color: '#e05a47' }} />
+                  <span>{imageFile ? imageFile.name : imagePreview ? 'Change Photo' : 'Upload Photo'}</span>
+                  <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                </label>
+                {imagePreview && (
+                  <div style={{ marginTop: '8px', width: '100%', height: '120px', borderRadius: '10px', overflow: 'hidden' }}>
+                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving || uploadingImage}
+                style={{
+                  marginTop: '8px',
+                  width: '100%',
+                  backgroundColor: '#e05a47',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '14px',
+                  padding: '12px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: saving || uploadingImage ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)'
+                }}
+              >
+                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Publish Curated Spot')}
               </button>
             </form>
           </div>
