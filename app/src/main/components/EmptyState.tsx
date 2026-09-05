@@ -17,38 +17,94 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onClose,
 }) => {
   return (
-    <div className="absolute top-[205px] left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm rounded-2xl bg-white/95 p-5 shadow-lg backdrop-blur-sm border border-neutral-100 text-center transition-all animate-in fade-in zoom-in-95">
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        boxSizing: 'border-box',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: '20px',
+        padding: '16px 20px',
+        boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+        border: '1px solid #e7e5e4',
+        textAlign: 'center',
+      }}
+    >
       {onClose && (
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-3 right-3 rounded-full bg-neutral-100 p-1.5 text-neutral-400 hover:text-neutral-700 transition-colors"
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            border: 'none',
+            background: '#f5f5f4',
+            borderRadius: '50%',
+            width: '26px',
+            height: '26px',
+            cursor: 'pointer',
+            color: '#78716c',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           title="Dismiss / Show All"
         >
-          <X className="h-3.5 w-3.5" />
+          <X style={{ width: '14px', height: '14px' }} />
         </button>
       )}
 
-      <h3 className="text-base font-semibold text-neutral-900 pr-6 pl-6">
+      <h3
+        style={{
+          margin: '0 0 4px 0',
+          fontSize: '15px',
+          fontWeight: 700,
+          color: '#1c1917',
+          letterSpacing: '-0.02em',
+          padding: '0 24px',
+        }}
+      >
         No unmapped spots here yet
       </h3>
 
-      <p className="mt-1 text-xs leading-relaxed text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis px-2">
+      <p
+        style={{
+          margin: '0 0 12px 0',
+          fontSize: '12px',
+          color: '#78716c',
+          lineHeight: 1.35,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {category && category !== 'All' ? (
           <>
-            No spots in <span className="font-medium text-neutral-700">"{category}"</span> nearby.
+            No spots in <span style={{ fontWeight: 600, color: '#44403c' }}>"{category}"</span> nearby.
           </>
         ) : (
           'Be the first to plot a hidden gem here.'
         )}
       </p>
 
-      <div className="mt-4 flex items-center justify-center gap-2">
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
         {category && category !== 'All' && onResetFilter && (
           <button
             onClick={onResetFilter}
             type="button"
-            className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+            style={{
+              padding: '7px 12px',
+              backgroundColor: '#f5f5f4',
+              color: '#44403c',
+              border: '1px solid #e7e5e4',
+              borderRadius: '12px',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
           >
             Show All Spots
           </button>
@@ -57,10 +113,22 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           <button
             onClick={onAddSpot}
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#e05a47] px-3.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-[#c94d3c] transition-colors"
+            style={{
+              padding: '7px 14px',
+              backgroundColor: '#e05a47',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)',
+            }}
           >
-            <Plus className="h-3.5 w-3.5" />
-            Drop a Pin
+            <Plus style={{ width: '13px', height: '13px' }} /> Drop a Pin
           </button>
         )}
       </div>

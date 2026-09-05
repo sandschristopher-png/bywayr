@@ -2260,25 +2260,25 @@ export default function Home() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Empty State */}
-      {filteredSpots.length === 0 && !loading && (
-        <EmptyState
-          category={selectedCategory}
-          onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
-          onAddSpot={() => {
-            if (!currentUserRef.current) {
-              setIsAuthModalOpen(true);
-              pushModalHistoryState('auth');
-              return;
-            }
-            const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-            dropPreviewAndOpenModal(center.lat, center.lng);
-          }}
-          onClose={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
-        />
-      )}
+        {/* Empty State Card (Directly flows with exact 8px uniform rhythm) */}
+        {filteredSpots.length === 0 && !loading && (
+          <EmptyState
+            category={selectedCategory}
+            onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
+            onAddSpot={() => {
+              if (!currentUserRef.current) {
+                setIsAuthModalOpen(true);
+                pushModalHistoryState('auth');
+                return;
+              }
+              const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+              dropPreviewAndOpenModal(center.lat, center.lng);
+            }}
+            onClose={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+          />
+        )}
+      </div>
 
       {/* 3. Floating Map Controls */}
       <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
