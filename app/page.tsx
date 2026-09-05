@@ -55,8 +55,6 @@ import {
   Footprints,
   ExternalLink,
   ArrowRight,
-  Ticket,
-  Wifi,
   Plane,
   AlertTriangle,
   Gamepad2,
@@ -1053,6 +1051,193 @@ export default function Home() {
     }
   };
 
+  const fetchSpots = async () => {
+    try {
+      const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
+      if (!error && data) {
+        setSpots(data as Spot[]);
+        localStorage.setItem('bywayr_cached_spots', JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error('Failed to load spots:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMustTryBookmarks = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.from('bookmarks').select('spot_id').eq('user_id', userId);
+      if (!error && data) setMustTrySpotIds(data.map((item: any) => item.spot_id));
+    } catch (err) {
+      console.error('Failed to load bookmarks:', err);
+    }
+  };
+
+  const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
+      setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
+      return;
+    }
+
+    if (!map.current) return;
+    triggerHaptic(8);
+    setViewingSpot(null);
+    setActiveSearchedSpot(null);
+    setIsEditing(false);
+
+    if (previewMarkerRef.current) previewMarkerRef.current.remove();
+
+    const previewPin = new maplibregl.Marker({ color: '#e05a47' }).setLngLat([lon, lat]).addTo(map.current);
+    previewMarkerRef.current = previewPin;
+
+    map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+
+    const geo = await reverseGeocode(lat, lon);
+
+    setNewSpot({
+      name: defaultName || geo.name || '',
+      category: 'Hidden Gems',
+      city: geo.city || 'Las Vegas',
+      country: geo.country || 'United States',
+      description: '',
+      latitude: parseFloat(lat.toFixed(6)),
+      longitude: parseFloat(lon.toFixed(6)),
+      image_url: '',
+    });
+
+    setImageFile(null);
+    setImagePreview(null);
+    setIsModalOpen(true);
+    pushModalHistoryState('addSpotModal');
+  };
+
+  const handleSelectSearchResult = (item: any) => {
+    triggerHaptic(8);
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    setShowDropdown(false);
+    setSearchQuery(item.display_name);
+
+    const placeName = item.name || item.display_name.split(',')[0];
+    const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
+
+    setActiveSearchedSpot({
+      name: placeName,
+      city: placeCity,
+      latitude: lat,
+      longitude: lon,
+    });
+    setViewingSpot(null);
+    pushModalHistoryState('activeSearchedSpot');
+
+    if (map.current) {
+      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+
+      if (previewMarkerRef.current) previewMarkerRef.current.remove();
+      previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
+        .setLngLat([lon, lat])
+        .addTo(map.current);
+    }
+  };
+
+  const handleOpenEditModal = (spot: Spot) => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || spot.user_id !== activeUser.id) return;
+    triggerHaptic(8);
+    setIsEditing(true);
+    setNewSpot(spot);
+    setImagePreview(spot.image_url || null);
+    setImageFile(null);
+    setViewingSpot(null);
+    setActiveSearchedSpot(null);
+    setIsModalOpen(true);
+    pushModalHistoryState('editSpotModal');
+  };
+
+  const handleSaveSpot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
+      setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
+      return;
+    }
+    if (!newSpot.name || isNaN(newSpot.latitude) || isNaN(newSpot.longitude)) return;
+
+    triggerHaptic(12);
+    setSaving(true);
+    let uploadedUrl = newSpot.image_url || '';
+
+    if (imageFile) {
+      setUploadingImage(true);
+      const fileToUpload = await compressImageToWebP(imageFile);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
+      const filePath = `spots/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage.from('spot-images').getPublicUrl(filePath);
+        uploadedUrl = publicUrlData.publicUrl;
+      }
+      setUploadingImage(false);
+    }
+
+    if (isEditing && newSpot.id) {
+      const { data, error } = await supabase
+        .from('spots')
+        .update({
+          name: newSpot.name,
+          category: newSpot.category,
+          city: newSpot.city,
+          country: newSpot.country || 'United States',
+          description: newSpot.description,
+          latitude: newSpot.latitude,
+          longitude: newSpot.longitude,
+          image_url: uploadedUrl || null,
+        })
+        .eq('id', newSpot.id)
+        .select();
+
+      if (!error && data && data.length > 0) {
+        setSpots((prev) => prev.map((s) => (s.id === newSpot.id ? (data[0] as Spot) : s)));
+        setViewingSpot(data[0] as Spot);
+        setActiveSearchedSpot(null);
+        dismissModalWithHistory(() => setIsModalOpen(false));
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('spots')
+        .insert([{
+          name: newSpot.name,
+          category: newSpot.category,
+          city: newSpot.city,
+          country: newSpot.country || 'United States',
+          description: newSpot.description,
+          latitude: newSpot.latitude,
+          longitude: newSpot.longitude,
+          image_url: uploadedUrl || null,
+          user_id: activeUser.id,
+        }])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        if (previewMarkerRef.current) {
+          previewMarkerRef.current.remove();
+          previewMarkerRef.current = null;
+        }
+        setSpots((prev) => [data[0] as Spot, ...prev]);
+        dismissModalWithHistory(() => setIsModalOpen(false));
+        setSearchQuery('');
+        setActiveSearchedSpot(null);
+        if (map.current) map.current.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 16 });
+      }
+    }
+    setSaving(false);
+  };
+
   const flyToSpot = (spot: Spot) => {
     if (!map.current || !spot.latitude || !spot.longitude) return;
     map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
@@ -1094,6 +1279,12 @@ export default function Home() {
       const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return timeB - timeA;
     });
+
+  const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
+  const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
+  const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
+  
+  const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
@@ -2220,8 +2411,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
@@ -2919,7 +3110,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: 0, display: 'flex'. }}>
                   <BookmarkCheck style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
@@ -2955,7 +3146,7 @@ export default function Home() {
             padding: '8px 16px',
             borderRadius: '20px',
             fontSize: '12px',
-            fontWeight: '600',
+            fontWeight: 600,
             zIndex: 100010,
             boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
             pointerEvents: 'none',
