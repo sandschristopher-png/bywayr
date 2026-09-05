@@ -68,6 +68,7 @@ import {
   Cpu,
   Download,
   MessageSquare,
+  WifiOff,
 } from 'lucide-react';
 
 interface Spot {
@@ -342,6 +343,7 @@ export default function Home() {
   const currentUserRef = useRef<any>(null);
 
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     if (typeof window !== 'undefined') {
@@ -394,6 +396,22 @@ export default function Home() {
       localStorage.setItem('bywayr_dark_mode', isDarkMode.toString());
     }
   }, [isDarkMode]);
+
+  // Online / Offline listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    setIsOffline(!navigator.onLine);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
@@ -1515,261 +1533,6 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!loading && spots.length > 0 && map.current) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const spotId = urlParams.get('spot');
-      if (spotId) {
-        const target = spots.find((s) => s.id === spotId);
-        if (target && target.latitude && target.longitude) flyToSpot(target);
-      }
-    }
-  }, [loading, spots]);
-
-  useEffect(() => {
-    const rawQuery = searchQuery.trim();
-    if (rawQuery.length < 3) {
-      setSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    const codeMatch = rawQuery.match(/([2-9CFGHJMPQRVWX+]{4,8}\+[2-9CFGHJMPQRVWX+]{2,})/i);
-
-    if (codeMatch) {
-      const codePart = codeMatch[1].toUpperCase();
-      const localityHint = rawQuery.replace(codeMatch[0], '').replace(/plus\s*code/gi, '').replace(/[()]/g, '').trim();
-
-      if (isValid(codePart)) {
-        if (isFull(codePart)) {
-          try {
-            const decoded = decode(codePart);
-            const lat = decoded.latitudeCenter;
-            const lon = decoded.longitudeCenter;
-            setSearchResults([{
-              lat: lat.toString(),
-              lon: lon.toString(),
-              display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
-            }]);
-            setShowDropdown(true);
-            return;
-          } catch (err) {
-            console.error('Full code decode error:', err);
-          }
-        } else if (isShort(codePart)) {
-          let isCancelled = false;
-          setIsSearching(true);
-          (async () => {
-            try {
-              let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
-              let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
-
-              if (localityHint) {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localityHint)}&limit=1`);
-                const geoData = await geoRes.json();
-                if (!isCancelled && geoData && geoData.length > 0) {
-                  anchorLat = parseFloat(geoData[0].lat);
-                  anchorLon = parseFloat(geoData[0].lon);
-                }
-              }
-
-              const fullCode = recoverNearest(codePart, anchorLat, anchorLon);
-              if (!isCancelled && isFull(fullCode)) {
-                const decoded = decode(fullCode);
-                const lat = decoded.latitudeCenter;
-                const lon = decoded.longitudeCenter;
-                setSearchResults([{
-                  lat: lat.toString(),
-                  lon: lon.toString(),
-                  display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
-                }]);
-                setShowDropdown(true);
-              }
-            } catch (err) {
-              console.error('Short Plus Code resolution error:', err);
-            } finally {
-              if (!isCancelled) setIsSearching(false);
-            }
-          })();
-
-          return () => {
-            isCancelled = true;
-          };
-        }
-      }
-    }
-
-    const coordMatch = rawQuery.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
-    if (coordMatch) {
-      const lat = parseFloat(coordMatch[1]);
-      const lon = parseFloat(coordMatch[3]);
-      setSearchResults([{ lat: lat.toString(), lon: lon.toString(), display_name: `GPS Coordinates: ${lat}, ${lon}` }]);
-      setShowDropdown(true);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}&lat=${center.lat}&lon=${center.lng}&limit=6`);
-        const data = await res.json();
-        setSearchResults(data || []);
-        setShowDropdown(true);
-      } catch (err) {
-        console.error('Search error:', err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const filteredSpots = spots
-    .filter((spot: Spot) => {
-      if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
-      if (maxRadiusKm !== null) {
-        const anchorLat = userCoords ? userCoords.lat : (map.current ? map.current.getCenter().lat : 36.1699);
-        const anchorLng = userCoords ? userCoords.lng : (map.current ? map.current.getCenter().lng : -115.1398);
-        const dist = getDistanceFromLatLonInKm(anchorLat, anchorLng, spot.latitude, spot.longitude);
-        if (dist > maxRadiusKm) return false;
-      }
-      if (selectedCategory === 'All') return true;
-      return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
-    })
-    .sort((a, b) => {
-      const idA = a.id ? Number(a.id) : 0;
-      const idB = b.id ? Number(b.id) : 0;
-      if (!isNaN(idA) && !isNaN(idB) && idA !== idB) {
-        return idB - idA;
-      }
-      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return timeB - timeA;
-    });
-
-  const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
-  const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
-  const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
-  
-  const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
-
-  const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-  const proximitySortedSpots: Spot[] = [...spots]
-    .filter((s: Spot) => s.latitude && s.longitude)
-    .map((spot) => ({
-      ...spot,
-      distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
-    }))
-    .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
-
-  useEffect(() => {
-    if (!map.current) return;
-    spotMarkersRef.current.forEach((marker) => marker.remove());
-    spotMarkersRef.current = [];
-
-    filteredSpots.forEach((spot) => {
-      if (!spot.latitude || !spot.longitude) return;
-      const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
-      const isWalkTarget = walkTargetSpot?.id === spot.id;
-      const color = getCategoryColor(spot.category);
-
-      const el = document.createElement('div');
-      el.style.width = '32px';
-      el.style.height = '32px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = isWalkTarget ? '#e05a47' : '#ffffff';
-      el.style.border = isMustTry
-        ? '3px solid #d97706'
-        : isWalkTarget
-        ? '3px solid #ffffff'
-        : `2.5px solid ${color}`;
-      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
-      el.style.cursor = 'pointer';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-      el.title = spot.name;
-
-      if (isWalkTarget) {
-        const iconDiv = document.createElement('div');
-        iconDiv.style.display = 'flex';
-        iconDiv.style.color = '#ffffff';
-        iconDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-        el.appendChild(iconDiv);
-      } else {
-        const svgIcon = document.createElement('div');
-        svgIcon.style.display = 'flex';
-        svgIcon.style.alignItems = 'center';
-        svgIcon.style.justifyContent = 'center';
-        svgIcon.style.color = color;
-        svgIcon.innerHTML = getCategorySvg(spot.category, color);
-        el.appendChild(svgIcon);
-      }
-
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        triggerHaptic(8);
-        setActiveSearchedSpot(null);
-        flyToSpot(spot);
-      });
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([spot.longitude, spot.latitude])
-        .addTo(map.current!);
-
-      spotMarkersRef.current.push(marker);
-    });
-  }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
-
-  useEffect(() => {
-    const query = walkSearchQuery.trim();
-    if (query.length < 2) {
-      setLiveOsmResults([]);
-      setIsSearchingOsm(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearchingOsm(true);
-      try {
-        const center = map.current ? map.current.getCenter() : { lng: -115.1398, lat: 36.1699 };
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=5`
-        );
-        const data = await res.json();
-
-        if (data && data.length > 0) {
-          const mapped: Spot[] = data.map((item: any) => {
-            const lat = parseFloat(item.lat);
-            const lon = parseFloat(item.lon);
-            return {
-              name: item.name || item.display_name.split(',')[0],
-              city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
-              country: item.address?.country || '',
-              category: 'Map Location',
-              description: item.display_name,
-              latitude: lat,
-              longitude: lon,
-              isLiveOsm: true,
-            };
-          });
-
-          setLiveOsmResults(mapped);
-        } else {
-          setLiveOsmResults([]);
-        }
-      } catch (err) {
-        console.error('OSM search error:', err);
-      } finally {
-        setIsSearchingOsm(false);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [walkSearchQuery]);
-
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
@@ -1806,15 +1569,9 @@ export default function Home() {
           to { transform: scale(1) translateZ(0); opacity: 1; }
         }
         @keyframes gpsRadarPulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.75);
-          }
-          70% {
-            box-shadow: 0 0 0 16px rgba(2, 132, 199, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
-          }
+          0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.75); }
+          70% { box-shadow: 0 0 0 16px rgba(2, 132, 199, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
         }
         .skeleton-pulse {
           animation: pulseSkeleton 1.4s ease-in-out infinite;
@@ -1870,8 +1627,34 @@ export default function Home() {
         }} 
       />
 
+      {/* Offline Notification Banner */}
+      {isOffline && (
+        <div className="animate-fade-in" style={{
+          position: 'fixed',
+          top: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#1c1917',
+          color: '#fafaf9',
+          padding: '7px 14px',
+          borderRadius: '20px',
+          fontSize: '11.5px',
+          fontWeight: 600,
+          zIndex: 100015,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+        }}>
+          <WifiOff style={{ width: '13px', height: '13px', color: '#e05a47' }} />
+          <span>Offline mode active · Using cached field notes</span>
+        </div>
+      )}
+
       {/* 2. Top Header & Search Bar */}
-      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', top: isOffline ? '50px' : '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', transition: 'top 0.2s ease' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -2196,13 +1979,14 @@ export default function Home() {
       {filteredSpots.length === 0 && !loading && (
         <div style={{ 
           position: 'fixed', 
-          top: '120px',
+          top: isOffline ? '195px' : '155px',
           left: '16px', 
           right: '16px', 
           maxWidth: '440px', 
           margin: '0 auto',
           zIndex: 9998, 
-          pointerEvents: 'auto' 
+          pointerEvents: 'auto',
+          transition: 'top 0.2s ease'
         }}>
           <EmptyState
             category={selectedCategory}
@@ -3602,7 +3386,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: '0', display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
                   <ThumbsUp style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
