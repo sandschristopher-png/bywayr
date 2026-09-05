@@ -921,7 +921,8 @@ export default function Home() {
     pushModalHistoryState('addSpotModal');
   };
 
-  const handleOpenEditModal = (spot: Spot) => {
+  const handleOpenEditModal = (spot: Spot, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     const activeUser = currentUserRef.current;
     if (!activeUser || spot.user_id !== activeUser.id) return;
     triggerHaptic(8);
@@ -935,7 +936,8 @@ export default function Home() {
     pushModalHistoryState('editSpotModal');
   };
 
-  const handleDeleteSpot = async (spot: Spot) => {
+  const handleDeleteSpot = async (spot: Spot, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     const activeUser = currentUserRef.current;
     if (!spot.id || !activeUser || spot.user_id !== activeUser.id) return;
     if (!confirm(`Are you sure you want to delete "${spot.name}"?`)) return;
@@ -2257,31 +2259,41 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay with Backdrop Blur, Bubble Animation, and Close X Button */}
+      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Close X Button */}
       {filteredSpots.length === 0 && !loading && (
-        <div className="animate-fade-in" style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(28, 25, 23, 0.45)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99998,
-          padding: '16px',
-        }}>
-          <div className="animate-scale-up" style={{
-            position: 'relative',
-            width: '100%',
-            maxWidth: '380px',
-            backgroundColor: '#ffffff',
-            borderRadius: '24px',
-            boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
-            border: '1px solid #e7e5e4',
-            padding: '24px',
-            boxSizing: 'border-box'
-          }}>
+        <div 
+          className="animate-fade-in" 
+          onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(28, 25, 23, 0.45)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99998,
+            padding: '16px',
+            cursor: 'pointer'
+          }}
+        >
+          <div 
+            className="animate-scale-up" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '380px',
+              backgroundColor: '#ffffff',
+              borderRadius: '24px',
+              boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
+              border: '1px solid #e7e5e4',
+              padding: '24px',
+              boxSizing: 'border-box',
+              cursor: 'default'
+            }}
+          >
             <button 
               onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
               style={{ 
@@ -2729,10 +2741,10 @@ export default function Home() {
 
               {currentUser && viewingSpot.user_id === currentUser.id && (
                 <>
-                  <button onClick={() => handleOpenEditModal(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex' }} title="Edit Spot">
+                  <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex' }} title="Edit Spot">
                     <Pencil style={{ width: '15px', height: '15px' }} />
                   </button>
-                  <button onClick={() => handleDeleteSpot(viewingSpot)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '12px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex' }} title="Delete Spot">
+                  <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '12px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex' }} title="Delete Spot">
                     {deleting ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '15px', height: '15px' }} />}
                   </button>
                 </>
@@ -3588,7 +3600,7 @@ export default function Home() {
                     required
                     placeholder="Enter your email"
                     value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
+                    onChange={(e) => setSearchQuery}
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
