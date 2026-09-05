@@ -2117,13 +2117,12 @@ export default function Home() {
           transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease;
         }
         .passport-stamp-card:hover {
-          transform: translateY(-4px) scale(1.04);
-          box-shadow: 0 8px 22px rgba(28, 25, 23, 0.12);
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 6px 16px rgba(28, 25, 23, 0.1);
         }
         .passport-stamp-card:active {
-          transform: scale(0.92) rotate(-0.5deg);
-          box-shadow: 0 2px 6px rgba(28, 25, 23, 0.15);
-          filter: contrast(105%);
+          transform: scale(0.95) rotate(-0.5deg);
+          box-shadow: 0 2px 4px rgba(28, 25, 23, 0.12);
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -3463,8 +3462,8 @@ export default function Home() {
                       display: 'flex',
                       gap: '12px',
                       overflowX: 'auto',
-                      paddingBottom: '8px',
-                      paddingTop: '2px',
+                      paddingBottom: '12px',
+                      paddingTop: '6px',
                       scrollbarWidth: 'none',
                       cursor: isStampDragging ? 'grabbing' : 'grab',
                       WebkitOverflowScrolling: 'touch',
@@ -3484,33 +3483,34 @@ export default function Home() {
                           backgroundColor: '#fbfbfa',
                           border: `2px dashed ${st.color}`,
                           borderRadius: '50%',
-                          width: '128px',
-                          height: '128px',
-                          minWidth: '128px',
+                          width: '108px',
+                          height: '108px',
+                          minWidth: '108px',
                           boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                           position: 'relative',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '14px',
+                          padding: '10px',
                           boxSizing: 'border-box',
                           textAlign: 'center',
+                          overflow: 'hidden',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: st.color, marginBottom: '2px' }}>
-                          <Plane style={{ width: '10px', height: '10px', transform: 'rotate(-45deg)' }} />
-                          <span style={{ fontSize: '7.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: st.color, marginBottom: '1px' }}>
+                          <Plane style={{ width: '9px', height: '9px', transform: 'rotate(-45deg)' }} />
+                          <span style={{ fontSize: '7px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
                             JAPAN
                           </span>
                         </div>
-                        <div style={{ fontSize: '12px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '2px 0' }}>
+                        <div style={{ fontSize: '10.5px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '1px 0' }}>
                           {st.country}
                         </div>
-                        <div style={{ fontSize: '9px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
+                        <div style={{ fontSize: '8px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
                           {st.cities[0] ? st.cities[0].toUpperCase() : 'TOKYO'}
                         </div>
-                        <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.7 }}>
+                        <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
                           {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
                         </div>
                       </div>
@@ -4091,8 +4091,8 @@ export default function Home() {
                     display: 'flex',
                     gap: '12px',
                     overflowX: 'auto',
-                    paddingBottom: '8px',
-                    paddingTop: '2px',
+                    paddingBottom: '12px',
+                    paddingTop: '6px',
                     scrollbarWidth: 'none',
                     cursor: isStampDragging ? 'grabbing' : 'grab',
                     WebkitOverflowScrolling: 'touch',
@@ -4112,33 +4112,34 @@ export default function Home() {
                         backgroundColor: '#fbfbfa',
                         border: `2px dashed ${st.color}`,
                         borderRadius: '50%',
-                        width: '128px',
-                        height: '128px',
-                        minWidth: '128px',
+                        width: '108px',
+                        height: '108px',
+                        minWidth: '108px',
                         boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                         position: 'relative',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: '14px',
+                        padding: '10px',
                         boxSizing: 'border-box',
                         textAlign: 'center',
+                        overflow: 'hidden',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: st.color, marginBottom: '2px' }}>
-                        <Plane style={{ width: '10px', height: '10px', transform: 'rotate(-45deg)' }} />
-                        <span style={{ fontSize: '7.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: st.color, marginBottom: '1px' }}>
+                        <Plane style={{ width: '9px', height: '9px', transform: 'rotate(-45deg)' }} />
+                        <span style={{ fontSize: '7px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
                           JAPAN
                         </span>
                       </div>
-                      <div style={{ fontSize: '12px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '2px 0' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '1px 0' }}>
                         {st.country}
                       </div>
-                      <div style={{ fontSize: '9px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
+                      <div style={{ fontSize: '8px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
                         {st.cities[0] ? st.cities[0].toUpperCase() : 'TOKYO'}
                       </div>
-                      <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.7 }}>
+                      <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
                         {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
                       </div>
                     </div>
