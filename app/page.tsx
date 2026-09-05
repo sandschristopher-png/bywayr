@@ -1146,7 +1146,8 @@ export default function Home() {
     } else {
       const { error } = await supabase.from('comment_upvotes').insert([{ user_id: activeUser.id, comment_id: commentId }]);
       if (!error) {
-        setUpvotedCommentIds((prev) => prev.map((c) => (c.id === commentId ? { ...c, upvotes: (c.upvotes || 0) + 1 } : c)));
+        setUpvotedCommentIds((prev) => [...prev, commentId]);
+        setSpotComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, upvotes: (c.upvotes || 0) + 1 } : c)));
         const target = spotComments.find(c => c.id === commentId);
         if (target) {
           await supabase.from('spot_comments').update({ upvotes: (target.upvotes || 0) + 1 }).eq('id', commentId);
