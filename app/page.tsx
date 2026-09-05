@@ -345,6 +345,9 @@ export default function Home() {
   const [isSavingProfileDetails, setIsSavingProfileDetails] = useState(false);
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
 
+  const [passportCopied, setPassportCopied] = useState(false);
+  const [publicPassportCopied, setPublicPassportCopied] = useState(false);
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -764,6 +767,24 @@ export default function Home() {
     setProfileCityFilter('All');
     setViewingSpot(null);
     pushModalHistoryState('publicProfile');
+  };
+
+  const handleSharePassport = async (username?: string, userId?: string) => {
+    triggerHaptic(8);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const shareUrl = username ? `${origin}/?user=${username}` : `${origin}/?curator=${userId}`;
+    const shareText = `Explore @${username || 'wanderer'}'s curated local field notes & passport on Bywayr!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Bywayr Passport — @${username || 'wanderer'}`, text: shareText, url: shareUrl });
+        return;
+      } catch {}
+    }
+
+    await navigator.clipboard.writeText(shareUrl);
+    setPassportCopied(true);
+    setTimeout(() => setPassportCopied(false), 2000);
   };
 
   const handleSaveProfileDetails = async (e: React.FormEvent) => {
@@ -1331,6 +1352,26 @@ export default function Home() {
       fetchSpotComments(viewingSpot.id);
     }
   }, [viewingSpot]);
+
+  // Deep-linking URL handler for ?user= and ?curator=
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined' && Object.keys(profilesMap).length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetUsername = urlParams.get('user')?.toLowerCase().replace('@', '');
+      const targetCuratorId = urlParams.get('curator');
+
+      let matchedUserId = '';
+      if (targetUsername) {
+        matchedUserId = Object.keys(profilesMap).find(id => profilesMap[id].username?.toLowerCase() === targetUsername) || '';
+      } else if (targetCuratorId && profilesMap[targetCuratorId]) {
+        matchedUserId = targetCuratorId;
+      }
+
+      if (matchedUserId) {
+        handleOpenPublicProfile(matchedUserId);
+      }
+    }
+  }, [loading, profilesMap]);
 
   const handleGoogleSignIn = async () => {
     triggerHaptic(10);
@@ -2921,7 +2962,7 @@ export default function Home() {
                     <Compass style={{ width: '28px', height: '28px' }} />
                   )}
                 </div>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span>@{viewingProfile.username || 'wanderer'}</span>
                     <span style={{ 
@@ -2984,6 +3025,30 @@ export default function Home() {
                   )}
                 </div>
               </div>
+
+              {/* Share Passport Link Button */}
+              <button
+                type="button"
+                onClick={() => handleSharePassport(viewingProfile.username, viewingProfile.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  backgroundColor: publicPassportCopied ? '#ecfdf5' : '#fafaf9',
+                  color: publicPassportCopied ? '#059669' : '#1c1917',
+                  border: publicPassportCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
+                  borderRadius: '12px',
+                  padding: '9px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginBottom: '14px',
+                }}
+              >
+                {publicPassportCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Share2 style={{ width: '14px', height: '14px' }} />}
+                {publicPassportCopied ? 'Passport Link Copied!' : `Share @${viewingProfile.username || 'wanderer'}'s Passport`}
+              </button>
 
               {uniqueCities.length > 1 && (
                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
@@ -3428,6 +3493,32 @@ export default function Home() {
                 )}
               </div>
             </div>
+
+            {/* Share Passport Link Button */}
+            <button
+              type="button"
+              onClick={() => handleSharePassport(userProfile?.username, currentUser.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: passportCopied ? '#ecfdf5' : '#fafaf9',
+                color: passportCopied ? '#059669' : '#1c1917',
+                border: passportCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
+                borderRadius: '12px',
+                padding: '9px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: '14px',
+              }}
+            >
+              {passportCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Share2 style={{ width: '14px', height: '14px' }} />}
+              {passportCopied ? 'Passport Link Copied to Clipboard!' : 'Share My Public Passport'}
+            </button>
 
             {/* Passport Profile Bio & Country Edit Form */}
             <form onSubmit={handleSaveProfileDetails} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
