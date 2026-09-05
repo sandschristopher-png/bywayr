@@ -101,34 +101,28 @@ interface SpotComment {
   spot_id: string;
   user_id: string;
   content: string;
+  tag?: string;
+  upvotes?: number;
   created_at: string;
 }
 
 const CATEGORIES = [
-  { label: 'All', desc: 'All curated field notes & unmapped spots', color: '#57534e', icon: Sparkles },
-  { label: 'Hidden Gems', desc: 'Unmarked spots, secret corners & quiet local treasures', color: '#e05a47', icon: Gem },
-  { label: 'Alley Eats', desc: 'Backstreet stalls, hidden bistros & local food legends', color: '#ea580c', icon: Utensils },
-  { label: 'Cafe & Chill', desc: 'Quiet roasters, courtyard hideaways & relaxed spaces', color: '#d97706', icon: Coffee },
-  { label: 'Bakeries & Sweets', desc: 'Neighborhood patisseries, gelato counters & pastry spots', color: '#f43f5e', icon: Cake },
-  { label: 'Listening & Bars', desc: 'Vinyl bars, basement speakeasies & acoustic haunts', color: '#db2777', icon: Beer },
-  { label: 'Street Markets', desc: 'Night bazaars, morning produce alleys & flea markets', color: '#9333ea', icon: Store },
-  { label: 'Nature & Trails', desc: 'Scenic walks, waterfalls, urban greenery & trailheads', color: '#0d9488', icon: Trees },
-  { label: 'Viewpoints', desc: 'Rooftops, hillside lookouts & panoramic sunset perches', color: '#059669', icon: Mountain },
-  { label: 'Urban Oases', desc: 'Tucked-away green pockets, courtyards & quiet resting spots', color: '#10b981', icon: Flower2 },
-  { label: 'Secret Coasts', desc: 'Uncrowded beaches, hidden coves & quiet shoreline walks', color: '#0284c7', icon: Waves },
+  { label: 'All', desc: 'All unindexed local spots & expat field notes', color: '#57534e', icon: Sparkles },
+  { label: 'Hidden Gems', desc: 'Secret viewpoints, quiet courtyards & unlisted local treasures', color: '#e05a47', icon: Gem },
+  { label: 'Street Food & Stalls', desc: 'Backstreet carts, night markets & unmapped local bites', color: '#ea580c', icon: Utensils },
+  { label: 'Local Eats', desc: 'Hole-in-the-wall diners & neighborhood restaurants', color: '#d97706', icon: Store },
+  { label: 'Cafes & Workspaces', desc: 'Nomad-friendly spots with reliable Wi-Fi & power outlets', color: '#2563eb', icon: Laptop },
+  { label: 'Bars & Nightlife', desc: 'Local watering holes, concept bars & neighborhood pubs', color: '#db2777', icon: Beer },
+  { label: 'Social & Host Bars', desc: 'Girls bars, hostess lounges, izakayas & social nightlife spots', color: '#7c3aed', icon: Wine },
+  { label: 'Entertainment & Play', desc: 'Retro arcades, game centers, batting cages & local amusement', color: '#6366f1', icon: Gamepad2 },
+  { label: 'Markets & Shops', desc: 'Local produce alleys, thrift stalls & independent markets', color: '#b45309', icon: Disc },
+  { label: 'Nature & Trails', desc: 'Trailheads, hidden beaches, waterfalls & green pockets', color: '#0d9488', icon: Trees },
+  { label: 'Culture & Shrines', desc: 'Neighborhood temples, historical plaques & hidden shrines', color: '#059669', icon: Landmark },
   { label: 'Stays & Hideaways', desc: 'Boutique guesthouses, quiet homestays & remote retreats', color: '#4f46e5', icon: HomeIcon },
-  { label: 'Vintage & Vinyl', desc: 'Retro oddity shops, thrifts & crate-digging stops', color: '#b45309', icon: Disc },
-  { label: 'Work & Focus', desc: 'Nomad-friendly work spots, quiet libraries & fast Wi-Fi cafes', color: '#2563eb', icon: Laptop },
-  { label: 'Late Night', desc: '2 AM food stalls, midnight street bites & after-hours spots', color: '#7c3aed', icon: MoonStar },
-  { label: 'Arcades & Play', desc: 'Retro game centers, crane game lofts & entertainment hubs', color: '#6366f1', icon: Gamepad2 },
-  { label: 'Street Art & Murals', desc: 'Alleyway graffiti, sticker walls & urban creative installations', color: '#ec4899', icon: Palette },
-  { label: 'Tech & Gadgets', desc: 'Component shops, custom hardware dens & electronics alleys', color: '#2563eb', icon: Cpu },
-  { label: 'Indie Bookshops', desc: 'Independent bookstores, zine nooks & reading spaces', color: '#b45309', icon: BookOpen },
-  { label: 'Shrines & Relics', desc: 'Neighborhood shrines, historical plaques & spiritual nooks', color: '#d97706', icon: Landmark },
-  { label: 'Curiosities & Oddities', desc: 'Quirky micro-museums, unusual landmarks & local artifacts', color: '#8b5cf6', icon: Glasses },
-  { label: 'Neon & Nights', desc: 'Glowing neon strips, moody alleys & night photography perches', color: '#db2777', icon: Zap },
-  { label: 'Secret Passages', desc: 'Hidden stairways, covered alley cut-throughs & shortcuts', color: '#0284c7', icon: Footprints },
+  { label: 'Practical Staples', desc: 'Essential local services, hidden ATMs, transit nooks & Wi-Fi zones', color: '#0284c7', icon: Compass },
 ];
+
+const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
 
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
@@ -157,68 +151,23 @@ const formatRelativeTime = (dateStr?: string) => {
 
 const getCategorySvg = (category: string, color: string): string => {
   const cat = category?.toLowerCase() || '';
-  if (cat.includes('cafe') || cat.includes('chill')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h12Z"/><path d="M6 2v2"/></svg>`;
+  if (cat.includes('cafe') || cat.includes('work')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>`;
   }
-  if (cat.includes('eat') || cat.includes('alley')) {
+  if (cat.includes('street food') || cat.includes('eats')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v18"/><path d="M6 2v20"/><path d="M3 2v4a3 3 0 0 0 3 3v0a3 3 0 0 0 3-3V2"/></svg>`;
   }
-  if (cat.includes('bar') || cat.includes('listen')) {
+  if (cat.includes('bar') || cat.includes('social') || cat.includes('nightlife')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/></svg>`;
-  }
-  if (cat.includes('coast') || cat.includes('beach')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
-  }
-  if (cat.includes('market')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>`;
   }
   if (cat.includes('nature') || cat.includes('trail')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.9"/></svg>`;
   }
-  if (cat.includes('view') || cat.includes('point')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>`;
+  if (cat.includes('entertainment') || cat.includes('play')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12"/><line x1="12" y1="6" x2="12" y2="18"/><circle cx="18" cy="15" r="1"/><circle cx="16" cy="9" r="1"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`;
   }
   if (cat.includes('stay') || cat.includes('hideaway')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
-  }
-  if (cat.includes('vintage') || cat.includes('vinyl')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg>`;
-  }
-  if (cat.includes('work') || cat.includes('focus')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>`;
-  }
-  if (cat.includes('late') || cat.includes('night')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
-  }
-  if (cat.includes('arcades')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12"/><line x1="12" y1="6" x2="12" y2="18"/><circle cx="18" cy="15" r="1"/><circle cx="16" cy="9" r="1"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`;
-  }
-  if (cat.includes('urban oases')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
-  }
-  if (cat.includes('street art')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.55-2.5 5.55-5.55C22 6.5 17.5 2 12 2z"/></svg>`;
-  }
-  if (cat.includes('shrines')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
-  }
-  if (cat.includes('bakeries')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 5v6"/><path d="M17 8v3"/></svg>`;
-  }
-  if (cat.includes('curiosities')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7h14l2.5 6"/></svg>`;
-  }
-  if (cat.includes('neon')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
-  }
-  if (cat.includes('passages')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-0-5H20"/></svg>`;
-  }
-  if (cat.includes('bookshops')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>`;
-  }
-  if (cat.includes('tech')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg>`;
   }
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
 };
@@ -449,6 +398,8 @@ export default function Home() {
 
   const [spotComments, setSpotComments] = useState<SpotComment[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
+  const [commentTag, setCommentTag] = useState<string>('[Tip]');
+  const [upvotedCommentIds, setUpvotedCommentIds] = useState<string[]>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
 
   const [shareDialogSpot, setShareDialogSpot] = useState<Spot | null>(null);
@@ -1114,6 +1065,20 @@ export default function Home() {
     }
   };
 
+  const fetchUserUpvotes = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('comment_upvotes')
+        .select('comment_id')
+        .eq('user_id', userId);
+      if (!error && data) {
+        setUpvotedCommentIds(data.map((u: any) => u.comment_id));
+      }
+    } catch (err) {
+      console.error('Failed to load upvotes:', err);
+    }
+  };
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const activeUser = currentUserRef.current;
@@ -1128,6 +1093,8 @@ export default function Home() {
         spot_id: viewingSpot.id,
         user_id: activeUser.id,
         content: newCommentText.trim(),
+        tag: commentTag,
+        upvotes: 0,
       }])
       .select();
 
@@ -1140,12 +1107,48 @@ export default function Home() {
         spot_id: viewingSpot.id,
         user_id: activeUser.id,
         content: newCommentText.trim(),
+        tag: commentTag,
+        upvotes: 0,
         created_at: new Date().toISOString(),
       };
       setSpotComments((prev) => [...prev, fallbackComment]);
       setNewCommentText('');
     }
     setSubmittingComment(false);
+  };
+
+  const handleUpvoteComment = async (commentId: string) => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
+      setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
+      return;
+    }
+
+    triggerHaptic(6);
+    const isUpvoted = upvotedCommentIds.includes(commentId);
+
+    if (isUpvoted) {
+      const { error } = await supabase.from('comment_upvotes').delete().eq('user_id', activeUser.id).eq('comment_id', commentId);
+      if (!error) {
+        setUpvotedCommentIds((prev) => prev.filter((id) => id !== commentId));
+        setSpotComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, upvotes: Math.max(0, (c.upvotes || 1) - 1) } : c)));
+        const target = spotComments.find(c => c.id === commentId);
+        if (target) {
+          await supabase.from('spot_comments').update({ upvotes: Math.max(0, (target.upvotes || 1) - 1) }).eq('id', commentId);
+        }
+      }
+    } else {
+      const { error } = await supabase.from('comment_upvotes').insert([{ user_id: activeUser.id, comment_id: commentId }]);
+      if (!error) {
+        setUpvotedCommentIds((prev) => [...prev, commentId]);
+        setSpotComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, upvotes: (c.upvotes || 0) + 1 } : c)));
+        const target = spotComments.find(c => c.id === commentId);
+        if (target) {
+          await supabase.from('spot_comments').update({ upvotes: (target.upvotes || 0) + 1 }).eq('id', commentId);
+        }
+      }
+    }
   };
 
   const handleExportData = (format: 'json' | 'gpx') => {
@@ -1252,6 +1255,9 @@ export default function Home() {
       const user = session?.user ?? null;
       setCurrentUser(user);
       currentUserRef.current = user;
+      if (user) {
+        fetchUserUpvotes(user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -1260,8 +1266,10 @@ export default function Home() {
       currentUserRef.current = user;
       if (user) {
         setIsAuthModalOpen(false);
+        fetchUserUpvotes(user.id);
       } else {
         setUserProfile(null);
+        setUpvotedCommentIds([]);
         localStorage.removeItem('bywayr_user_profile');
       }
     });
@@ -1276,12 +1284,20 @@ export default function Home() {
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
       fetchUserProfile(currentUser.id);
+      fetchUserUpvotes(currentUser.id);
     } else {
       setMustTrySpotIds([]);
       setVouchedSpotIds([]);
+      setUpvotedCommentIds([]);
       setUserProfile(null);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (viewingSpot?.id) {
+      fetchSpotComments(viewingSpot.id);
+    }
+  }, [viewingSpot]);
 
   const handleGoogleSignIn = async () => {
     triggerHaptic(10);
@@ -1427,6 +1443,7 @@ export default function Home() {
     currentUserRef.current = null;
     setMustTrySpotIds([]);
     setVouchedSpotIds([]);
+    setUpvotedCommentIds([]);
     setOnlyMySpots(false);
     setUserProfile(null);
     localStorage.removeItem('bywayr_user_profile');
@@ -1453,6 +1470,7 @@ export default function Home() {
       setUserProfile(null);
       setMustTrySpotIds([]);
       setVouchedSpotIds([]);
+      setUpvotedCommentIds([]);
       localStorage.removeItem('bywayr_user_profile');
       setIsDeleteAccountModalOpen(false);
       setIsProfileModalOpen(false);
@@ -1502,7 +1520,6 @@ export default function Home() {
       zoom: initialZoom,
     });
 
-    // Bulletproof anti-privacy tracker shield listener on container
     const containerEl = mapContainer.current;
     if (containerEl) {
       const preventDefaultTouch = (e: TouchEvent) => {
@@ -1748,7 +1765,6 @@ export default function Home() {
         el.appendChild(svgIcon);
       }
 
-      // Robust tap/click listener with direct state invocation & history push
       const handleMarkerClick = (e: MouseEvent | TouchEvent) => {
         e.stopPropagation();
         triggerHaptic(8);
@@ -2763,29 +2779,83 @@ export default function Home() {
               <MessageSquare style={{ width: '13px', height: '13px' }} color="#e05a47" /> Field Notes Discussion ({spotComments.length})
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto', marginBottom: '10px' }}>
               {spotComments.length === 0 ? (
                 <p style={{ margin: 0, fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No tips or comments left yet. Be the first!</p>
               ) : (
                 spotComments.map((c) => {
                   const authorProfile = profilesMap[c.user_id];
+                  const isUpvoted = upvotedCommentIds.includes(c.id);
+                  const tagColor = c.tag === '[Status: Closed]' ? '#e05a47' : c.tag === '[Menu / Price]' ? '#d97706' : c.tag === '[Work / Wi-Fi]' ? '#2563eb' : '#059669';
+
                   return (
                     <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '10px', padding: '8px 10px', fontSize: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
+                          <span style={{ fontSize: '9.5px', fontWeight: 700, color: tagColor, backgroundColor: `${tagColor}15`, padding: '1px 5px', borderRadius: '4px' }}>
+                            {c.tag || '[Tip]'}
+                          </span>
+                        </div>
                         <span style={{ fontSize: '10px', color: '#a8a29e' }}>{formatRelativeTime(c.created_at)}</span>
                       </div>
-                      <p style={{ margin: 0, color: '#44403c', lineHeight: 1.35 }}>{c.content}</p>
+                      <p style={{ margin: '0 0 6px 0', color: '#44403c', lineHeight: 1.35 }}>{c.content}</p>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => handleUpvoteComment(c.id)}
+                          style={{
+                            background: isUpvoted ? '#ecfdf5' : '#f5f5f4',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '3px 7px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            color: isUpvoted ? '#059669' : '#78716c',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                        >
+                          <ThumbsUp style={{ width: '11px', height: '11px' }} />
+                          <span>{c.upvotes || 0}</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })
               )}
             </div>
 
+            {/* Tag Selector Pill Row */}
+            <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {COMMENT_TAGS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { triggerHaptic(4); setCommentTag(t); }}
+                  style={{
+                    backgroundColor: commentTag === t ? '#1c1917' : '#f5f5f4',
+                    color: commentTag === t ? '#fafaf9' : '#78716c',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
             <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="text"
-                placeholder="Leave a quick tip or note..."
+                placeholder="Leave a quick tip or update..."
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
                 style={{ flex: 1, boxSizing: 'border-box', backgroundColor: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '8px 12px', fontSize: '12px', outline: 'none', color: '#1c1917' }}
@@ -2821,7 +2891,6 @@ export default function Home() {
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
 
-              {/* Curator Info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px' }}>
                 <div style={{ width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
                   {viewingProfile.avatar_url ? (
@@ -2857,7 +2926,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Stats Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px 10px', marginBottom: '14px', textAlign: 'center' }}>
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
@@ -2873,7 +2941,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* City Filter Pills */}
               {uniqueCities.length > 1 && (
                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
                   <button
@@ -2924,7 +2991,6 @@ export default function Home() {
                 Curated Field Notes
               </div>
 
-              {/* Spot Cards */}
               <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
                 {filteredProfileSpots.length === 0 ? (
                   <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
