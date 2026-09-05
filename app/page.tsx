@@ -3481,7 +3481,7 @@ export default function Home() {
                           dismissModalWithHistory(() => setViewingProfile(null));
                         }}
                         style={{
-                          backgroundColor: '#fdfdfc',
+                          backgroundColor: '#fbfbfa',
                           border: `2px dashed ${st.color}`,
                           borderRadius: '50%',
                           width: '128px',
@@ -4193,7 +4193,7 @@ export default function Home() {
                 transition: 'color 0.15s ease',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#e05a47')}
-              onMouseLeave={(e) => (e.currentTarget.style.a8a29e = '#a8a29e')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#a8a29e')}
             >
               Delete Account
             </button>
