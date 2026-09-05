@@ -420,7 +420,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Drawer open + closing animation state
+  // Drawer state for smooth slide-in/slide-out
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
@@ -1510,7 +1510,7 @@ export default function Home() {
       />
 
       {/* 2. Top Header & Search Bar */}
-      <div style={{ position: 'fixed', top: '12px', left: '12px', right: '12px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -1835,7 +1835,7 @@ export default function Home() {
       {filteredSpots.length === 0 && !loading && (
         <div style={{ 
           position: 'fixed', 
-          top: '150px',
+          top: '128px',
           left: '16px', 
           right: '16px', 
           maxWidth: '440px', 
@@ -2530,8 +2530,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
@@ -3115,7 +3115,7 @@ export default function Home() {
       {/* 11. Add / Edit Spot Modal */}
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
