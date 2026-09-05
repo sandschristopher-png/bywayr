@@ -71,6 +71,7 @@ import {
   Mic2,
   Award,
   Globe,
+  Clock,
 } from 'lucide-react';
 
 interface Spot {
@@ -132,7 +133,7 @@ const CATEGORIES = [
   { label: 'Practical Staples', desc: 'Essential local services, ATMs & transit nooks', color: '#0284c7', icon: Compass },
 ];
 
-const STAMP_PALETTE = ['#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#0d9488', '#4f46e5'];
+const STAMP_PALETTE = ['#0d9488', '#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#4f46e5'];
 const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
 
 const getCategoryColor = (cat: string) => {
@@ -556,6 +557,11 @@ export default function Home() {
 
   const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
   const myPassportStamps = extractPassportStamps(myUserSpots);
+  const recentUserSpots = [...myUserSpots].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  }).slice(0, 3);
 
   const filteredSpots = spots
     .filter((spot: Spot) => {
@@ -3434,7 +3440,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Scrollable Visual Passport Stamps Section (Public Profile) */}
+              {/* Scrollable Tokyo-Style Circular Passport Stamps Section (Public Profile) */}
               <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -3475,35 +3481,37 @@ export default function Home() {
                           dismissModalWithHistory(() => setViewingProfile(null));
                         }}
                         style={{
-                          backgroundColor: '#fbfbfa',
+                          backgroundColor: '#fdfdfc',
                           border: `2px dashed ${st.color}`,
-                          borderRadius: '20px',
-                          padding: '14px 16px',
-                          minWidth: '150px',
-                          maxWidth: '170px',
+                          borderRadius: '50%',
+                          width: '128px',
+                          height: '128px',
+                          minWidth: '128px',
                           boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                           position: 'relative',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '6px',
-                          textAlign: 'center',
                           alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '14px',
+                          boxSizing: 'border-box',
+                          textAlign: 'center',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', width: '100%' }}>
-                          <span style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.08em' }}>
-                            PASSPORT VISA
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: st.color, marginBottom: '2px' }}>
+                          <Plane style={{ width: '10px', height: '10px', transform: 'rotate(-45deg)' }} />
+                          <span style={{ fontSize: '7.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                            JAPAN
                           </span>
                         </div>
-                        <div style={{ fontSize: '13.5px', fontWeight: 900, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em', textTransform: 'uppercase', borderBottom: `1px solid ${st.color}35`, width: '100%', paddingBottom: '3px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '2px 0' }}>
                           {st.country}
                         </div>
-                        <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                          {st.cities.join(', ') || 'Explored'}
+                        <div style={{ fontSize: '9px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
+                          {st.cities[0] ? st.cities[0].toUpperCase() : 'TOKYO'}
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '2px', paddingTop: '4px', borderTop: '1px dotted #e7e5e4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 700 }}>
-                          <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
-                          <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+                        <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.7 }}>
+                          {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
                         </div>
                       </div>
                     ))}
@@ -3762,6 +3770,50 @@ export default function Home() {
                 <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
               </div>
             </div>
+
+            {/* Recents Section (Last 3 Pins) */}
+            {currentUser && drawerTab === 'fieldNotes' && recentUserSpots.length > 0 && (
+              <div style={{ marginBottom: '14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 12px', flexShrink: 0 }}>
+                <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Clock style={{ width: '12px', height: '12px', color: '#e05a47' }} /> Recent Pins
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {recentUserSpots.map((spot) => {
+                    const color = getCategoryColor(spot.category);
+                    return (
+                      <div
+                        key={`recent-${spot.id || spot.name}`}
+                        onClick={() => {
+                          triggerHaptic(8);
+                          setIsDrawerClosing(true);
+                          setTimeout(() => {
+                            setIsDrawerOpen(false);
+                            setIsDrawerClosing(false);
+                          }, 280);
+                          flyToSpot(spot);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 8px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          border: '1px solid #e7e5e4',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</span>
+                        </div>
+                        <span style={{ fontSize: '10px', color: '#a8a29e', flexShrink: 0 }}>{formatRelativeTime(spot.created_at)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
               {displayedDrawerSpots.map((spot: Spot) => {
@@ -4004,7 +4056,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Visual Scrollable Passport Stamps Section (Field Journal) */}
+            {/* Scrollable Tokyo-Style Circular Passport Stamps Section (Field Journal) */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -4049,33 +4101,35 @@ export default function Home() {
                       style={{
                         backgroundColor: '#fbfbfa',
                         border: `2px dashed ${st.color}`,
-                        borderRadius: '20px',
-                        padding: '14px 16px',
-                        minWidth: '150px',
-                        maxWidth: '170px',
+                        borderRadius: '50%',
+                        width: '128px',
+                        height: '128px',
+                        minWidth: '128px',
                         boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                         position: 'relative',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '6px',
-                        textAlign: 'center',
                         alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '14px',
+                        boxSizing: 'border-box',
+                        textAlign: 'center',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', width: '100%' }}>
-                        <span style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.08em' }}>
-                          PASSPORT VISA
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: st.color, marginBottom: '2px' }}>
+                        <Plane style={{ width: '10px', height: '10px', transform: 'rotate(-45deg)' }} />
+                        <span style={{ fontSize: '7.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                          JAPAN
                         </span>
                       </div>
-                      <div style={{ fontSize: '13.5px', fontWeight: 900, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em', textTransform: 'uppercase', borderBottom: `1px solid ${st.color}35`, width: '100%', paddingBottom: '3px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '2px 0' }}>
                         {st.country}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                        {st.cities.join(', ') || 'Explored'}
+                      <div style={{ fontSize: '9px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
+                        {st.cities[0] ? st.cities[0].toUpperCase() : 'TOKYO'}
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '2px', paddingTop: '4px', borderTop: '1px dotted #e7e5e4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 700 }}>
-                        <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
-                        <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+                      <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.7 }}>
+                        {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
                       </div>
                     </div>
                   ))}
@@ -4139,7 +4193,7 @@ export default function Home() {
                 transition: 'color 0.15s ease',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#e05a47')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#a8a29e')}
+              onMouseLeave={(e) => (e.currentTarget.style.a8a29e = '#a8a29e')}
             >
               Delete Account
             </button>
