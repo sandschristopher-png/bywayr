@@ -3450,7 +3450,7 @@ export default function Home() {
                     onWheel={(e) => handleStampWheel(e, publicStampScrollRef)}
                     style={{
                       display: 'flex',
-                      gap: '10px',
+                      gap: '12px',
                       overflowX: 'auto',
                       paddingBottom: '8px',
                       paddingTop: '2px',
@@ -3470,32 +3470,33 @@ export default function Home() {
                           dismissModalWithHistory(() => setViewingProfile(null));
                         }}
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: `1.8px dashed ${st.color}`,
-                          borderRadius: '14px',
-                          padding: '10px 12px',
-                          minWidth: '135px',
-                          maxWidth: '155px',
+                          backgroundColor: '#fbfbfa',
+                          border: `2px dashed ${st.color}`,
+                          borderRadius: '20px',
+                          padding: '14px 16px',
+                          minWidth: '150px',
+                          maxWidth: '170px',
                           boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                           position: 'relative',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '4px',
+                          gap: '6px',
+                          textAlign: 'center',
+                          alignItems: 'center',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
-                            ENTRY STAMP
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', width: '100%' }}>
+                          <span style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.08em' }}>
+                            PASSPORT VISA
                           </span>
-                          <Award style={{ width: '12px', height: '12px', color: st.color }} />
                         </div>
-                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                        <div style={{ fontSize: '13.5px', fontWeight: 900, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em', textTransform: 'uppercase', borderBottom: `1px solid ${st.color}35`, width: '100%', paddingBottom: '3px' }}>
                           {st.country}
                         </div>
-                        <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
                           {st.cities.join(', ') || 'Explored'}
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px', paddingTop: '4px', borderTop: '1px solid #f5f5f4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 600 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '2px', paddingTop: '4px', borderTop: '1px dotted #e7e5e4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 700 }}>
                           <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
                           <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
                         </div>
@@ -4021,7 +4022,7 @@ export default function Home() {
                   onWheel={(e) => handleStampWheel(e, profileStampScrollRef)}
                   style={{
                     display: 'flex',
-                    gap: '10px',
+                    gap: '12px',
                     overflowX: 'auto',
                     paddingBottom: '8px',
                     paddingTop: '2px',
@@ -4041,32 +4042,33 @@ export default function Home() {
                         handleCloseProfileDrawer();
                       }}
                       style={{
-                        backgroundColor: '#ffffff',
-                        border: `1.8px dashed ${st.color}`,
-                        borderRadius: '14px',
-                        padding: '10px 12px',
-                        minWidth: '135px',
-                        maxWidth: '155px',
+                        backgroundColor: '#fbfbfa',
+                        border: `2px dashed ${st.color}`,
+                        borderRadius: '20px',
+                        padding: '14px 16px',
+                        minWidth: '150px',
+                        maxWidth: '170px',
                         boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                         position: 'relative',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '4px',
+                        gap: '6px',
+                        textAlign: 'center',
+                        alignItems: 'center',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
-                          ENTRY STAMP
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', width: '100%' }}>
+                        <span style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.08em' }}>
+                          PASSPORT VISA
                         </span>
-                        <Award style={{ width: '12px', height: '12px', color: st.color }} />
                       </div>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 900, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em', textTransform: 'uppercase', borderBottom: `1px solid ${st.color}35`, width: '100%', paddingBottom: '3px' }}>
                         {st.country}
                       </div>
-                      <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
                         {st.cities.join(', ') || 'Explored'}
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px', paddingTop: '4px', borderTop: '1px solid #f5f5f4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 600 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '2px', paddingTop: '4px', borderTop: '1px dotted #e7e5e4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 700 }}>
                         <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
                         <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
                       </div>
