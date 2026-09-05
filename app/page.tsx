@@ -2694,7 +2694,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Floating Map Controls (with smooth slide out/in animation on map drag) */}
+      {/* 3. Floating Map Controls */}
       <div style={{ 
         position: 'fixed', 
         bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
@@ -3155,7 +3155,7 @@ export default function Home() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MessageSquare style={{ width: '14px', height: '14px' }} />
+                  <MessageSquare style={{ width: '14px', height: '14px', color: '#e05a47' }} />
                   <span>Field Notes Discussion ({spotComments.length})</span>
                 </div>
                 <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
@@ -3928,44 +3928,56 @@ export default function Home() {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/aviasales.svg" alt="Aviasales" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/aviasales.svg" alt="Aviasales" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>Flight Search | Aviasales</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Aviasales</span>
+                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Flight Search</span>
+                    </div>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                 </a>
 
-                <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/klook.svg" alt="Klook" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+                <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/klook.svg" alt="Klook" style={{ width: '15px', height: '15px', objectFit: 'contain' }} />
                     </div>
-                    <span>Tickets & Hotels | Klook</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Klook</span>
+                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Tickets & Hotels</span>
+                    </div>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                 </a>
 
-                <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/yesim.svg" alt="Yesim" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/yesim.svg" alt="Yesim" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>eSIM Data | Yesim</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Yesim</span>
+                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>eSIM Data</span>
+                    </div>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                 </a>
 
-                <a href="https://kkday.tpk.lv/s21IbWWp" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/kkday.svg" alt="KKDay" style={{ width: '14px', height: '14px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
+                <a href="https://kkday.tpk.lv/s21IbWWp" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                      <img src="/kkday.svg" alt="KKDay" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
-                    <span>Tours & Activities | KKDay</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>KKDay</span>
+                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Tours & Activities</span>
+                    </div>
                   </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                 </a>
               </div>
             </div>
