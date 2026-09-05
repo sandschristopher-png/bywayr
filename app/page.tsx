@@ -2284,7 +2284,10 @@ export default function Home() {
             className="animate-scale-up" 
             onClick={(e) => e.stopPropagation()}
             style={{
-              position: 'relative',
+              position: 'fixed',
+              top: '120px',
+              left: '50%',
+              transform: 'translateX(-50%)',
               width: '100%',
               maxWidth: '380px',
               backgroundColor: '#ffffff',
@@ -2293,7 +2296,8 @@ export default function Home() {
               border: '1px solid #e7e5e4',
               padding: '24px',
               boxSizing: 'border-box',
-              cursor: 'default'
+              cursor: 'default',
+              zIndex: 99999
             }}
           >
             <button 
@@ -3056,8 +3060,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
@@ -3612,6 +3616,120 @@ export default function Home() {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Spot Add / Edit Modal */}
+      {isModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '400px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto' }}>
+            <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{isEditing ? 'Edit Field Note' : 'New Field Note'}</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Curate a hidden gem or local spot for explorers.</p>
+
+            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Backstreet Ramen Nook"
+                  value={newSpot.name}
+                  onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
+                  <select
+                    value={newSpot.category}
+                    onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '10px 10px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', backgroundColor: '#ffffff', color: '#1c1917' }}
+                  >
+                    {CATEGORIES.filter((c) => c.label !== 'All').map((c) => (
+                      <option key={c.label} value={c.label}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="City"
+                    value={newSpot.city}
+                    onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Description / Tips</label>
+                <textarea
+                  rows={3}
+                  placeholder="What makes this place special? Any tips on ordering or Wi-Fi?"
+                  value={newSpot.description}
+                  onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Location & GPS Helper */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', backgroundColor: '#f5f5f4', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e7e5e4' }}>
+                <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#1c1917', display: 'block' }}>Pin Coordinates</span>
+                  <span style={{ fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                    {newSpot.latitude.toFixed(4)}, {newSpot.longitude.toFixed(4)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleModalLocate}
+                  disabled={isModalLocating}
+                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '7px 10px', fontSize: '11px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
+                >
+                  {isModalLocating ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '13px', height: '13px' }} />}
+                  Use GPS
+                </button>
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
+                {imagePreview ? (
+                  <div style={{ position: 'relative', width: '100%', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #d6d3d1' }}>
+                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button
+                      type="button"
+                      onClick={() => { setImageFile(null); setImagePreview(null); setNewSpot({ ...newSpot, image_url: '' }); }}
+                      style={{ position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#ffffff', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X style={{ width: '14px', height: '14px' }} />
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', border: '1.5px dashed #d6d3d1', borderRadius: '12px', backgroundColor: '#fafaf9', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#78716c' }}>
+                    <Camera style={{ width: '16px', height: '16px', color: '#e05a47' }} />
+                    <span>Upload or snap photo</span>
+                    <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                  </label>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving || uploadingImage}
+                style={{ width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 700, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: saving || uploadingImage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.3)' }}
+              >
+                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Drop Curated Pin')}
+              </button>
+            </form>
           </div>
         </div>
       )}
