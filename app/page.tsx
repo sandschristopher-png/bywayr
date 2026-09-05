@@ -1160,6 +1160,16 @@ export default function Home() {
     }
   };
 
+  const flyToSpot = (spot: Spot) => {
+    if (!map.current || !spot.latitude || !spot.longitude) return;
+    map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+    setViewingSpot(spot);
+    setActiveSearchedSpot(null);
+    setIsDrawerOpen(false);
+    pushModalHistoryState('viewingSpot');
+    if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
+  };
+
   // Basemap Initialization - Stadia Maps OSM Bright (Vibrant & Colorful)
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -1429,37 +1439,8 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleSelectSearchResult = (item: any) => {
-    triggerHaptic(8);
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-    setShowDropdown(false);
-    setSearchQuery(item.display_name);
-
-    const placeName = item.name || item.display_name.split(',')[0];
-    const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
-
-    setActiveSearchedSpot({
-      name: placeName,
-      city: placeCity,
-      latitude: lat,
-      longitude: lon,
-    });
-    setViewingSpot(null);
-    pushModalHistoryState('activeSearchedSpot');
-
-    if (map.current) {
-      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-
-      if (previewMarkerRef.current) previewMarkerRef.current.remove();
-      previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
-        .setLngLat([lon, lat])
-        .addTo(map.current);
-    }
-  };
-
   const filteredSpots = spots
-    .filter((spot) => {
+    .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
       if (maxRadiusKm !== null) {
         const anchorLat = userCoords ? userCoords.lat : mapCenter.lat;
@@ -1480,398 +1461,6 @@ export default function Home() {
       const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return timeB - timeA;
     });
-
-  // Marker Rendering
-  useEffect(() => {
-    if (!map.current) return;
-    spotMarkersRef.current.forEach((marker) => marker.remove());
-    spotMarkersRef.current = [];
-
-    filteredSpots.forEach((spot) => {
-      if (!spot.latitude || !spot.longitude) return;
-      const isMustTry = spot.id ? mustTrySpotIds.includes(spot.id) : false;
-      const isWalkTarget = walkTargetSpot?.id === spot.id;
-      const color = getCategoryColor(spot.category);
-
-      const el = document.createElement('div');
-      el.style.width = '32px';
-      el.style.height = '32px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = isWalkTarget ? '#e05a47' : '#ffffff';
-      el.style.border = isMustTry
-        ? '3px solid #d97706'
-        : isWalkTarget
-        ? '3px solid #ffffff'
-        : `2.5px solid ${color}`;
-      el.style.boxShadow = '0 6px 16px rgba(28, 25, 23, 0.25)';
-      el.style.cursor = 'pointer';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-      el.title = spot.name;
-
-      if (isWalkTarget) {
-        const iconDiv = document.createElement('div');
-        iconDiv.style.display = 'flex';
-        iconDiv.style.color = '#ffffff';
-        iconDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-        el.appendChild(iconDiv);
-      } else {
-        const svgIcon = document.createElement('div');
-        svgIcon.style.display = 'flex';
-        svgIcon.style.alignItems = 'center';
-        svgIcon.style.justifyContent = 'center';
-        svgIcon.style.color = color;
-        svgIcon.innerHTML = getCategorySvg(spot.category, color);
-        el.appendChild(svgIcon);
-      }
-
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        triggerHaptic(8);
-        setActiveSearchedSpot(null);
-        flyToSpot(spot);
-      });
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([spot.longitude, spot.latitude])
-        .addTo(map.current!);
-
-      spotMarkersRef.current.push(marker);
-    });
-  }, [filteredSpots, mustTrySpotIds, walkTargetSpot]);
-
-  const handleLocateMe = () => {
-    triggerHaptic(8);
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserCoords({ lat: latitude, lng: longitude });
-        if (!map.current) return;
-
-        if (userLocationMarkerRef.current) {
-          userLocationMarkerRef.current.setLngLat([longitude, latitude]);
-        } else {
-          const el = document.createElement('div');
-          el.style.width = '16px';
-          el.style.height = '16px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#0284c7';
-          el.style.border = '3px solid #ffffff';
-          el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
-          el.className = 'user-location-pulse';
-
-          userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
-            .setLngLat([longitude, latitude])
-            .addTo(map.current);
-        }
-
-        map.current.flyTo({ center: [longitude, latitude], zoom: 16, essential: true });
-        setIsLocating(false);
-      },
-      () => {
-        alert('Could not retrieve your location.');
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const handleModalLocate = () => {
-    triggerHaptic(8);
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
-      return;
-    }
-
-    setIsModalLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserCoords({ lat: latitude, lng: longitude });
-        const lat = parseFloat(latitude.toFixed(6));
-        const lon = parseFloat(longitude.toFixed(6));
-
-        if (map.current) {
-          if (previewMarkerRef.current) previewMarkerRef.current.remove();
-          previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
-            .setLngLat([lon, lat])
-            .addTo(map.current);
-          map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-        }
-
-        const geo = await reverseGeocode(lat, lon);
-        setNewSpot((prev) => ({
-          ...prev,
-          latitude: lat,
-          longitude: lon,
-          city: geo.city || prev.city || 'Las Vegas',
-          country: geo.country || prev.country || 'United States',
-          name: prev.name || geo.name || '',
-        }));
-
-        setIsModalLocating(false);
-      },
-      () => {
-        alert('Could not retrieve current location.');
-        setIsModalLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const handleShareSpot = async (spot: Spot) => {
-    if (!spot.id) return;
-    triggerHaptic(8);
-    const shareUrl = `${window.location.origin}${window.location.pathname}?spot=${spot.id}`;
-    const shareText = `Check out ${spot.name} in ${spot.city} on Bywayr!`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
-        return;
-      } catch {}
-    }
-
-    setShareDialogSpot(spot);
-    setShareDialogCopied(false);
-    pushModalHistoryState('share');
-  };
-
-  const handleCopyCoordinates = async (lat: number, lon: number) => {
-    triggerHaptic(10);
-    await navigator.clipboard.writeText(`${lat}, ${lon}`);
-    setCoordsCopied(true);
-    setTimeout(() => setCoordsCopied(false), 2000);
-  };
-
-  const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-
-    if (!map.current) return;
-    triggerHaptic(8);
-    setViewingSpot(null);
-    setActiveSearchedSpot(null);
-    setIsEditing(false);
-
-    if (previewMarkerRef.current) previewMarkerRef.current.remove();
-
-    const previewPin = new maplibregl.Marker({ color: '#e05a47' }).setLngLat([lon, lat]).addTo(map.current);
-    previewMarkerRef.current = previewPin;
-
-    map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-
-    const geo = await reverseGeocode(lat, lon);
-
-    setNewSpot({
-      name: defaultName || geo.name || '',
-      category: 'Hidden Gems',
-      city: geo.city || 'Las Vegas',
-      country: geo.country || 'United States',
-      description: '',
-      latitude: parseFloat(lat.toFixed(6)),
-      longitude: parseFloat(lon.toFixed(6)),
-      image_url: '',
-    });
-
-    setImageFile(null);
-    setImagePreview(null);
-    setIsModalOpen(true);
-    pushModalHistoryState('addSpotModal');
-  };
-
-  const handleOpenEditModal = (spot: Spot) => {
-    const activeUser = currentUserRef.current;
-    if (!activeUser || spot.user_id !== activeUser.id) return;
-    triggerHaptic(8);
-    setIsEditing(true);
-    setNewSpot(spot);
-    setImagePreview(spot.image_url || null);
-    setImageFile(null);
-    setViewingSpot(null);
-    setActiveSearchedSpot(null);
-    setIsModalOpen(true);
-    pushModalHistoryState('editSpotModal');
-  };
-
-  const handleCloseModal = () => {
-    if (previewMarkerRef.current && !activeSearchedSpot) {
-      previewMarkerRef.current.remove();
-      previewMarkerRef.current = null;
-    }
-    setImageFile(null);
-    setImagePreview(null);
-    setIsEditing(false);
-    setIsModalOpen(false);
-  };
-
-  const handleDeleteSpot = async (spot: Spot) => {
-    const activeUser = currentUserRef.current;
-    if (!spot.id || !activeUser || spot.user_id !== activeUser.id) return;
-    if (!confirm(`Are you sure you want to delete "${spot.name}"?`)) return;
-
-    triggerHaptic(15);
-    setDeleting(true);
-    const { error } = await supabase.from('spots').delete().eq('id', spot.id);
-    if (!error) {
-      setSpots((prev) => prev.filter((s) => s.id !== spot.id));
-      setViewingSpot(null);
-    }
-    setDeleting(false);
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleSaveSpot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-    if (!newSpot.name || isNaN(newSpot.latitude) || isNaN(newSpot.longitude)) return;
-
-    triggerHaptic(12);
-    setSaving(true);
-    let uploadedUrl = newSpot.image_url || '';
-
-    if (imageFile) {
-      setUploadingImage(true);
-      const fileToUpload = await compressImageToWebP(imageFile);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
-      const filePath = `spots/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage.from('spot-images').getPublicUrl(filePath);
-        uploadedUrl = publicUrlData.publicUrl;
-      }
-      setUploadingImage(false);
-    }
-
-    if (isEditing && newSpot.id) {
-      const { data, error } = await supabase
-        .from('spots')
-        .update({
-          name: newSpot.name,
-          category: newSpot.category,
-          city: newSpot.city,
-          country: newSpot.country || 'United States',
-          description: newSpot.description,
-          latitude: newSpot.latitude,
-          longitude: newSpot.longitude,
-          image_url: uploadedUrl || null,
-        })
-        .eq('id', newSpot.id)
-        .select();
-
-      if (!error && data && data.length > 0) {
-        setSpots((prev) => prev.map((s) => (s.id === newSpot.id ? (data[0] as Spot) : s)));
-        setViewingSpot(data[0] as Spot);
-        setActiveSearchedSpot(null);
-        dismissModalWithHistory(() => setIsModalOpen(false));
-      }
-    } else {
-      const { data, error } = await supabase
-        .from('spots')
-        .insert([{
-          name: newSpot.name,
-          category: newSpot.category,
-          city: newSpot.city,
-          country: newSpot.country || 'United States',
-          description: newSpot.description,
-          latitude: newSpot.latitude,
-          longitude: newSpot.longitude,
-          image_url: uploadedUrl || null,
-          user_id: activeUser.id,
-        }])
-        .select();
-
-      if (!error && data && data.length > 0) {
-        if (previewMarkerRef.current) {
-          previewMarkerRef.current.remove();
-          previewMarkerRef.current = null;
-        }
-        setSpots((prev) => [data[0] as Spot, ...prev]);
-        dismissModalWithHistory(() => setIsModalOpen(false));
-        setSearchQuery('');
-        setActiveSearchedSpot(null);
-        if (map.current) map.current.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 16 });
-      }
-    }
-    setSaving(false);
-  };
-
-  const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
-  const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
-  const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
-  
-  const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
-
-  useEffect(() => {
-    const query = walkSearchQuery.trim();
-    if (query.length < 2) {
-      setLiveOsmResults([]);
-      setIsSearchingOsm(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearchingOsm(true);
-      try {
-        const center = map.current ? map.current.getCenter() : { lng: -115.1398, lat: 36.1699 };
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=5`
-        );
-        const data = await res.json();
-
-        if (data && data.length > 0) {
-          const mapped: Spot[] = data.map((item: any) => {
-            const lat = parseFloat(item.lat);
-            const lon = parseFloat(item.lon);
-            return {
-              name: item.name || item.display_name.split(',')[0],
-              city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
-              country: item.address?.country || '',
-              category: 'Map Location',
-              description: item.display_name,
-              latitude: lat,
-              longitude: lon,
-              isLiveOsm: true,
-            };
-          });
-
-          setLiveOsmResults(mapped);
-        } else {
-          setLiveOsmResults([]);
-        }
-      } catch (err) {
-        console.error('OSM search error:', err);
-      } finally {
-        setIsSearchingOsm(false);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [walkSearchQuery]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
@@ -2526,7 +2115,7 @@ export default function Home() {
             {/* Scrollable Results Area */}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '48vh', paddingRight: '2px' }}>
               {(() => {
-                const curatedMatches = proximitySortedSpots.filter((s) => {
+                const curatedMatches = proximitySortedSpots.filter((s: Spot) => {
                   if (!walkSearchQuery.trim()) return true;
                   const q = walkSearchQuery.toLowerCase();
                   return (
@@ -2549,7 +2138,7 @@ export default function Home() {
                         No curated spots match "{walkSearchQuery}".
                       </p>
                     ) : (
-                      curatedMatches.map((spot) => (
+                      curatedMatches.map((spot: Spot) => (
                         <div
                           key={spot.id || spot.name}
                           onClick={() => {
