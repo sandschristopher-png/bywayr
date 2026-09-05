@@ -3685,18 +3685,21 @@ export default function Home() {
           style={{
             position: 'fixed',
             bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(28, 25, 23, 0.92)',
+            left: '16px',
+            right: '16px',
+            maxWidth: '320px',
+            margin: '0 auto',
+            backgroundColor: '#e05a47',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
-            color: '#fafaf9',
-            padding: '8px 16px',
+            color: '#ffffff',
+            padding: '10px 16px',
             borderRadius: '20px',
             fontSize: '12px',
             fontWeight: 600,
+            textAlign: 'center',
             zIndex: 100010,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+            boxShadow: '0 8px 24px rgba(224, 90, 71, 0.35)',
             pointerEvents: 'none',
           }}
         >
@@ -3704,6 +3707,7 @@ export default function Home() {
         </div>
       )}
 
+      
       {/* PWA Web Install Banner */}
       <PwaInstallBanner />
     </div>

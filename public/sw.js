@@ -1,7 +1,8 @@
-const CACHE_NAME = 'bywayr-shell-v2';
+const CACHE_NAME = 'bywayr-shell-v3';
 const TILE_CACHE_NAME = 'bywayr-tiles-v1';
 
 const STATIC_ASSETS = [
+  '/',
   '/manifest.json',
   '/icon.svg',
   '/icon-192.png',

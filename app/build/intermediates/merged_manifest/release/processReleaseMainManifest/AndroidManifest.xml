@@ -22,7 +22,7 @@
      the abbreviated format.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.bywayr.twa"
+    package="com.bywayr.app"
     android:versionCode="1"
     android:versionName="1" >
 
@@ -53,16 +53,16 @@
     <uses-permission android:name="com.android.vending.BILLING" />
 
     <permission
-        android:name="com.bywayr.twa.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="com.bywayr.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.bywayr.twa.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" /> <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
+    <uses-permission android:name="com.bywayr.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" /> <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
     <!-- <uses-sdk android:minSdkVersion="14"/> -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name="com.bywayr.twa.Application"
+        android:name="com.bywayr.app.Application"
         android:allowBackup="true"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:extractNativeLibs="false"
@@ -97,7 +97,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.bywayr.twa.LauncherActivity"
+            android:name="com.bywayr.app.LauncherActivity"
             android:alwaysRetainTaskState="true"
             android:exported="true"
             android:label="@string/launcherName" >
@@ -176,7 +176,7 @@
         </provider>
 
         <service
-            android:name="com.bywayr.twa.DelegationService"
+            android:name="com.bywayr.app.DelegationService"
             android:enabled="@bool/enableNotification"
             android:exported="@bool/enableNotification" >
             <meta-data
@@ -240,7 +240,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.bywayr.twa.androidx-startup"
+            android:authorities="com.bywayr.app.androidx-startup"
             android:exported="false" >
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.bywayr.twa.app-mergeReleaseResources-27:/values/values.xml",
+            "outputFile": "com.bywayr.app-mergeReleaseResources-27:/values/values.xml",
             "map": [
                 {
                     "source": "C:\\Users\\sands\\.gradle\\caches\\8.11.1\\transforms\\737b8dc2f3acbd56f4cbc53741bff7b8\\transformed\\billing-1.2.0\\res\\values\\values.xml",

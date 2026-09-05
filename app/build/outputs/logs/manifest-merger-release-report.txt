@@ -151,7 +151,7 @@ category#android.intent.category.DEFAULT
 ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:73:21-80
 	android:name
 		ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:73:31-77
-activity#com.bywayr.twa.LauncherActivity
+activity#com.bywayr.app.LauncherActivity
 ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:78:9-159:20
 	android:label
 		ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:80:13-49
@@ -299,7 +299,7 @@ ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:171:13-1
 		ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:173:17-50
 	android:name
 		ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:172:17-67
-service#com.bywayr.twa.DelegationService
+service#com.bywayr.app.DelegationService
 ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:176:9-191:19
 	android:enabled
 		ADDED from C:\Users\sands\secret-spots\app\src\main\AndroidManifest.xml:178:13-55
@@ -553,7 +553,7 @@ ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\tran
 		ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:23:9-81
-permission#com.bywayr.twa.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.bywayr.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:24:9-44
@@ -563,7 +563,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:26:22-94
-uses-permission#com.bywayr.twa.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.bywayr.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.13.0] C:\Users\sands\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:26:22-94

@@ -40,7 +40,7 @@
     <!-- Value from default config. -->
     <string name="orientation" translatable="false">portrait</string>
     <!-- Value from default config. -->
-    <string name="providerAuthority" translatable="false">com.bywayr.twa.fileprovider</string>
+    <string name="providerAuthority" translatable="false">com.bywayr.app.fileprovider</string>
     <!-- Value from default config. -->
     <string name="webManifestUrl" translatable="false">https://bywayr.com/manifest.json</string>
 

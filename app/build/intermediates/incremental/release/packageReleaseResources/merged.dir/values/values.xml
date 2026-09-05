@@ -29,6 +29,6 @@
     <string name="launchUrl" translatable="false">https://bywayr.com/</string>
     <string name="launcherName" translatable="false">Bywayr</string>
     <string name="orientation" translatable="false">portrait</string>
-    <string name="providerAuthority" translatable="false">com.bywayr.twa.fileprovider</string>
+    <string name="providerAuthority" translatable="false">com.bywayr.app.fileprovider</string>
     <string name="webManifestUrl" translatable="false">https://bywayr.com/manifest.json</string>
 </resources>

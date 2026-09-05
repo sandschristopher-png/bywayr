@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.bywayr.twa.app-mergeReleaseResources-27:/values-zu/values-zu.xml",
+            "outputFile": "com.bywayr.app-mergeReleaseResources-27:/values-zu/values-zu.xml",
             "map": [
                 {
                     "source": "C:\\Users\\sands\\.gradle\\caches\\8.11.1\\transforms\\5846cf32d1d3de8a9759defd4249411a\\transformed\\play-services-basement-18.9.0\\res\\values-zu\\values.xml",
