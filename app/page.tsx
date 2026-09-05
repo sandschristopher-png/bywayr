@@ -68,7 +68,7 @@ import {
   Cpu,
   MessageSquare,
   WifiOff,
-  GlassWater,
+  Mic2,
 } from 'lucide-react';
 
 interface Spot {
@@ -108,18 +108,18 @@ interface SpotComment {
 
 const CATEGORIES = [
   { label: 'All', desc: 'All unindexed local spots & expat field notes', color: '#57534e', icon: Sparkles },
-  { label: 'Hidden Gems', desc: 'Secret viewpoints, quiet courtyards & unlisted local treasures', color: '#e05a47', icon: Gem },
-  { label: 'Street Food & Stalls', desc: 'Backstreet carts, night markets & unmapped local bites', color: '#ea580c', icon: Utensils },
-  { label: 'Local Eats', desc: 'Hole-in-the-wall diners & neighborhood restaurants', color: '#d97706', icon: Store },
-  { label: 'Cafes & Workspaces', desc: 'Nomad-friendly spots with reliable Wi-Fi & power outlets', color: '#2563eb', icon: Laptop },
-  { label: 'Bars & Nightlife', desc: 'Local watering holes, concept bars & neighborhood pubs', color: '#db2777', icon: Beer },
-  { label: 'Social & Host Bars', desc: 'Girls bars, hostess lounges, izakayas & social nightlife spots', color: '#7c3aed', icon: GlassWater },
-  { label: 'Entertainment & Play', desc: 'Retro arcades, game centers, batting cages & local amusement', color: '#6366f1', icon: Gamepad2 },
-  { label: 'Markets & Shops', desc: 'Local produce alleys, thrift stalls & independent markets', color: '#b45309', icon: Disc },
-  { label: 'Nature & Trails', desc: 'Trailheads, hidden beaches, waterfalls & green pockets', color: '#0d9488', icon: Trees },
-  { label: 'Culture & Shrines', desc: 'Neighborhood temples, historical plaques & hidden shrines', color: '#059669', icon: Landmark },
-  { label: 'Stays & Hideaways', desc: 'Boutique guesthouses, quiet homestays & remote retreats', color: '#4f46e5', icon: HomeIcon },
-  { label: 'Practical Staples', desc: 'Essential local services, hidden ATMs, transit nooks & Wi-Fi zones', color: '#0284c7', icon: Compass },
+  { label: 'Hidden Gems', desc: 'Secret viewpoints & quiet local treasures', color: '#e05a47', icon: Gem },
+  { label: 'Street Food & Stalls', desc: 'Backstreet carts & unmapped night bites', color: '#ea580c', icon: Utensils },
+  { label: 'Local Eats', desc: 'Hole-in-the-wall diners & neighborhood spots', color: '#d97706', icon: Store },
+  { label: 'Cafes & Workspaces', desc: 'Nomad-friendly spots with reliable Wi-Fi', color: '#2563eb', icon: Laptop },
+  { label: 'Bars & Nightlife', desc: 'Local watering holes & concept pubs', color: '#db2777', icon: Beer },
+  { label: 'Host & KTV Lounges', desc: 'Private karaoke rooms & companion spaces', color: '#7c3aed', icon: Mic2 },
+  { label: 'Entertainment & Play', desc: 'Retro arcades, game lofts & amusement', color: '#6366f1', icon: Gamepad2 },
+  { label: 'Markets & Shops', desc: 'Produce alleys & independent thrift stalls', color: '#b45309', icon: Disc },
+  { label: 'Nature & Trails', desc: 'Trailheads, hidden coves & green pockets', color: '#0d9488', icon: Trees },
+  { label: 'Culture & Shrines', desc: 'Neighborhood temples & historical plaques', color: '#059669', icon: Landmark },
+  { label: 'Stays & Hideaways', desc: 'Boutique guesthouses & quiet retreats', color: '#4f46e5', icon: HomeIcon },
+  { label: 'Practical Staples', desc: 'Essential local services, ATMs & transit nooks', color: '#0284c7', icon: Compass },
 ];
 
 const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
@@ -157,8 +157,11 @@ const getCategorySvg = (category: string, color: string): string => {
   if (cat.includes('street food') || cat.includes('eats')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v18"/><path d="M6 2v20"/><path d="M3 2v4a3 3 0 0 0 3 3v0a3 3 0 0 0 3-3V2"/></svg>`;
   }
-  if (cat.includes('bar') || cat.includes('social') || cat.includes('nightlife')) {
+  if (cat.includes('bar') || cat.includes('nightlife')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/></svg>`;
+  }
+  if (cat.includes('host') || cat.includes('ktv')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
   }
   if (cat.includes('nature') || cat.includes('trail')) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.9"/></svg>`;
@@ -3600,7 +3603,7 @@ export default function Home() {
                     required
                     placeholder="Enter your email"
                     value={authEmail}
-                    onChange={(e) => setSearchQuery}
+                    onChange={(e) => setAuthEmail(e.target.value)}
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
