@@ -69,7 +69,6 @@ import {
   MessageSquare,
   WifiOff,
   Mic2,
-  Award,
 } from 'lucide-react';
 
 interface Spot {
@@ -280,69 +279,6 @@ const compressImageToWebP = async (file: File, maxDimension = 1200, quality = 0.
   });
 };
 
-// Compact, cleanly-spaced ink stamp badge
-const PassportStamp = ({
-  label,
-  subtext,
-  color = '#e05a47',
-  rotation = -4,
-}: {
-  label: string;
-  subtext?: string;
-  color?: string;
-  rotation?: number;
-}) => (
-  <div
-    style={{
-      display: 'inline-flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      border: `1.5px dashed ${color}`,
-      borderRadius: '50%',
-      width: '58px',
-      height: '58px',
-      padding: '3px',
-      boxSizing: 'border-box',
-      transform: `rotate(${rotation}deg)`,
-      color: color,
-      backgroundColor: `${color}0A`,
-      flexShrink: 0,
-      userSelect: 'none',
-    }}
-  >
-    <span
-      style={{
-        fontSize: '7.5px',
-        fontWeight: 800,
-        textTransform: 'uppercase',
-        letterSpacing: '0.03em',
-        textAlign: 'center',
-        lineHeight: 1.05,
-        maxWidth: '48px',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
-    </span>
-    {subtext && (
-      <span
-        style={{
-          fontSize: '6px',
-          fontWeight: 700,
-          opacity: 0.85,
-          marginTop: '1px',
-          textTransform: 'uppercase',
-        }}
-      >
-        {subtext}
-      </span>
-    )}
-  </div>
-);
-
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -506,7 +442,7 @@ export default function Home() {
     image_url: '',
   });
 
-  // Derived state variables
+  // Derived state variables placed here before any JSX return statement to prevent TS2304 / TS7006 errors
   const filteredSpots = spots
     .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
@@ -531,10 +467,8 @@ export default function Home() {
     });
 
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id));
-  const mySpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
-  const mySpotsCount = mySpots.length;
-  const myCitiesCount = new Set(mySpots.map((s) => s.city.trim()).filter(Boolean)).size;
-  const myCountriesList = Array.from(new Set(mySpots.map((s) => (s.country || 'United States').trim()).filter(Boolean)));
+  const mySpotsCount = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id).length : 0;
+  const myCitiesCount = currentUser ? new Set(spots.filter((s: Spot) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
   
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
@@ -1682,7 +1616,7 @@ export default function Home() {
           setIsSearching(true);
           (async () => {
             try {
-              let anchorLat = map.current ? map.current.getCenter() : 36.1699;
+              let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
               let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
 
               if (localityHint) {
@@ -2004,7 +1938,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 2. Top Header & Search Bar */}
+      {/* 2. Top Header & Search Bar (Locked with absolute positioning to prevent mobile UI jitter) */}
       <div style={{ position: 'absolute', top: isOffline ? '50px' : '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -2155,7 +2089,7 @@ export default function Home() {
                   <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
                   <span>Planning a trip? Search flights via Aviasales</span>
                 </div>
-                <ArrowRight style={{ width: '13px', height: '13px' }} color="#a8a29e" />
+                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
               </a>
             </div>
           )}
@@ -2326,25 +2260,81 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        {/* Empty State Card */}
-        {filteredSpots.length === 0 && !loading && (
-          <EmptyState
-            category={selectedCategory}
-            onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
-            onAddSpot={() => {
-              if (!currentUserRef.current) {
-                setIsAuthModalOpen(true);
-                pushModalHistoryState('auth');
-                return;
-              }
-              const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-              dropPreviewAndOpenModal(center.lat, center.lng);
-            }}
-            onClose={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
-          />
-        )}
       </div>
+
+      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Close X Button */}
+      {filteredSpots.length === 0 && !loading && (
+        <div 
+          className="animate-fade-in" 
+          onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(28, 25, 23, 0.45)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99998,
+            padding: '16px',
+            cursor: 'pointer'
+          }}
+        >
+          <div 
+            className="animate-scale-up" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '380px',
+              backgroundColor: '#ffffff',
+              borderRadius: '24px',
+              boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
+              border: '1px solid #e7e5e4',
+              padding: '24px',
+              boxSizing: 'border-box',
+              cursor: 'default'
+            }}
+          >
+            <button 
+              onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
+              style={{ 
+                position: 'absolute', 
+                top: '16px', 
+                right: '16px', 
+                border: 'none', 
+                background: '#f5f5f4', 
+                borderRadius: '50%', 
+                width: '32px', 
+                height: '32px', 
+                cursor: 'pointer', 
+                color: '#78716c', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}
+              title="Dismiss / Show All"
+            >
+              <X style={{ width: '16px', height: '16px' }} />
+            </button>
+            
+            <EmptyState
+              category={selectedCategory}
+              onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
+              onAddSpot={() => {
+                if (!currentUserRef.current) {
+                  setIsAuthModalOpen(true);
+                  pushModalHistoryState('auth');
+                  return;
+                }
+                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                dropPreviewAndOpenModal(center.lat, center.lng);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 3. Floating Map Controls */}
       <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
@@ -2699,29 +2689,35 @@ export default function Home() {
 
       {/* 4. Spot Details Bottom Sheet with Comments / Discussion */}
       {viewingSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-            <div style={{ flex: 1, paddingRight: '10px' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '10px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
-              <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{viewingSpot.name}</h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#78716c' }}>
-                {viewingSpot.city}{' '}
-                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
-                  <>
-                    ·{' '}
-                    <span
-                      onClick={() => handleOpenPublicProfile(viewingSpot.user_id!)}
-                      style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      @{profilesMap[viewingSpot.user_id].username}
-                    </span>
-                  </>
-                ) : ''}
-              </p>
+              <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{viewingSpot.name}</span>
+                <span style={{ fontSize: '12px', fontWeight: 400, color: '#78716c', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  · {viewingSpot.city}
+                  {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username && (
+                    <>
+                      {' · '}
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenPublicProfile(viewingSpot.user_id!);
+                        }}
+                        style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        @{profilesMap[viewingSpot.user_id].username}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </h3>
             </div>
-            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+            
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
               <button
                 onClick={() => toggleVouch(viewingSpot.id)}
                 disabled={savingVouch}
@@ -2737,6 +2733,7 @@ export default function Home() {
                   gap: '4px',
                   fontSize: '12px',
                   fontWeight: 600,
+                  flexShrink: 0,
                 }}
                 title="Vouch for this spot"
               >
@@ -2744,34 +2741,41 @@ export default function Home() {
                 <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
               </button>
 
-              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex' }} title="Save to Must-Try">
+              <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '7px', display: 'flex', flexShrink: 0 }} title="Save to Must-Try">
                 {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '16px', height: '16px' }} /> : <Bookmark style={{ width: '16px', height: '16px' }} />}
               </button>
 
-              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px' }} title="Share spot">
+              <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} title="Share spot">
                 <Share2 style={{ width: '16px', height: '16px' }} />
               </button>
 
               {currentUser && viewingSpot.user_id === currentUser.id && (
                 <>
-                  <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex' }} title="Edit Spot">
+                  <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '12px', cursor: 'pointer', color: '#57534e', padding: '7px', display: 'flex', flexShrink: 0 }} title="Edit Spot">
                     <Pencil style={{ width: '15px', height: '15px' }} />
                   </button>
-                  <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '12px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex' }} title="Delete Spot">
+                  <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '12px', cursor: 'pointer', color: '#e05a47', padding: '7px', display: 'flex', flexShrink: 0 }} title="Delete Spot">
                     {deleting ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '15px', height: '15px' }} />}
                   </button>
                 </>
               )}
-              <button onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
+              <button onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px', flexShrink: 0 }}>
                 <X style={{ width: '19px', height: '19px' }} />
               </button>
             </div>
           </div>
 
-          {viewingSpot.image_url && <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '16px', margin: '8px 0' }} />}
-          {viewingSpot.description && <p style={{ margin: '8px 0 14px 0', fontSize: '13px', color: '#44403c', lineHeight: 1.45 }}>{viewingSpot.description}</p>}
+          {viewingSpot.image_url && (
+            <div style={{ width: '100%', height: '160px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f5f5f4' }}>
+              <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </div>
+          )}
+
+          {viewingSpot.description && (
+            <p style={{ margin: 0, fontSize: '13px', color: '#44403c', lineHeight: 1.45, wordBreak: 'break-word' }}>{viewingSpot.description}</p>
+          )}
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <button
               onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
@@ -2789,12 +2793,12 @@ export default function Home() {
           </div>
 
           {/* Spot Comments / Field Discussion Section */}
-          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, color: '#57534e', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
+          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, color: '#57534e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               <MessageSquare style={{ width: '13px', height: '13px' }} color="#e05a47" /> Field Notes Discussion ({spotComments.length})
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
               {spotComments.length === 0 ? (
                 <p style={{ margin: 0, fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No tips or comments left yet. Be the first!</p>
               ) : (
@@ -2814,7 +2818,7 @@ export default function Home() {
                         </div>
                         <span style={{ fontSize: '10px', color: '#a8a29e' }}>{formatRelativeTime(c.created_at)}</span>
                       </div>
-                      <p style={{ margin: '0 0 6px 0', color: '#44403c', lineHeight: 1.35 }}>{c.content}</p>
+                      <p style={{ margin: '0 0 6px 0', color: '#44403c', lineHeight: 1.35, wordBreak: 'break-word' }}>{c.content}</p>
                       
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <button
@@ -2843,8 +2847,7 @@ export default function Home() {
               )}
             </div>
 
-            {/* Tag Selector Pill Row */}
-            <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', scrollbarWidth: 'none' }}>
               {COMMENT_TAGS.map((t) => (
                 <button
                   key={t}
@@ -2893,7 +2896,7 @@ export default function Home() {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
         const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
         
-        const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'United States');
+        const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'Philippines');
 
         const filteredProfileSpots = profileCityFilter === 'All' 
           ? viewingProfileSpots 
@@ -2901,28 +2904,28 @@ export default function Home() {
 
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '22px 20px', position: 'relative', boxSizing: 'border-box' }}>
-              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X style={{ width: '16px', height: '16px' }} />
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: '18px', height: '18px' }} />
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingRight: '28px' }}>
-                <div style={{ width: '52px', height: '52px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)' }}>
                   {viewingProfile.avatar_url ? (
                     <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <Compass style={{ width: '24px', height: '24px' }} />
+                    <Compass style={{ width: '28px', height: '28px' }} />
                   )}
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span>@{viewingProfile.username || 'wanderer'}</span>
                     <span style={{ 
-                      fontSize: '10px', 
+                      fontSize: '10.5px', 
                       fontWeight: 600, 
                       color: '#78716c', 
                       backgroundColor: '#f5f5f4', 
-                      padding: '2px 7px', 
+                      padding: '3px 8px', 
                       borderRadius: '6px', 
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
@@ -2935,52 +2938,29 @@ export default function Home() {
                       {resolvedCountry}
                     </span>
                   </h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
+                  <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
                     {viewingProfile.bio || 'Wanderer & local spot hunter'}
                   </p>
                 </div>
               </div>
 
-              {/* Compact Stats Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 8px', marginBottom: '12px', textAlign: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px 10px', marginBottom: '14px', textAlign: 'center' }}>
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
-                  <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Total Pins</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Total Pins</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#0284c7' }}>{uniqueCities.length}</div>
-                  <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{uniqueCities.length}</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
-                  <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Countries</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
                 </div>
               </div>
 
-              {/* Passport Stamps Tray */}
-              <div style={{ marginBottom: '12px', backgroundColor: '#fafaf9', borderRadius: '14px', border: '1px solid #e7e5e4', padding: '8px 10px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Award style={{ width: '12px', height: '12px', color: '#d97706' }} /> Passport Stamps & Badges
-                </div>
-                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '2px 0 4px 0', scrollbarWidth: 'none' }}>
-                  {uniqueCountries.map((c, i) => (
-                    <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -4 : 3} />
-                  ))}
-                  {viewingProfileSpots.length >= 1 && (
-                    <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={2} />
-                  )}
-                  {viewingProfileSpots.length >= 5 && (
-                    <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-3} />
-                  )}
-                  {uniqueCountries.length >= 2 && (
-                    <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={5} />
-                  )}
-                </div>
-              </div>
-
-              {/* City Filter Pills */}
               {uniqueCities.length > 1 && (
-                <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '10px', scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
                   <button
                     onClick={() => {
                       triggerHaptic(6);
@@ -2990,9 +2970,9 @@ export default function Home() {
                       backgroundColor: profileCityFilter === 'All' ? '#1c1917' : '#f5f5f4',
                       color: profileCityFilter === 'All' ? '#fafaf9' : '#57534e',
                       border: 'none',
-                      borderRadius: '10px',
-                      padding: '4px 8px',
-                      fontSize: '10.5px',
+                      borderRadius: '12px',
+                      padding: '5px 10px',
+                      fontSize: '11px',
                       fontWeight: 600,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
@@ -3011,9 +2991,9 @@ export default function Home() {
                         backgroundColor: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#1c1917' : '#f5f5f4',
                         color: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#fafaf9' : '#57534e',
                         border: 'none',
-                        borderRadius: '10px',
-                        padding: '4px 8px',
-                        fontSize: '10.5px',
+                        borderRadius: '12px',
+                        padding: '5px 10px',
+                        fontSize: '11px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         whiteSpace: 'nowrap',
@@ -3025,39 +3005,39 @@ export default function Home() {
                 </div>
               )}
 
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#57534e', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#57534e', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Curated Field Notes
               </div>
 
-              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '2px' }}>
+              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
                 {filteredProfileSpots.length === 0 ? (
-                  <p style={{ margin: '16px 0', fontSize: '12px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
+                  <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
                 ) : (
                   filteredProfileSpots.map((s) => (
                     <div
                       key={s.id || s.name}
                       className="spot-card-hover"
-                      style={{ padding: '10px 12px', borderRadius: '14px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '10px', alignItems: 'center', boxShadow: '0 2px 8px rgba(28, 25, 23, 0.03)' }}
+                      style={{ padding: '12px 14px', borderRadius: '16px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 2px 8px rgba(28, 25, 23, 0.03)' }}
                     >
                       {s.image_url ? (
-                        <img src={s.image_url} alt={s.name} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+                        <img src={s.image_url} alt={s.name} style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
-                        <div style={{ width: '48px', height: '48px', borderRadius: '10px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
-                          <MapPin style={{ width: '18px', height: '18px' }} />
+                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
+                          <MapPin style={{ width: '22px', height: '22px' }} />
                         </div>
                       )}
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                          <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '9.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px' }}>
                             {s.category}
                           </span>
-                          <span style={{ fontSize: '10px', color: '#a8a29e', fontWeight: 500 }}>
+                          <span style={{ fontSize: '10.5px', color: '#a8a29e', fontWeight: 500 }}>
                             {formatRelativeTime(s.created_at)}
                           </span>
                         </div>
-                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
-                        <p style={{ margin: '1px 0 0 0', fontSize: '10.5px', color: '#78716c' }}>{s.city}</p>
+                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>{s.city}</p>
                       </div>
 
                       <button
@@ -3071,18 +3051,18 @@ export default function Home() {
                           color: '#1c1917',
                           border: '1px solid #d6d3d1',
                           borderRadius: '10px',
-                          padding: '6px 8px',
-                          fontSize: '10.5px',
+                          padding: '7px 10px',
+                          fontSize: '11px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '3px',
+                          gap: '4px',
                           flexShrink: 0,
                         }}
                         title="View on Map"
                       >
-                        Map <ExternalLink style={{ width: '9px', height: '9px' }} />
+                        Map <ExternalLink style={{ width: '10px', height: '10px' }} />
                       </button>
                     </div>
                   ))
@@ -3220,7 +3200,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs (Export buttons removed for future Bywayr Plus release) */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
                 <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
@@ -3354,98 +3334,76 @@ export default function Home() {
         </div>
       )}
 
-      {/* Profile Modal (Own Profile) */}
+      {/* Profile Modal */}
       {isProfileModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '22px 20px', position: 'relative', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
             <button onClick={() => dismissModalWithHistory(() => setIsProfileModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '14px' }}>
-              <label style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '8px', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
+              <label style={{ width: '72px', height: '72px', borderRadius: '24px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
-                  <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
+                  <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
                 ) : userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <User style={{ width: '26px', height: '26px', color: '#78716c' }} />
+                  <User style={{ width: '30px', height: '30px', color: '#78716c' }} />
                 )}
                 <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
-                  <Camera style={{ width: '18px', height: '18px' }} />
+                  <Camera style={{ width: '20px', height: '20px' }} />
                 </div>
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
               </label>
 
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
                 {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
                 <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
-                  <Pencil style={{ width: '12px', height: '12px' }} />
+                  <Pencil style={{ width: '13px', height: '13px' }} />
                 </button>
               </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>{currentUser.email}</p>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{currentUser.email}</p>
             </div>
             
-            {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 8px', marginBottom: '12px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
-                <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Pins</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
               </div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
-                <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
               </div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
-                <div style={{ fontSize: '10px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
+                <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
               </div>
             </div>
 
-            {/* Passport Stamps Tray */}
-            <div style={{ marginBottom: '12px', backgroundColor: '#fafaf9', borderRadius: '14px', border: '1px solid #e7e5e4', padding: '8px 10px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Award style={{ width: '12px', height: '12px', color: '#d97706' }} /> Passport Stamps & Badges
-              </div>
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '2px 0 4px 0', scrollbarWidth: 'none' }}>
-                {myCountriesList.map((c, i) => (
-                  <PassportStamp key={c} label={c} subtext="Stamped" color={i % 2 === 0 ? '#0284c7' : '#e05a47'} rotation={i % 2 === 0 ? -4 : 3} />
-                ))}
-                {mySpotsCount >= 1 && (
-                  <PassportStamp label="Explorer" subtext="1st Pin" color="#059669" rotation={2} />
-                )}
-                {mySpotsCount >= 5 && (
-                  <PassportStamp label="Scout" subtext="5+ Pins" color="#d97706" rotation={-3} />
-                )}
-                {myCountriesList.length >= 2 && (
-                  <PassportStamp label="Nomad" subtext="Multi-Nat" color="#7c3aed" rotation={5} />
-                )}
-              </div>
-            </div>
-
-            {/* Bywayr Plus Section */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {/* Bywayr Plus Coming Soon Section */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Crown style={{ width: '14px', height: '14px', color: '#d97706' }} /> Bywayr Plus
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Crown style={{ width: '15px', height: '15px', color: '#d97706' }} /> Bywayr Plus
                 </span>
-                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '9.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '6px' }}>Coming soon</span>
+                <span style={{ backgroundColor: '#fef3c7', color: '#d97706', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>Coming soon</span>
               </div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
                 Unlock custom categories, custom icons, and JSON/GPX backups via Google Play & App Store billing.
               </p>
             </div>
 
-            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '12px', cursor: 'pointer', marginBottom: '12px' }}>
+            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin style={{ width: '15px', height: '15px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
-                <span style={{ fontSize: '12px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
+                <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '15px', height: '15px', color: '#e05a47' }} /> : <Square style={{ width: '15px', height: '15px', color: '#a8a29e' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
 
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12px', padding: '10px', borderRadius: '12px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <LogOut style={{ width: '13px', height: '13px' }} /> Sign Out
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
 
             <button
@@ -3456,11 +3414,11 @@ export default function Home() {
                 pushModalHistoryState('deleteAccount');
               }}
               style={{
-                marginTop: '10px',
+                marginTop: '12px',
                 background: 'none',
                 border: 'none',
                 color: '#a8a29e',
-                fontSize: '10.5px',
+                fontSize: '11px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 textAlign: 'center',
@@ -3668,120 +3626,6 @@ export default function Home() {
                 </button>
               </form>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Spot Add / Edit Modal */}
-      {isModalOpen && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '400px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto' }}>
-            <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
-            </button>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{isEditing ? 'Edit Field Note' : 'New Field Note'}</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c' }}>Curate a hidden gem or local spot for explorers.</p>
-
-            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Backstreet Ramen Nook"
-                  value={newSpot.name}
-                  onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
-                  <select
-                    value={newSpot.category}
-                    onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '10px 10px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', backgroundColor: '#ffffff', color: '#1c1917' }}
-                  >
-                    {CATEGORIES.filter((c) => c.label !== 'All').map((c) => (
-                      <option key={c.label} value={c.label}>{c.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="City"
-                    value={newSpot.city}
-                    onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Description / Tips</label>
-                <textarea
-                  rows={3}
-                  placeholder="What makes this place special? Any tips on ordering or Wi-Fi?"
-                  value={newSpot.description}
-                  onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917', resize: 'vertical' }}
-                />
-              </div>
-
-              {/* Location & GPS Helper */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', backgroundColor: '#f5f5f4', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e7e5e4' }}>
-                <div style={{ flex: 1, minWidth: 0, paddingRight: '8px' }}>
-                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#1c1917', display: 'block' }}>Pin Coordinates</span>
-                  <span style={{ fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                    {newSpot.latitude.toFixed(4)}, {newSpot.longitude.toFixed(4)}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleModalLocate}
-                  disabled={isModalLocating}
-                  style={{ backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '10px', padding: '7px 10px', fontSize: '11px', fontWeight: 600, color: '#e05a47', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
-                >
-                  {isModalLocating ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '13px', height: '13px' }} />}
-                  Use GPS
-                </button>
-              </div>
-
-              {/* Photo Upload */}
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
-                {imagePreview ? (
-                  <div style={{ position: 'relative', width: '100%', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #d6d3d1' }}>
-                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button
-                      type="button"
-                      onClick={() => { setImageFile(null); setImagePreview(null); setNewSpot({ ...newSpot, image_url: '' }); }}
-                      style={{ position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#ffffff', border: 'none', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <X style={{ width: '14px', height: '14px' }} />
-                    </button>
-                  </div>
-                ) : (
-                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', border: '1.5px dashed #d6d3d1', borderRadius: '12px', backgroundColor: '#fafaf9', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#78716c' }}>
-                    <Camera style={{ width: '16px', height: '16px' }} />
-                    <span>Upload or snap photo</span>
-                    <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
-                  </label>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={saving || uploadingImage}
-                style={{ width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 700, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: saving || uploadingImage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.3)' }}
-              >
-                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Drop Curated Pin')}
-              </button>
-            </form>
           </div>
         </div>
       )}
