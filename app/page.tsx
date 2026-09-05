@@ -1041,6 +1041,367 @@ export default function Home() {
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
+  const fetchSpotComments = async (spotId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('spot_comments')
+        .select('*')
+        .eq('spot_id', spotId)
+        .order('created_at', { ascending: true });
+      if (!error && data) {
+        setSpotComments(data);
+      }
+    } catch (err) {
+      console.error('Failed to load spot comments:', err);
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !viewingSpot?.id || !newCommentText.trim()) return;
+
+    triggerHaptic(10);
+    setSubmittingComment(true);
+
+    const { data, error } = await supabase
+      .from('spot_comments')
+      .insert([{
+        spot_id: viewingSpot.id,
+        user_id: activeUser.id,
+        content: newCommentText.trim(),
+      }])
+      .select();
+
+    if (!error && data && data.length > 0) {
+      setSpotComments((prev) => [...prev, data[0] as SpotComment]);
+      setNewCommentText('');
+    } else {
+      const fallbackComment: SpotComment = {
+        id: Date.now().toString(),
+        spot_id: viewingSpot.id,
+        user_id: activeUser.id,
+        content: newCommentText.trim(),
+        created_at: new Date().toISOString(),
+      };
+      setSpotComments((prev) => [...prev, fallbackComment]);
+      setNewCommentText('');
+    }
+    setSubmittingComment(false);
+  };
+
+  const handleExportData = (format: 'json' | 'gpx') => {
+    triggerHaptic(12);
+    const targetSpots = drawerTab === 'mustTry' ? spots.filter(s => mustTrySpotIds.includes(s.id!)) : spots;
+    
+    if (format === 'json') {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(targetSpots, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } else {
+      let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Bywayr">\n`;
+      targetSpots.forEach(s => {
+        gpx += `  <wpt lat="${s.latitude}" lon="${s.longitude}">\n`;
+        gpx += `    <name>${escapeXml(s.name)}</name>\n`;
+        gpx += `    <desc>${escapeXml(s.description || s.category)}</desc>\n`;
+        gpx += `  </wpt>\n`;
+      });
+      gpx += `</gpx>`;
+
+      const dataStr = "data:text/gpx+xml;charset=utf-8," + encodeURIComponent(gpx);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.gpx`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+  };
+
+  const escapeXml = (str: string) => {
+    return str.replace(/[<>&'"]/g, (c) => {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+        default: return c;
+      }
+    });
+  };
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (!error && data) {
+        setUserProfile(data);
+        localStorage.setItem('bywayr_user_profile', JSON.stringify(data));
+        if (!data.username) {
+          setIsClaimUsernameModalOpen(true);
+          pushModalHistoryState('claimUsername');
+        }
+      } else if (!data) {
+        setIsClaimUsernameModalOpen(true);
+        pushModalHistoryState('claimUsername');
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+    }
+  };
+
+  const fetchProfiles = async () => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (!error && data) {
+        const map: Record<string, UserProfile> = {};
+        data.forEach((p: UserProfile) => {
+          if (p.id) map[p.id] = p;
+        });
+        setProfilesMap(map);
+      }
+    } catch (err) {
+      console.error('Failed to load profiles map:', err);
+    }
+  };
+
+  const fetchVouches = async (userId?: string) => {
+    try {
+      const { data: allVouches, error } = await supabase.from('vouches').select('spot_id, user_id');
+      if (!error && allVouches) {
+        const counts: Record<string, number> = {};
+        const myVouches: string[] = [];
+        allVouches.forEach((v: { spot_id: string; user_id: string }) => {
+          counts[v.spot_id] = (counts[v.spot_id] || 0) + 1;
+          if (userId && v.user_id === userId) {
+            myVouches.push(v.spot_id);
+          }
+        });
+        setVouchCounts(counts);
+        setVouchedSpotIds(myVouches);
+      }
+    } catch (err) {
+      console.error('Failed to load vouches:', err);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      currentUserRef.current = user;
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      currentUserRef.current = user;
+      if (user) {
+        setIsAuthModalOpen(false);
+      } else {
+        setUserProfile(null);
+        localStorage.removeItem('bywayr_user_profile');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    fetchSpots();
+    fetchProfiles();
+    fetchVouches(currentUser?.id);
+    if (currentUser?.id) {
+      fetchMustTryBookmarks(currentUser.id);
+      fetchUserProfile(currentUser.id);
+    } else {
+      setMustTrySpotIds([]);
+      setVouchedSpotIds([]);
+      setUserProfile(null);
+    }
+  }, [currentUser]);
+
+  const handleGoogleSignIn = async () => {
+    triggerHaptic(10);
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+    });
+  };
+
+  const handleMagicLinkSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail.trim()) return;
+
+    const cleanUsername = authUsername.trim().toLowerCase();
+    if (cleanUsername) {
+      if (cleanUsername.length < 3 || cleanUsername.length > 20 || !/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+        setAuthUsernameError('Username must be 3-20 characters (letters, numbers, underscores).');
+        return;
+      }
+
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanUsername)
+        .maybeSingle();
+
+      if (existingUser) {
+        setAuthUsernameError('This username is already taken. Please choose another.');
+        return;
+      }
+    }
+
+    setIsSendingMagicLink(true);
+    setAuthUsernameError('');
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail.trim(),
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        data: cleanUsername ? { username: cleanUsername } : undefined,
+      },
+    });
+
+    if (error) alert(`Error sending link: ${error.message}`);
+    else {
+      triggerHaptic(15);
+      setMagicLinkSent(true);
+    }
+    setIsSendingMagicLink(false);
+  };
+
+  const handleClaimUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser) return;
+
+    const clean = claimUsername.trim().toLowerCase();
+    if (clean.length < 3 || clean.length > 20 || !/^[a-z0-9_]{3,20}$/.test(clean)) {
+      setClaimUsernameError('Username must be 3-20 characters (letters, numbers, underscores).');
+      return;
+    }
+
+    setIsSavingUsername(true);
+    setClaimUsernameError('');
+
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', clean)
+      .maybeSingle();
+
+    if (existing && existing.id !== activeUser.id) {
+      setClaimUsernameError('That username is already taken.');
+      setIsSavingUsername(false);
+      return;
+    }
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: activeUser.id,
+      username: clean,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      setClaimUsernameError(error.message);
+    } else {
+      triggerHaptic(15);
+      const updated = { ...userProfile, id: activeUser.id, username: clean };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+      setIsClaimUsernameModalOpen(false);
+      fetchProfiles();
+    }
+    setIsSavingUsername(false);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !e.target.files || !e.target.files[0]) return;
+
+    const file = e.target.files[0];
+    setUploadingAvatar(true);
+
+    try {
+      const compressed = await compressImageToWebP(file, 400, 0.85);
+      const filePath = `${activeUser.id}-${Date.now()}.webp`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, compressed, { contentType: 'image/webp', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const publicUrl = publicUrlData.publicUrl;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: activeUser.id,
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (profileError) throw profileError;
+
+      triggerHaptic(15);
+      const updated = { ...userProfile, id: activeUser.id, avatar_url: publicUrl };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+      fetchProfiles();
+    } catch (err: any) {
+      alert(`Avatar upload failed: ${err.message || 'Error uploading file'}`);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    triggerHaptic(10);
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+    currentUserRef.current = null;
+    setMustTrySpotIds([]);
+    setVouchedSpotIds([]);
+    setOnlyMySpots(false);
+    setUserProfile(null);
+    localStorage.removeItem('bywayr_user_profile');
+    setIsProfileModalOpen(false);
+    setIsClaimUsernameModalOpen(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
+
+    setIsDeletingAccount(true);
+    try {
+      await supabase.from('bookmarks').delete().eq('user_id', activeUser.id);
+      await supabase.from('vouches').delete().eq('user_id', activeUser.id);
+      await supabase.from('profiles').delete().eq('id', activeUser.id);
+      await supabase.rpc('delete_user');
+    } catch (err) {
+      console.error('Account deletion cleanup error:', err);
+    } finally {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      currentUserRef.current = null;
+      setUserProfile(null);
+      setMustTrySpotIds([]);
+      setVouchedSpotIds([]);
+      localStorage.removeItem('bywayr_user_profile');
+      setIsDeleteAccountModalOpen(false);
+      setIsProfileModalOpen(false);
+      setIsDeletingAccount(false);
+    }
+  };
+
   // Basemap Initialization - Clean Standard OpenStreetMap Raster Tiles
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -1835,7 +2196,7 @@ export default function Home() {
       {filteredSpots.length === 0 && !loading && (
         <div style={{ 
           position: 'fixed', 
-          top: '128px',
+          top: '120px',
           left: '16px', 
           right: '16px', 
           maxWidth: '440px', 
@@ -3241,7 +3602,7 @@ export default function Home() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
+                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: '0', display: 'flex', marginTop: '1px' }}>
                   <ThumbsUp style={{ width: '14px', height: '14px' }} />
                 </div>
                 <div>
