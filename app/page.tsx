@@ -442,7 +442,7 @@ export default function Home() {
     image_url: '',
   });
 
-  // Derived state variables placed here before any JSX return statement to prevent TS2304 / TS7006 errors
+  // Derived state variables
   const filteredSpots = spots
     .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
@@ -1938,7 +1938,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 2. Top Header & Search Bar (Locked with absolute positioning to prevent mobile UI jitter) */}
+      {/* 2. Top Header & Search Bar */}
       <div style={{ position: 'absolute', top: isOffline ? '50px' : '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
@@ -2262,63 +2262,22 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Card (Completely un-wrapped, positioned high up, centered, with integrated close X button) */}
+      {/* Empty State */}
       {filteredSpots.length === 0 && !loading && (
-        <div 
-          className="animate-scale-up" 
-          style={{
-            position: 'absolute',
-            top: '185px',
-            left: '16px',
-            right: '16px',
-            maxWidth: '440px',
-            margin: '0 auto',
-            backgroundColor: '#ffffff',
-            borderRadius: '24px',
-            boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
-            border: '1px solid #e7e5e4',
-            padding: '24px',
-            boxSizing: 'border-box',
-            zIndex: 99998
+        <EmptyState
+          category={selectedCategory}
+          onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
+          onAddSpot={() => {
+            if (!currentUserRef.current) {
+              setIsAuthModalOpen(true);
+              pushModalHistoryState('auth');
+              return;
+            }
+            const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+            dropPreviewAndOpenModal(center.lat, center.lng);
           }}
-        >
-          <button 
-            onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
-            style={{ 
-              position: 'absolute', 
-              top: '16px', 
-              right: '16px', 
-              border: 'none', 
-              background: '#f5f5f4', 
-              borderRadius: '50%', 
-              width: '32px', 
-              height: '32px', 
-              cursor: 'pointer', 
-              color: '#78716c', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              zIndex: 10
-            }}
-            title="Dismiss / Show All"
-          >
-            <X style={{ width: '16px', height: '16px' }} />
-          </button>
-          
-          <EmptyState
-            category={selectedCategory}
-            onResetFilter={() => { setSelectedCategory('All'); setMaxRadiusKm(null); }}
-            onAddSpot={() => {
-              if (!currentUserRef.current) {
-                setIsAuthModalOpen(true);
-                pushModalHistoryState('auth');
-                return;
-              }
-              const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-              dropPreviewAndOpenModal(center.lat, center.lng);
-            }}
-          />
-        </div>
+          onClose={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+        />
       )}
 
       {/* 3. Floating Map Controls */}
@@ -3042,8 +3001,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
@@ -3371,7 +3330,7 @@ export default function Home() {
                 <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px' }} /> : <Square style={{ width: '16px', height: '16px' }} />}
             </div>
 
             <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
