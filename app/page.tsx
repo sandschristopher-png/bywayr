@@ -1793,12 +1793,18 @@ export default function Home() {
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
         html, body {
-          overscroll-behavior-y: contain;
+          position: fixed;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          overscroll-behavior-y: none;
+          touch-action: none;
           -webkit-tap-highlight-color: transparent;
           user-select: none;
         }
         input, textarea {
           user-select: text;
+          touch-action: manipulation;
         }
         @keyframes slideUp {
           from { transform: translateY(24px) translateZ(0); opacity: 0; }
