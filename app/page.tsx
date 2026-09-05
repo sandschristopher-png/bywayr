@@ -69,7 +69,6 @@ import {
   MessageSquare,
   WifiOff,
   Mic2,
-  Stamp,
   Award,
   Globe,
 } from 'lucide-react';
@@ -134,7 +133,6 @@ const CATEGORIES = [
 ];
 
 const STAMP_PALETTE = ['#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#0d9488', '#4f46e5'];
-
 const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
 
 const getCategoryColor = (cat: string) => {
@@ -212,16 +210,17 @@ const sanitizeCountryAndCity = (city: string, country: string): { city: string; 
   let cCity = (city || '').trim();
   let cCountry = (country || '').trim();
   const lowerCity = cCity.toLowerCase();
+  const lowerCountry = cCountry.toLowerCase();
 
-  if (lowerCity.includes('chroy changvar') || lowerCity.includes('phnom penh') || lowerCity.includes('siem reap')) {
+  if (lowerCity.includes('chroy changvar') || lowerCity.includes('phnom penh') || lowerCity.includes('siem reap') || lowerCountry.includes('cambodia')) {
     cCountry = 'Cambodia';
-  } else if (lowerCity.includes('hong kong') || lowerCity.includes('kowloon')) {
+  } else if (lowerCity.includes('hong kong') || lowerCity.includes('kowloon') || lowerCountry.includes('hong kong')) {
     cCountry = 'Hong Kong';
-  } else if (lowerCity.includes('tokyo') || lowerCity.includes('shinjuku') || lowerCity.includes('shibuya') || lowerCity.includes('osaka')) {
+  } else if (lowerCity.includes('tokyo') || lowerCity.includes('shinjuku') || lowerCity.includes('shibuya') || lowerCity.includes('osaka') || lowerCountry.includes('japan')) {
     cCountry = 'Japan';
-  } else if (lowerCity.includes('cebu') || lowerCity.includes('manila') || lowerCity.includes('lapu-lapu') || lowerCity.includes('makati')) {
+  } else if (lowerCity.includes('cebu') || lowerCity.includes('manila') || lowerCity.includes('lapu-lapu') || lowerCity.includes('makati') || lowerCountry.includes('philippines')) {
     cCountry = 'Philippines';
-  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco')) {
+  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco') || lowerCountry.includes('united states') || lowerCountry.includes('usa')) {
     cCountry = 'United States';
   }
 
@@ -347,10 +346,18 @@ export default function Home() {
   const userLocationMarkerRef = useRef<maplibregl.Marker | null>(null);
   const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const profileStampScrollRef = useRef<HTMLDivElement>(null);
+  const publicStampScrollRef = useRef<HTMLDivElement>(null);
 
+  // Category Drag Scrolling
   const [isCategoryDragging, setIsCategoryDragging] = useState(false);
   const [categoryStartX, setCategoryStartX] = useState(0);
   const [categoryScrollLeft, setCategoryScrollLeft] = useState(0);
+
+  // Stamp Drag Scrolling on PC
+  const [isStampDragging, setIsStampDragging] = useState(false);
+  const [stampStartX, setStampStartX] = useState(0);
+  const [stampScrollLeft, setStampScrollLeft] = useState(0);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const currentUserRef = useRef<any>(null);
@@ -379,6 +386,9 @@ export default function Home() {
   const [isEditingCountry, setIsEditingCountry] = useState(false);
   const [editCountryValue, setEditCountryValue] = useState('');
   const [savingCountry, setSavingCountry] = useState(false);
+
+  // Country Filter active on map
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -463,7 +473,6 @@ export default function Home() {
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
-  // Auto-detect signup country from timezone if not provided
   useEffect(() => {
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -548,6 +557,7 @@ export default function Home() {
   const filteredSpots = spots
     .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
+      if (selectedCountryFilter && (spot.country || '').toLowerCase() !== selectedCountryFilter.toLowerCase()) return false;
       if (maxRadiusKm !== null) {
         const anchorLat = userCoords ? userCoords.lat : (map.current ? map.current.getCenter().lat : 36.1699);
         const anchorLng = userCoords ? userCoords.lng : (map.current ? map.current.getCenter().lng : -115.1398);
@@ -754,7 +764,6 @@ export default function Home() {
     try {
       const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
       if (!error && data) {
-        // Sanitize existing spots on load
         const cleaned = (data as Spot[]).map((s) => {
           const sanitized = sanitizeCountryAndCity(s.city, s.country || '');
           return {
@@ -874,6 +883,29 @@ export default function Home() {
     if (!categoryScrollRef.current) return;
     if (e.deltaY !== 0) {
       categoryScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  // Generic Stamp Mouse Wheel & Drag Handler
+  const handleStampMouseDown = (e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return;
+    setIsStampDragging(true);
+    setStampStartX(e.pageX - ref.current.offsetLeft);
+    setStampScrollLeft(ref.current.scrollLeft);
+  };
+
+  const handleStampMouseMove = (e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!isStampDragging || !ref.current) return;
+    e.preventDefault();
+    const x = e.pageX - ref.current.offsetLeft;
+    const walk = (x - stampStartX) * 1.6;
+    ref.current.scrollLeft = stampScrollLeft - walk;
+  };
+
+  const handleStampWheel = (e: React.WheelEvent, ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return;
+    if (e.deltaY !== 0) {
+      ref.current.scrollLeft += e.deltaY;
     }
   };
 
@@ -1574,6 +1606,7 @@ export default function Home() {
     setVouchedSpotIds([]);
     setUpvotedCommentIds([]);
     setOnlyMySpots(false);
+    setSelectedCountryFilter(null);
     setUserProfile(null);
     localStorage.removeItem('bywayr_user_profile');
     setIsProfileModalOpen(false);
@@ -1607,7 +1640,7 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization - Clean Standard OpenStreetMap Raster Tiles
+  // Basemap Initialization
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -2027,11 +2060,6 @@ export default function Home() {
           from { transform: scale(0.85) translateZ(0); opacity: 0; }
           to { transform: scale(1) translateZ(0); opacity: 1; }
         }
-        @keyframes stampPop {
-          0% { transform: scale(0.9) rotate(-3deg); opacity: 0.8; }
-          60% { transform: scale(1.05) rotate(1deg); }
-          100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
         @keyframes gpsRadarPulse {
           0% {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0.75);
@@ -2045,14 +2073,16 @@ export default function Home() {
         }
         .passport-stamp-card {
           flex-shrink: 0;
-          scroll-snap-align: start;
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+          cursor: pointer;
+          user-select: none;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .passport-stamp-card:hover {
-          transform: translateY(-2px) scale(1.02);
+          transform: translateY(-3px) scale(1.03);
+          box-shadow: 0 6px 18px rgba(28, 25, 23, 0.1);
         }
         .passport-stamp-card:active {
-          transform: scale(0.97);
+          transform: scale(0.96);
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -2130,7 +2160,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 2. Unified Search & Actions Bar */}
+      {/* 2. Unified Search & Actions Bar with Compact Shortened Placeholder */}
       <div style={{ position: 'absolute', top: isOffline ? '56px' : '16px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
         <div style={{ position: 'relative', width: '100%' }}>
           <div style={{
@@ -2161,11 +2191,11 @@ export default function Home() {
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
 
-            {/* Middle: Integrated Search Input */}
+            {/* Middle: Integrated Search Input with Shortened Placeholder */}
             <div style={{ flex: 1, position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="Search, paste coordinates, or plus codes..."
+                placeholder="Search places, coordinates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
@@ -2177,7 +2207,9 @@ export default function Home() {
                   outline: 'none',
                   fontSize: '13.5px',
                   color: '#1c1917',
-                  padding: '6px 24px 6px 4px',
+                  padding: '6px 20px 6px 4px',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               />
               <div style={{ position: 'absolute', right: '4px', display: 'flex', alignItems: 'center' }}>
@@ -2199,7 +2231,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Group */}
+            {/* Right Group: Field Notes Button, Ghost Red Add Button & Circular Profile Avatar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
               <button
                 onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }}
@@ -2311,6 +2343,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Search Dropdown */}
           {showDropdown && searchQuery.trim().length >= 3 && (
             <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
@@ -2354,6 +2387,19 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Active Country Filter Badge if Stamp Clicked */}
+        {selectedCountryFilter && (
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', backgroundColor: '#1c1917', color: '#ffffff', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Globe style={{ width: '13px', height: '13px', color: '#e05a47' }} />
+              <span>Filtered to <strong>{selectedCountryFilter}</strong> ({filteredSpots.length} pins)</span>
+            </div>
+            <button onClick={() => { triggerHaptic(6); setSelectedCountryFilter(null); }} style={{ background: 'none', border: 'none', color: '#a8a29e', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+              <X style={{ width: '14px', height: '14px' }} />
+            </button>
+          </div>
+        )}
 
         {/* Categories Bar & Proximity Filter */}
         <div 
@@ -2507,7 +2553,7 @@ export default function Home() {
                 No unmapped spots here yet
               </h3>
               <button 
-                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
+                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setSelectedCountryFilter(null); setMaxRadiusKm(null); }} 
                 style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                 title="Dismiss"
               >
@@ -2516,12 +2562,12 @@ export default function Home() {
             </div>
             
             <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.4 }}>
-              No spots in "{selectedCategory}" nearby.
+              No spots in "{selectedCategory}"{selectedCountryFilter ? ` in ${selectedCountryFilter}` : ''} nearby.
             </p>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
               <button
-                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
+                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setSelectedCountryFilter(null); setMaxRadiusKm(null); }}
                 style={{ flex: 1, padding: '10px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Show All Spots
@@ -3354,7 +3400,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Scrollable Visual Passport Stamps Section */}
+              {/* Scrollable Visual Passport Stamps Section (Public Profile) with Mouse Wheel / Drag Support */}
               <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -3366,20 +3412,34 @@ export default function Home() {
                 {publicPassportStamps.length === 0 ? (
                   <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No country passport stamps collected yet.</p>
                 ) : (
-                  <div style={{
-                    display: 'flex',
-                    gap: '10px',
-                    overflowX: 'auto',
-                    paddingBottom: '6px',
-                    paddingTop: '2px',
-                    scrollbarWidth: 'none',
-                    scrollSnapType: 'x mandatory',
-                    WebkitOverflowScrolling: 'touch',
-                  }}>
+                  <div 
+                    ref={publicStampScrollRef}
+                    onMouseDown={(e) => handleStampMouseDown(e, publicStampScrollRef)}
+                    onMouseLeave={handleCategoryMouseLeaveOrUp}
+                    onMouseUp={handleCategoryMouseLeaveOrUp}
+                    onMouseMove={(e) => handleStampMouseMove(e, publicStampScrollRef)}
+                    onWheel={(e) => handleStampWheel(e, publicStampScrollRef)}
+                    style={{
+                      display: 'flex',
+                      gap: '10px',
+                      overflowX: 'auto',
+                      paddingBottom: '8px',
+                      paddingTop: '2px',
+                      scrollbarWidth: 'none',
+                      cursor: isStampDragging ? 'grabbing' : 'grab',
+                      WebkitOverflowScrolling: 'touch',
+                      transform: 'translateZ(0)',
+                    }}
+                  >
                     {publicPassportStamps.map((st, idx) => (
                       <div
                         key={idx}
                         className="passport-stamp-card"
+                        onClick={() => {
+                          triggerHaptic(8);
+                          setSelectedCountryFilter(st.country);
+                          dismissModalWithHistory(() => setViewingProfile(null));
+                        }}
                         style={{
                           backgroundColor: '#ffffff',
                           border: `1.8px dashed ${st.color}`,
@@ -3784,7 +3844,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Profile Drawer (Right) with Scrollable Passport Stamps & Country of Origin Editor */}
+      {/* Slide-Out Profile Drawer (Right) */}
       {(isProfileModalOpen || isProfileClosing) && currentUser && (
         <div 
           style={{ 
@@ -3905,7 +3965,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Visual Scrollable Passport Stamps Section */}
+            {/* Visual Scrollable Passport Stamps Section (Field Journal) with Mouse Wheel / Drag Support */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -3919,20 +3979,34 @@ export default function Home() {
                   Pin your first spot to earn your first country passport stamp!
                 </p>
               ) : (
-                <div style={{
-                  display: 'flex',
-                  gap: '10px',
-                  overflowX: 'auto',
-                  paddingBottom: '6px',
-                  paddingTop: '2px',
-                  scrollbarWidth: 'none',
-                  scrollSnapType: 'x mandatory',
-                  WebkitOverflowScrolling: 'touch',
-                }}>
+                <div 
+                  ref={profileStampScrollRef}
+                  onMouseDown={(e) => handleStampMouseDown(e, profileStampScrollRef)}
+                  onMouseLeave={handleCategoryMouseLeaveOrUp}
+                  onMouseUp={handleCategoryMouseLeaveOrUp}
+                  onMouseMove={(e) => handleStampMouseMove(e, profileStampScrollRef)}
+                  onWheel={(e) => handleStampWheel(e, profileStampScrollRef)}
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    overflowX: 'auto',
+                    paddingBottom: '8px',
+                    paddingTop: '2px',
+                    scrollbarWidth: 'none',
+                    cursor: isStampDragging ? 'grabbing' : 'grab',
+                    WebkitOverflowScrolling: 'touch',
+                    transform: 'translateZ(0)',
+                  }}
+                >
                   {myPassportStamps.map((st, idx) => (
                     <div
                       key={idx}
                       className="passport-stamp-card"
+                      onClick={() => {
+                        triggerHaptic(8);
+                        setSelectedCountryFilter(st.country);
+                        handleCloseProfileDrawer();
+                      }}
                       style={{
                         backgroundColor: '#ffffff',
                         border: `1.8px dashed ${st.color}`,
