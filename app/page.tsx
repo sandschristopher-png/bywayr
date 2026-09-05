@@ -2700,9 +2700,9 @@ export default function Home() {
 
       {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Top Row: Category Badge & Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '2px' }}>
             <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>
               {viewingSpot.category}
             </span>
@@ -2756,11 +2756,11 @@ export default function Home() {
           </div>
 
           {/* Full-Width Title and Subtitle Block */}
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word', width: '100%' }}>
               {viewingSpot.name}
             </h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#78716c', fontWeight: 500, width: '100%' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
               {viewingSpot.city}
               {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
                 <>
@@ -2789,7 +2789,7 @@ export default function Home() {
             <p style={{ margin: 0, fontSize: '13px', color: '#44403c', lineHeight: 1.45, wordBreak: 'break-word' }}>{viewingSpot.description}</p>
           )}
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
             <button
               onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '11px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
@@ -2807,7 +2807,7 @@ export default function Home() {
           </div>
 
           {/* Field Notes Discussion Button to Open Separate Window */}
-          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px' }}>
+          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px', marginTop: '2px' }}>
             <button
               onClick={() => {
                 triggerHaptic(8);
