@@ -2257,7 +2257,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay with Backdrop Blur, Zoom-In Animation, and Close Button */}
+      {/* Empty State Overlay with Backdrop Blur, Bubble Animation, and Close X Button */}
       {filteredSpots.length === 0 && !loading && (
         <div className="animate-fade-in" style={{
           position: 'fixed',
@@ -2274,7 +2274,7 @@ export default function Home() {
           <div className="animate-scale-up" style={{
             position: 'relative',
             width: '100%',
-            maxWidth: '390px',
+            maxWidth: '380px',
             backgroundColor: '#ffffff',
             borderRadius: '24px',
             boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
@@ -3142,6 +3142,7 @@ export default function Home() {
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
             backdropFilter: 'blur(3px)', 
+            WebkitBackdropFilter: 'blur(3px)',
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-start',
@@ -3307,7 +3308,7 @@ export default function Home() {
 
       {/* Profile Modal */}
       {isProfileModalOpen && currentUser && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
             <button onClick={() => dismissModalWithHistory(() => setIsProfileModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
@@ -3408,7 +3409,7 @@ export default function Home() {
 
       {/* Delete Account Verification Dialog */}
       {isDeleteAccountModalOpen && currentUser && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
               <AlertTriangle style={{ width: '24px', height: '24px' }} />
@@ -3480,7 +3481,7 @@ export default function Home() {
 
       {/* 9. Claim Handle Modal */}
       {isClaimUsernameModalOpen && currentUser && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
             <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
               <AtSign style={{ width: '24px', height: '24px' }} />
@@ -3524,7 +3525,7 @@ export default function Home() {
 
       {/* 10. Auth Modal */}
       {isAuthModalOpen && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
             <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
@@ -3601,195 +3602,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* 11. Add / Edit Spot Modal */}
-      {isModalOpen && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
-            </button>
-            <h2 style={{ margin: '0 0 14px 0', fontWeight: 700, fontSize: '17px', color: '#1c1917', display: 'flex', alignItems: 'center', gap: '7px', letterSpacing: '-0.02em' }}>
-              <MapPin style={{ width: '19px', height: '19px' }} color="#e05a47" />
-              {isEditing ? 'Edit Spot' : 'Add to Bywayr'}
-            </h2>
-            <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Photo (Optional)</label>
-                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #d6d3d1', borderRadius: '14px', cursor: 'pointer', backgroundColor: imagePreview ? 'transparent' : '#fafaf9', position: 'relative', overflow: 'hidden' }}>
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#78716c' }}>
-                      <Camera style={{ width: '20px', height: '20px' }} />
-                      <span style={{ fontSize: '11.5px', fontWeight: 500 }}>Tap to upload image</span>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
-                </label>
-              </div>
-
-              {!isEditing && (
-                <button
-                  type="button"
-                  onClick={handleModalLocate}
-                  disabled={isModalLocating}
-                  style={{
-                    backgroundColor: '#f5f5f4',
-                    color: '#1c1917',
-                    border: '1px solid #d6d3d1',
-                    borderRadius: '14px',
-                    padding: '9px 12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  {isModalLocating ? (
-                    <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
-                  ) : (
-                    <Crosshair style={{ width: '14px', height: '14px' }} />
-                  )}
-                  Pin My Current Location
-                </button>
-              )}
-
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Spot Name</label>
-                <input required autoFocus type="text" placeholder="e.g. Hidden Rooftop Cafe" value={newSpot.name} onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
-              </div>
-              <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
-                  <div>
-                    <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Latitude</label>
-                    <input required type="number" step="any" value={newSpot.latitude} onChange={(e) => setNewSpot({ ...newSpot, latitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Longitude</label>
-                    <input required type="number" step="any" value={newSpot.longitude} onChange={(e) => setNewSpot({ ...newSpot, longitude: parseFloat(e.target.value) })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px' }}>
-                <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Category</label>
-                  <select value={newSpot.category} onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', backgroundColor: '#fff' }}>
-                    {CATEGORIES.filter(c => c.label !== 'All').map(cat => (
-                      <option key={cat.label} value={cat.label}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>City</label>
-                  <input type="text" value={newSpot.city} onChange={(e) => setNewSpot({ ...newSpot, city: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1' }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Notes / Description</label>
-                <textarea rows={2} placeholder="Atmosphere, tips, menu favorites, best time to visit..." value={newSpot.description} onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })} style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', resize: 'none' }} />
-              </div>
-              <button type="submit" disabled={saving || uploadingImage} style={{ marginTop: '4px', width: '100%', backgroundColor: '#e05a47', color: '#ffffff', fontWeight: 600, fontSize: '13px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}>
-                {saving || uploadingImage ? <Loader2 style={{ width: '16px', height: '16px' }} /> : isEditing ? 'Update Spot' : 'Save Spot'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 12. Welcome Onboarding Modal */}
-      {showWelcome && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '370px', padding: '28px 22px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', margin: '0 auto 16px auto', boxShadow: '0 10px 24px -4px rgba(224, 90, 71, 0.25)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
-              <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.03em' }}>
-              Your Pocket Field Guide
-            </h2>
-            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
-              A quiet map for expats, travelers, and wanderers to curate and share the unmapped local spots guidebooks overlook.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', marginBottom: '22px', backgroundColor: '#fafaf9', padding: '14px 15px', borderRadius: '16px', border: '1px solid #e7e5e4' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fff1ee', padding: '6px', borderRadius: '10px', color: '#e05a47', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
-                  <Gem style={{ width: '14px', height: '14px' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Curate Unmapped Corners</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Plot backstreet food stalls, hidden night views, and unlisted local gems.</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#ecfdf5', padding: '6px', borderRadius: '10px', color: '#059669', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
-                  <ThumbsUp style={{ width: '14px', height: '14px' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Community Vouches</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Tag genuine community finds and keep track of your favorite spots.</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ backgroundColor: '#fef3c7', padding: '6px', borderRadius: '10px', color: '#d97706', flexShrink: 0, display: 'flex', marginTop: '1px' }}>
-                  <BookmarkCheck style={{ width: '14px', height: '14px' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Personal Passport</div>
-                  <div style={{ fontSize: '11px', color: '#78716c', lineHeight: 1.35 }}>Build your personal Passport, categorize your finds, and collect secret local spots along the way.</div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => dismissModalWithHistory(handleDismissWelcome)}
-              style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 700, fontSize: '13.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(28, 25, 23, 0.22)' }}
-            >
-              Open the Field Guide
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Exit App Confirmation Toast */}
-      {showExitToast && (
-        <div
-          className="animate-fade-in"
-          style={{
-            position: 'fixed',
-            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-            left: '16px',
-            right: '16px',
-            maxWidth: '320px',
-            margin: '0 auto',
-            backgroundColor: '#e05a47',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            color: '#ffffff',
-            padding: '10px 16px',
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: 600,
-            textAlign: 'center',
-            zIndex: 100010,
-            boxShadow: '0 8px 24px rgba(224, 90, 71, 0.35)',
-            pointerEvents: 'none',
-          }}
-        >
-          Press back again to exit Bywayr
-        </div>
-      )}
-
-      
       {/* PWA Web Install Banner */}
       <PwaInstallBanner />
     </div>
