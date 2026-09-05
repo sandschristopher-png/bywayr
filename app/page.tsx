@@ -68,6 +68,7 @@ import {
   Cpu,
   Download,
   MessageSquare,
+  WifiOff,
 } from 'lucide-react';
 
 interface Spot {
@@ -596,7 +597,6 @@ export default function Home() {
     setShowWelcome(false);
   };
 
-  // Fetch comments when viewing a spot
   useEffect(() => {
     if (viewingSpot?.id) {
       fetchSpotComments(viewingSpot.id);
@@ -641,7 +641,6 @@ export default function Home() {
       setSpotComments((prev) => [...prev, data[0] as SpotComment]);
       setNewCommentText('');
     } else {
-      // Fallback local append if table doesn't exist yet
       const fallbackComment: SpotComment = {
         id: Date.now().toString(),
         spot_id: viewingSpot.id,
@@ -655,7 +654,6 @@ export default function Home() {
     setSubmittingComment(false);
   };
 
-  // Offline Export Handler (JSON / GPX)
   const handleExportData = (format: 'json' | 'gpx') => {
     triggerHaptic(12);
     const targetSpots = drawerTab === 'mustTry' ? spots.filter(s => mustTrySpotIds.includes(s.id!)) : spots;
@@ -669,7 +667,6 @@ export default function Home() {
       downloadAnchor.click();
       downloadAnchor.remove();
     } else {
-      // Generate GPX XML
       let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Bywayr">\n`;
       targetSpots.forEach(s => {
         gpx += `  <wpt lat="${s.latitude}" lon="${s.longitude}">\n`;
@@ -1087,7 +1084,6 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization - Restored Stable Raster Tile Cartography
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1208,7 +1204,6 @@ export default function Home() {
     }
   }, [loading, spots]);
 
-  // Main Live Search
   useEffect(() => {
     const rawQuery = searchQuery.trim();
     if (rawQuery.length < 3) {
@@ -1355,7 +1350,6 @@ export default function Home() {
       return timeB - timeA;
     });
 
-  // Marker Rendering
   useEffect(() => {
     if (!map.current) return;
     spotMarkersRef.current.forEach((marker) => marker.remove());
@@ -1683,6 +1677,16 @@ export default function Home() {
     setSaving(false);
   };
 
+  const flyToSpot = (spot: Spot) => {
+    if (!map.current || !spot.latitude || !spot.longitude) return;
+    map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+    setViewingSpot(spot);
+    setActiveSearchedSpot(null);
+    setIsDrawerOpen(false);
+    pushModalHistoryState('viewingSpot');
+    if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
+  };
+
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s) => s.id && mustTrySpotIds.includes(s.id));
   const mySpotsCount = currentUser ? spots.filter((s) => s.user_id === currentUser.id).length : 0;
   const myCitiesCount = currentUser ? new Set(spots.filter((s) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
@@ -1697,53 +1701,6 @@ export default function Home() {
       distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
     }))
     .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
-
-  useEffect(() => {
-    const query = walkSearchQuery.trim();
-    if (query.length < 2) {
-      setLiveOsmResults([]);
-      setIsSearchingOsm(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearchingOsm(true);
-      try {
-        const center = map.current ? map.current.getCenter() : { lng: -115.1398, lat: 36.1699 };
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&lat=${center.lat}&lon=${center.lng}&limit=5`
-        );
-        const data = await res.json();
-
-        if (data && data.length > 0) {
-          const mapped: Spot[] = data.map((item: any) => {
-            const lat = parseFloat(item.lat);
-            const lon = parseFloat(item.lon);
-            return {
-              name: item.name || item.display_name.split(',')[0],
-              city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
-              country: item.address?.country || '',
-              category: 'Map Location',
-              description: item.display_name,
-              latitude: lat,
-              longitude: lon,
-              isLiveOsm: true,
-            };
-          });
-
-          setLiveOsmResults(mapped);
-        } else {
-          setLiveOsmResults([]);
-        }
-      } catch (err) {
-        console.error('OSM search error:', err);
-      } finally {
-        setIsSearchingOsm(false);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [walkSearchQuery]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
@@ -1782,6 +1739,16 @@ export default function Home() {
           100% {
             box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
           }
+        }
+        @keyframes pulseSkeleton {
+          0% { opacity: 0.5; }
+          50% { opacity: 1; }
+          100% { opacity: 0.5; }
+        }
+        .skeleton-pulse {
+          animation: pulseSkeleton 1.4s ease-in-out infinite;
+          background-color: #e7e5e4;
+          border-radius: 12px;
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -2824,8 +2791,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
@@ -3158,7 +3125,7 @@ export default function Home() {
                 <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px' }} /> : <Square style={{ width: '16px', height: '16px' }} />}
             </div>
 
             <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
