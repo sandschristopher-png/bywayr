@@ -841,9 +841,9 @@ export default function Home() {
           el.style.width = '16px';
           el.style.height = '16px';
           el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#0284c7';
+          el.style.backgroundColor = '#e05a47';
           el.style.border = '3px solid #ffffff';
-          el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
+          el.style.boxShadow = '0 0 0 0 rgba(224, 90, 71, 0.75)';
           el.className = 'user-location-pulse';
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
@@ -1506,7 +1506,6 @@ export default function Home() {
     const containerEl = mapContainer.current;
     if (containerEl) {
       const preventDefaultTouch = (e: TouchEvent) => {
-        // Prevent default only if touch started on the map canvas itself
         if ((e.target as HTMLElement)?.closest('.maplibregl-canvas, .maplibregl-map')) {
           if (e.cancelable) {
             e.preventDefault();
@@ -1541,9 +1540,9 @@ export default function Home() {
               el.style.width = '16px';
               el.style.height = '16px';
               el.style.borderRadius = '50%';
-              el.style.backgroundColor = '#0284c7';
+              el.style.backgroundColor = '#e05a47';
               el.style.border = '3px solid #ffffff';
-              el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
+              el.style.boxShadow = '0 0 0 0 rgba(224, 90, 71, 0.75)';
               el.className = 'user-location-pulse';
 
               userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
@@ -1866,13 +1865,13 @@ export default function Home() {
         }
         @keyframes gpsRadarPulse {
           0% {
-            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.75);
+            box-shadow: 0 0 0 0 rgba(224, 90, 71, 0.75);
           }
           70% {
-            box-shadow: 0 0 0 16px rgba(2, 132, 199, 0);
+            box-shadow: 0 0 0 16px rgba(224, 90, 71, 0);
           }
           100% {
-            box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
+            box-shadow: 0 0 0 0 rgba(224, 90, 71, 0);
           }
         }
         .skeleton-pulse {
