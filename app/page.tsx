@@ -310,6 +310,7 @@ export default function Home() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isProfileClosing, setIsProfileClosing] = useState(false);
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -412,7 +413,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Drawer state for smooth slide-in/slide-out
+  // Drawer state for smooth slide-in/slide-out (Left for Field Notes)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
@@ -463,7 +464,7 @@ export default function Home() {
     image_url: '',
   });
 
-  // Derived state variables placed here before any JSX return statement to prevent TS2304 / TS7006 errors
+  // Derived state variables
   const filteredSpots = spots
     .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
@@ -507,12 +508,13 @@ export default function Home() {
     isModalOpen ||
     isDrawerOpen ||
     isDrawerClosing ||
+    isProfileModalOpen ||
+    isProfileClosing ||
     viewingSpot ||
     isDiscussionModalOpen ||
     viewingProfile ||
     isWalkModalOpen ||
     shareDialogSpot ||
-    isProfileModalOpen ||
     isAuthModalOpen ||
     isClaimUsernameModalOpen ||
     isDeleteAccountModalOpen ||
@@ -554,10 +556,22 @@ export default function Home() {
     }
   };
 
+  const handleCloseProfileDrawer = () => {
+    triggerHaptic(6);
+    setIsProfileClosing(true);
+    setTimeout(() => {
+      setIsProfileModalOpen(false);
+      setIsProfileClosing(false);
+    }, 280);
+    if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
+      window.history.back();
+    }
+  };
+
   const closeTopmostSheet = useCallback(() => {
     if (isDeleteAccountModalOpen) { setIsDeleteAccountModalOpen(false); return; }
     if (isClaimUsernameModalOpen) { setIsClaimUsernameModalOpen(false); return; }
-    if (isProfileModalOpen) { setIsProfileModalOpen(false); return; }
+    if (isProfileModalOpen) { handleCloseProfileDrawer(); return; }
     if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
     if (shareDialogSpot) { setShareDialogSpot(null); return; }
     if (isWalkModalOpen) { setIsWalkModalOpen(false); return; }
@@ -1866,6 +1880,14 @@ export default function Home() {
           from { transform: translateX(0) translateZ(0); opacity: 1; }
           to { transform: translateX(-100%) translateZ(0); opacity: 0; }
         }
+        @keyframes slideInRight {
+          from { transform: translateX(100%) translateZ(0); opacity: 0; }
+          to { transform: translateX(0) translateZ(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+          from { transform: translateX(0) translateZ(0); opacity: 1; }
+          to { transform: translateX(100%) translateZ(0); opacity: 0; }
+        }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateZ(0); }
           to { opacity: 1; transform: translateZ(0); }
@@ -1970,130 +1992,201 @@ export default function Home() {
         </div>
       )}
 
-      {/* 2. Top Header & Search Bar (Maximized space with minimalist plus icon & scaled up UI for readability) */}
-      <div style={{ position: 'absolute', top: isOffline ? '56px' : '20px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'auto', touchAction: 'none' }}>
-        <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '12px 16px', borderRadius: '22px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.1), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+      {/* 2. Unified Search & Actions Bar */}
+      <div style={{ position: 'absolute', top: isOffline ? '56px' : '16px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
+          <div style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            padding: '6px 8px 6px 10px',
+            borderRadius: showDropdown ? '24px 24px 0 0' : '28px',
+            boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+            border: '1px solid #e7e5e4',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}>
+            {/* Far Left: Circular Bywayr Logo */}
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              display: 'flex',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)',
+              border: '1px solid rgba(0, 0, 0, 0.06)'
+            }}>
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontWeight: 700, fontSize: '17px', color: '#1c1917', letterSpacing: '-0.03em', lineHeight: 1.2 }}>Bywayr</h1>
-              <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {loading ? 'Connecting...' : `${spots.length} saved spots${selectedCategory !== 'All' || onlyMySpots || maxRadiusKm !== null ? ` (${filteredSpots.length} shown)` : ''}`}
-              </p>
+
+            {/* Middle: Integrated Search Input */}
+            <div style={{ flex: 1, position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Search, paste coordinates, or plus codes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '13.5px',
+                  color: '#1c1917',
+                  padding: '6px 24px 6px 4px',
+                }}
+              />
+              <div style={{ position: 'absolute', right: '4px', display: 'flex', alignItems: 'center' }}>
+                {isSearching && <Loader2 style={{ color: '#e05a47', width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />}
+                {searchQuery && !isSearching && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setShowDropdown(false);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
+                    title="Clear search"
+                  >
+                    <X style={{ width: '16px', height: '16px' }} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-            {/* 1. Minimalist Plus Add Button */}
-            <button
-              onClick={() => {
-                triggerHaptic(8);
-                if (!currentUserRef.current) {
-                  setIsAuthModalOpen(true);
-                  pushModalHistoryState('auth');
-                  return;
-                }
-                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-                dropPreviewAndOpenModal(center.lat, center.lng);
-              }}
-              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '14px', width: '38px', height: '38px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 3px 10px rgba(224, 90, 71, 0.35)' }}
-              title="Add Curated Spot"
-            >
-              <Plus style={{ width: '20px', height: '20px', strokeWidth: 2.8 }} />
-            </button>
+            {/* Right Group: Field Notes Button, Ghost Red Add Button & Circular Profile Avatar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              {/* Field Notes Drawer Trigger */}
+              <button
+                onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }}
+                style={{
+                  backgroundColor: '#f5f5f4',
+                  border: '1px solid #e7e5e4',
+                  borderRadius: '50%',
+                  width: '34px',
+                  height: '34px',
+                  color: '#44403c',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+                title="Open Field Notes"
+              >
+                <List style={{ width: '16px', height: '16px' }} />
+              </button>
 
-            {/* 2. Field Notes (Drawer) Button */}
-            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '14px', width: '38px', height: '38px', color: '#44403c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} title="Open Field Notes">
-              <List style={{ width: '18px', height: '18px' }} />
-            </button>
-
-            {/* 3. User Profile Button */}
-            {currentUser ? (
-              <button 
+              {/* Lighter Weight Ghost Coral Red Add Button */}
+              <button
                 onClick={() => {
                   triggerHaptic(8);
-                  setIsProfileModalOpen(true);
-                  pushModalHistoryState('profile');
-                }} 
-                style={{ 
-                  backgroundColor: '#f5f5f4', 
-                  border: '1px solid #d6d3d1', 
-                  borderRadius: '14px', 
-                  padding: '6px 11px', 
-                  color: '#44403c', 
-                  fontSize: '13px', 
-                  fontWeight: 600, 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '7px', 
-                  whiteSpace: 'nowrap', 
-                  overflow: 'hidden', 
-                  textOverflow: 'ellipsis', 
-                  maxWidth: '130px', 
-                  flexShrink: 1 
+                  if (!currentUserRef.current) {
+                    setIsAuthModalOpen(true);
+                    pushModalHistoryState('auth');
+                    return;
+                  }
+                  const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                  dropPreviewAndOpenModal(center.lat, center.lng);
                 }}
+                style={{
+                  backgroundColor: 'rgba(224, 90, 71, 0.12)',
+                  border: '1px solid rgba(224, 90, 71, 0.25)',
+                  borderRadius: '50%',
+                  width: '34px',
+                  height: '34px',
+                  color: '#e05a47',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+                title="Add Curated Spot"
               >
-                {userProfile?.avatar_url ? (
-                  <img src={userProfile.avatar_url} alt="Avatar" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  <User style={{ width: '15px', height: '15px', flexShrink: 0 }} />
-                )}
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {userProfile?.username ? `@${userProfile.username}` : 'Account'}
-                </span>
+                <Plus style={{ width: '18px', height: '18px', strokeWidth: 2.5 }} />
               </button>
-            ) : (
-              <button onClick={() => { triggerHaptic(8); setMagicLinkSent(false); setAuthUsername(''); setAuthUsernameError(''); setIsAuthModalOpen(true); pushModalHistoryState('auth'); }} style={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '14px', padding: '8px 13px', color: '#fafaf9', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <LogIn style={{ width: '15px', height: '15px', flexShrink: 0 }} /> Sign In
-              </button>
-            )}
-          </div>
-        </div>
 
-        {/* Primary Search Input Bar */}
-        <div style={{ position: 'relative', width: '100%' }}>
-          <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
-            <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '19px', height: '19px' }} />
-            <input
-              type="text"
-              placeholder="Search, paste coordinates, or plus codes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
-              style={{ width: '100%', boxSizing: 'border-box', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '14px 44px 14px 46px', fontSize: '14px', borderRadius: showDropdown ? '22px 22px 0 0' : '22px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', outline: 'none', color: '#1c1917' }}
-            />
-            <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {isSearching && <Loader2 style={{ color: '#e05a47', width: '19px', height: '19px', animation: 'spin 1s linear infinite' }} />}
-              {searchQuery && !isSearching && (
+              {/* User Avatar Circle / Profile Trigger */}
+              {currentUser ? (
                 <button
-                  type="button"
                   onClick={() => {
-                    setSearchQuery('');
-                    setSearchResults([]);
-                    setShowDropdown(false);
+                    triggerHaptic(8);
+                    setIsProfileModalOpen(true);
+                    pushModalHistoryState('profile');
                   }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
-                  title="Clear search"
+                  style={{
+                    backgroundColor: '#f5f5f4',
+                    border: '1px solid #d6d3d1',
+                    borderRadius: '50%',
+                    width: '34px',
+                    height: '34px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    padding: 0,
+                    flexShrink: 0,
+                  }}
+                  title="View Account Profile"
                 >
-                  <X style={{ width: '18px', height: '18px' }} />
+                  {userProfile?.avatar_url ? (
+                    <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User style={{ width: '16px', height: '16px', color: '#78716c' }} />
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    triggerHaptic(8);
+                    setMagicLinkSent(false);
+                    setAuthUsername('');
+                    setAuthUsernameError('');
+                    setIsAuthModalOpen(true);
+                    pushModalHistoryState('auth');
+                  }}
+                  style={{
+                    backgroundColor: '#1c1917',
+                    border: 'none',
+                    borderRadius: '18px',
+                    padding: '6px 11px',
+                    color: '#fafaf9',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  <LogIn style={{ width: '13px', height: '13px' }} /> Sign In
                 </button>
               )}
             </div>
-          </form>
+          </div>
 
+          {/* Search Dropdown */}
           {showDropdown && searchQuery.trim().length >= 3 && (
-            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 22px 22px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
-                <div style={{ padding: '14px 16px', textAlign: 'center', color: '#78716c', fontSize: '13.5px' }}>
+                <div style={{ padding: '14px 16px', textAlign: 'center', color: '#78716c', fontSize: '13px' }}>
                   No local places found.
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
-                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '12px 16px', fontSize: '13.5px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <MapPin style={{ width: '15px', height: '15px', color: '#a8a29e', flexShrink: 0 }} />
+                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                    <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                   </div>
                 ))
@@ -2107,22 +2200,22 @@ export default function Home() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '13px 16px',
+                  padding: '12px 16px',
                   backgroundColor: '#fafaf9',
                   borderTop: '1px solid #e7e5e4',
                   color: '#44403c',
                   textDecoration: 'none',
-                  fontSize: '13px',
+                  fontSize: '12.5px',
                   fontWeight: 600,
-                  borderBottomLeftRadius: '22px',
-                  borderBottomRightRadius: '22px',
+                  borderBottomLeftRadius: '24px',
+                  borderBottomRightRadius: '24px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Plane style={{ width: '15px', height: '15px', color: '#e05a47' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                  <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
                   <span>Planning a trip? Search flights via Aviasales</span>
                 </div>
-                <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
+                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
               </a>
             </div>
           )}
@@ -2138,7 +2231,7 @@ export default function Home() {
           onWheel={handleCategoryWheel}
           style={{ 
             display: 'flex', 
-            gap: '8px', 
+            gap: '6px', 
             overflowX: 'auto', 
             paddingBottom: '2px', 
             scrollbarWidth: 'none', 
@@ -2160,20 +2253,20 @@ export default function Home() {
                 WebkitBackdropFilter: 'blur(12px)',
                 color: onlyMySpots ? '#e05a47' : '#57534e',
                 border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4',
-                padding: '8px 14px',
-                borderRadius: '22px',
-                fontSize: '12.5px',
+                padding: '7px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 flexShrink: 0
               }}
             >
-              <User style={{ width: '14px', height: '14px' }} />
+              <User style={{ width: '13px', height: '13px' }} />
               My Pins ({mySpotsCount})
             </button>
           )}
@@ -2191,20 +2284,20 @@ export default function Home() {
               WebkitBackdropFilter: 'blur(12px)',
               color: maxRadiusKm !== null ? '#0284c7' : '#57534e',
               border: maxRadiusKm !== null ? '1px solid #bae6fd' : '1px solid #e7e5e4',
-              padding: '8px 14px',
-              borderRadius: '22px',
-              fontSize: '12.5px',
+              padding: '7px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               flexShrink: 0,
             }}
           >
-            <Compass style={{ width: '14px', height: '14px' }} />
+            <Compass style={{ width: '13px', height: '13px' }} />
             {maxRadiusKm === null ? 'Radius: Any' : `Within ${maxRadiusKm}km`}
           </button>
 
@@ -2224,20 +2317,20 @@ export default function Home() {
                   WebkitBackdropFilter: 'blur(12px)',
                   color: isSelected ? '#fafaf9' : '#57534e', 
                   border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
-                  padding: '8px 14px', 
-                  borderRadius: '22px', 
-                  fontSize: '12.5px', 
+                  padding: '7px 12px', 
+                  borderRadius: '20px', 
+                  fontSize: '12px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   whiteSpace: 'nowrap', 
                   boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '7px',
+                  gap: '6px',
                   flexShrink: 0 
                 }}
               >
-                <Icon style={{ width: '13px', height: '13px', color: isSelected ? '#fafaf9' : cat.color }} />
+                <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
                 {cat.label}
               </button>
             );
@@ -2246,15 +2339,15 @@ export default function Home() {
 
         {/* Category Description Banner */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '16px', border: '1px solid #e7e5e4', fontSize: '12px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 12px', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11.5px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
             </span>
           </div>
         )}
 
-        {/* Empty State Popup (Placed neatly under category description with matching width/padding) */}
+        {/* Empty State Popup */}
         {filteredSpots.length === 0 && !loading && (
           <div 
             className="animate-fade-in" 
@@ -2264,38 +2357,38 @@ export default function Home() {
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
-              borderRadius: '22px',
+              borderRadius: '20px',
               boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
               border: '1px solid #e7e5e4',
-              padding: '18px',
+              padding: '16px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '10px',
               marginTop: '2px',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              <h3 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 No unmapped spots here yet
               </h3>
               <button 
                 onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
-                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                 title="Dismiss"
               >
-                <X style={{ width: '15px', height: '15px' }} />
+                <X style={{ width: '14px', height: '14px' }} />
               </button>
             </div>
             
-            <p style={{ margin: 0, fontSize: '13px', color: '#78716c', lineHeight: 1.4 }}>
+            <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.4 }}>
               No spots in "{selectedCategory}" nearby.
             </p>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '2px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
               <button
                 onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }}
-                style={{ flex: 1, padding: '11px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '10px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Show All Spots
               </button>
@@ -2309,7 +2402,7 @@ export default function Home() {
                   const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
                   dropPreviewAndOpenModal(center.lat, center.lng);
                 }}
-                style={{ flex: 1, padding: '11px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+                style={{ flex: 1, padding: '10px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
               >
                 + Drop a Pin
               </button>
@@ -2319,39 +2412,39 @@ export default function Home() {
 
         {/* Active Walk HUD Banner */}
         {walkTargetSpot && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '18px', fontSize: '13.5px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-              <Footprints style={{ width: '18px', height: '18px', color: '#e05a47', flexShrink: 0 }} />
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', backgroundColor: '#1c1917', color: '#fafaf9', borderRadius: '16px', fontSize: '13px', fontWeight: 600, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.25)', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <Footprints style={{ width: '16px', height: '16px', color: '#e05a47', flexShrink: 0 }} />
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {walkTargetSpot.name}
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <button 
                 onClick={() => openNativeWalkNavigation(walkTargetSpot.latitude, walkTargetSpot.longitude, walkTargetSpot.name)}
                 style={{ 
                   backgroundColor: '#e05a47', 
                   color: '#ffffff', 
                   border: 'none', 
-                  borderRadius: '12px', 
-                  padding: '6px 12px', 
-                  fontSize: '12px', 
+                  borderRadius: '10px', 
+                  padding: '5px 10px', 
+                  fontSize: '11.5px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '5px' 
+                  gap: '4px' 
                 }}
                 title="Get Directions"
               >
-                Directions <Navigation2 style={{ width: '12px', height: '12px' }} />
+                Directions <Navigation2 style={{ width: '11px', height: '11px' }} />
               </button>
               <button 
                 onClick={() => setWalkTargetSpot(null)} 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
                 title="Dismiss"
               >
-                <X style={{ width: '18px', height: '18px' }} />
+                <X style={{ width: '16px', height: '16px' }} />
               </button>
             </div>
           </div>
@@ -3065,7 +3158,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 5. Public/User Profile Modal with Passport Stamps */}
+      {/* 5. Public Passport Profile Modal */}
       {viewingProfile && (() => {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
         const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
@@ -3349,7 +3442,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer with Smooth Slide-In / Slide-Out Animations */}
+      {/* Slide-Out Drawer (Field Notes - Slides from Left) */}
       {(isDrawerOpen || isDrawerClosing) && (
         <div 
           style={{ 
@@ -3378,7 +3471,6 @@ export default function Home() {
               animation: isDrawerClosing ? 'slideOutLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
             }}
           >
-            
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
@@ -3387,7 +3479,7 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tabs (Export buttons removed for future Bywayr Plus release) */}
+            {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
                 <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
@@ -3395,7 +3487,7 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Scrollable Spot List with Distance Badges */}
+            {/* Scrollable Spot List */}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
               {displayedDrawerSpots.map((spot: Spot) => {
                 const color = getCategoryColor(spot.category);
@@ -3482,7 +3574,6 @@ export default function Home() {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {/* 1. Aviasales */}
                 <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
@@ -3493,7 +3584,6 @@ export default function Home() {
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
 
-                {/* 2. Klook */}
                 <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
@@ -3504,7 +3594,6 @@ export default function Home() {
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
                 </a>
 
-                {/* 3. Yesim */}
                 <a href="https://yesim.tpk.lv/o2T5nWaw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none', fontSize: '12px', fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
@@ -3516,27 +3605,55 @@ export default function Home() {
                 </a>
               </div>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* Profile Modal */}
-      {isProfileModalOpen && currentUser && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '380px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-            <button onClick={() => dismissModalWithHistory(() => setIsProfileModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
-              <X style={{ width: '20px', height: '20px' }} />
-            </button>
+      {/* Slide-Out Profile Drawer (Slides from Right with matching animation physics) */}
+      {(isProfileModalOpen || isProfileClosing) && currentUser && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(28, 25, 23, 0.45)', 
+            backdropFilter: 'blur(3px)', 
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 100000, 
+            display: 'flex', 
+            justifyContent: 'flex-end',
+            animation: isProfileClosing ? 'fadeOut 0.3s ease-out forwards' : 'fadeIn 0.2s ease-out forwards'
+          }}
+        >
+          <div 
+            style={{ 
+              width: '100%', 
+              maxWidth: '380px', 
+              backgroundColor: '#ffffff', 
+              height: '100%', 
+              boxShadow: '-10px 0 35px rgba(28, 25, 23, 0.18)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              padding: '24px', 
+              boxSizing: 'border-box',
+              overflowY: 'auto',
+              animation: isProfileClosing ? 'slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
+              <button onClick={handleCloseProfileDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
-              <label style={{ width: '72px', height: '72px', borderRadius: '24px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
+              <label style={{ width: '76px', height: '76px', borderRadius: '50%', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '2px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 20px rgba(28, 25, 23, 0.08)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
                   <Loader2 style={{ width: '22px', height: '22px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
                 ) : userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <User style={{ width: '30px', height: '30px', color: '#78716c' }} />
+                  <User style={{ width: '32px', height: '32px', color: '#78716c' }} />
                 )}
                 <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
                   <Camera style={{ width: '20px', height: '20px' }} />
@@ -3545,7 +3662,7 @@ export default function Home() {
               </label>
 
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
-                {userProfile?.username ? `@${userProfile.username}` : 'Field Journal'}
+                {userProfile?.username ? `@${userProfile.username}` : 'Account'}
                 <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                   <Pencil style={{ width: '13px', height: '13px' }} />
                 </button>
@@ -3745,7 +3862,7 @@ export default function Home() {
             <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ width: '52px', height: '52px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
