@@ -424,7 +424,6 @@ export default function Home() {
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
-  // Spot comments state
   const [spotComments, setSpotComments] = useState<SpotComment[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -1024,13 +1023,99 @@ export default function Home() {
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
-  useEffect(() => {
-    if (viewingSpot?.id) {
-      fetchSpotComments(viewingSpot.id);
-    } else {
-      setSpotComments([]);
+  const fetchSpotComments = async (spotId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('spot_comments')
+        .select('*')
+        .eq('spot_id', spotId)
+        .order('created_at', { ascending: true });
+      if (!error && data) {
+        setSpotComments(data);
+      }
+    } catch (err) {
+      console.error('Failed to load spot comments:', err);
     }
-  }, [viewingSpot?.id]);
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !viewingSpot?.id || !newCommentText.trim()) return;
+
+    triggerHaptic(10);
+    setSubmittingComment(true);
+
+    const { data, error } = await supabase
+      .from('spot_comments')
+      .insert([{
+        spot_id: viewingSpot.id,
+        user_id: activeUser.id,
+        content: newCommentText.trim(),
+      }])
+      .select();
+
+    if (!error && data && data.length > 0) {
+      setSpotComments((prev) => [...prev, data[0] as SpotComment]);
+      setNewCommentText('');
+    } else {
+      const fallbackComment: SpotComment = {
+        id: Date.now().toString(),
+        spot_id: viewingSpot.id,
+        user_id: activeUser.id,
+        content: newCommentText.trim(),
+        created_at: new Date().toISOString(),
+      };
+      setSpotComments((prev) => [...prev, fallbackComment]);
+      setNewCommentText('');
+    }
+    setSubmittingComment(false);
+  };
+
+  const handleExportData = (format: 'json' | 'gpx') => {
+    triggerHaptic(12);
+    const targetSpots = drawerTab === 'mustTry' ? spots.filter(s => mustTrySpotIds.includes(s.id!)) : spots;
+    
+    if (format === 'json') {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(targetSpots, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } else {
+      let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Bywayr">\n`;
+      targetSpots.forEach(s => {
+        gpx += `  <wpt lat="${s.latitude}" lon="${s.longitude}">\n`;
+        gpx += `    <name>${escapeXml(s.name)}</name>\n`;
+        gpx += `    <desc>${escapeXml(s.description || s.category)}</desc>\n`;
+        gpx += `  </wpt>\n`;
+      });
+      gpx += `</gpx>`;
+
+      const dataStr = "data:text/gpx+xml;charset=utf-8," + encodeURIComponent(gpx);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bywayr_field_guide_${Date.now()}.gpx`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+  };
+
+  const escapeXml = (str: string) => {
+    return str.replace(/[<>&'"]/g, (c) => {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+        default: return c;
+      }
+    });
+  };
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -3102,10 +3187,10 @@ export default function Home() {
 
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
+                <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px' }} /> : <Square style={{ width: '16px', height: '16px' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
 
             <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
