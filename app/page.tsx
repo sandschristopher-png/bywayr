@@ -1979,7 +1979,7 @@ export default function Home() {
             <div style={{ minWidth: 0 }}>
               <h1 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1c1917', letterSpacing: '-0.03em', lineHeight: 1.2 }}>Bywayr</h1>
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {loading ? 'Connecting...' : selectedCategory === 'All' && !onlyMySpots && maxRadiusKm === null ? `${spots.length} saved spots` : `${filteredSpots.length} spots`}
+                {loading ? 'Connecting...' : `${spots.length} saved spots${selectedCategory !== 'All' || onlyMySpots || maxRadiusKm !== null ? ` (${filteredSpots.length} shown)` : ''}`}
               </p>
             </div>
           </div>
