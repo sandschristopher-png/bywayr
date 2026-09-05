@@ -17,7 +17,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onClose,
 }) => {
   return (
-    <div className="absolute top-[180px] left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm rounded-2xl bg-white/95 p-5 shadow-lg backdrop-blur-sm border border-neutral-100 text-center transition-all animate-in fade-in zoom-in-95">
+    <div className="absolute top-[205px] left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm rounded-2xl bg-white/95 p-5 shadow-lg backdrop-blur-sm border border-neutral-100 text-center transition-all animate-in fade-in zoom-in-95">
       {onClose && (
         <button
           onClick={onClose}
