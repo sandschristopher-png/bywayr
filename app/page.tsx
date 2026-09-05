@@ -69,6 +69,8 @@ import {
   MessageSquare,
   WifiOff,
   Mic2,
+  Stamp,
+  Award,
 } from 'lucide-react';
 
 interface Spot {
@@ -106,6 +108,14 @@ interface SpotComment {
   created_at: string;
 }
 
+interface PassportStampData {
+  country: string;
+  cities: string[];
+  spotCount: number;
+  firstVisit?: string;
+  color: string;
+}
+
 const CATEGORIES = [
   { label: 'All', desc: 'All unindexed local spots & expat field notes', color: '#57534e', icon: Sparkles },
   { label: 'Hidden Gems', desc: 'Secret viewpoints & quiet local treasures', color: '#e05a47', icon: Gem },
@@ -121,6 +131,8 @@ const CATEGORIES = [
   { label: 'Stays & Hideaways', desc: 'Boutique guesthouses & quiet retreats', color: '#4f46e5', icon: HomeIcon },
   { label: 'Practical Staples', desc: 'Essential local services, ATMs & transit nooks', color: '#0284c7', icon: Compass },
 ];
+
+const STAMP_PALETTE = ['#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#0d9488', '#4f46e5'];
 
 const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
 
@@ -279,6 +291,30 @@ const compressImageToWebP = async (file: File, maxDimension = 1200, quality = 0.
   });
 };
 
+const extractPassportStamps = (userSpots: Spot[]): PassportStampData[] => {
+  const groups: Record<string, { cities: Set<string>; spotCount: number; dates: string[] }> = {};
+
+  userSpots.forEach((spot) => {
+    const rawCountry = (spot.country || '').trim();
+    const country = rawCountry || (spot.city.toLowerCase().includes('vegas') ? 'United States' : 'Curated Territory');
+    
+    if (!groups[country]) {
+      groups[country] = { cities: new Set<string>(), spotCount: 0, dates: [] };
+    }
+    if (spot.city) groups[country].cities.add(spot.city.trim());
+    groups[country].spotCount += 1;
+    if (spot.created_at) groups[country].dates.push(spot.created_at);
+  });
+
+  return Object.keys(groups).map((country, index) => ({
+    country,
+    cities: Array.from(groups[country].cities),
+    spotCount: groups[country].spotCount,
+    firstVisit: groups[country].dates.sort()[0] || new Date().toISOString(),
+    color: STAMP_PALETTE[index % STAMP_PALETTE.length],
+  }));
+};
+
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -346,11 +382,9 @@ export default function Home() {
   });
   const [isInteracting, setIsInteracting] = useState(false);
 
-  // Floating map controls fade out / slide state during map interaction
   const [isControlsHidden, setIsControlsHidden] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-hide floating map controls during map drag/zoom interaction
   useEffect(() => {
     if (isInteracting) {
       setIsControlsHidden(true);
@@ -372,7 +406,6 @@ export default function Home() {
     }
   }, [isDarkMode]);
 
-  // Online / Offline listener
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handleOnline = () => setIsOffline(false);
@@ -413,7 +446,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Drawer state for smooth slide-in/slide-out (Left for Field Notes)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
@@ -464,7 +496,9 @@ export default function Home() {
     image_url: '',
   });
 
-  // Derived state variables
+  const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
+  const myPassportStamps = extractPassportStamps(myUserSpots);
+
   const filteredSpots = spots
     .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
@@ -489,9 +523,9 @@ export default function Home() {
     });
 
   const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id));
-  const mySpotsCount = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id).length : 0;
-  const myCitiesCount = currentUser ? new Set(spots.filter((s: Spot) => s.user_id === currentUser.id).map((s) => s.city.trim())).size : 0;
-  const myCountriesCount = currentUser ? new Set(spots.filter((s: Spot) => s.user_id === currentUser.id).map((s) => (s.country || '').trim()).filter(Boolean)).size : 0;
+  const mySpotsCount = myUserSpots.length;
+  const myCitiesCount = currentUser ? new Set(myUserSpots.map((s) => s.city.trim())).size : 0;
+  const myCountriesCount = myPassportStamps.length;
   
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
@@ -1900,6 +1934,11 @@ export default function Home() {
           from { transform: scale(0.85) translateZ(0); opacity: 0; }
           to { transform: scale(1) translateZ(0); opacity: 1; }
         }
+        @keyframes stampPop {
+          0% { transform: scale(0.9) rotate(-3deg); opacity: 0.8; }
+          60% { transform: scale(1.05) rotate(1deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
         @keyframes gpsRadarPulse {
           0% {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0.75);
@@ -1911,10 +1950,16 @@ export default function Home() {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0);
           }
         }
-        .skeleton-pulse {
-          animation: pulseSkeleton 1.4s ease-in-out infinite;
-          background-color: #e7e5e4;
-          border-radius: 12px;
+        .passport-stamp-card {
+          flex-shrink: 0;
+          scroll-snap-align: start;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+        }
+        .passport-stamp-card:hover {
+          transform: translateY(-2px) scale(1.02);
+        }
+        .passport-stamp-card:active {
+          transform: scale(0.97);
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -2063,7 +2108,6 @@ export default function Home() {
 
             {/* Right Group: Field Notes Button, Ghost Red Add Button & Circular Profile Avatar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              {/* Field Notes Drawer Trigger */}
               <button
                 onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }}
                 style={{
@@ -2084,7 +2128,6 @@ export default function Home() {
                 <List style={{ width: '16px', height: '16px' }} />
               </button>
 
-              {/* Lighter Weight Ghost Coral Red Add Button */}
               <button
                 onClick={() => {
                   triggerHaptic(8);
@@ -2114,7 +2157,6 @@ export default function Home() {
                 <Plus style={{ width: '18px', height: '18px', strokeWidth: 2.5 }} />
               </button>
 
-              {/* User Avatar Circle / Profile Trigger */}
               {currentUser ? (
                 <button
                   onClick={() => {
@@ -2574,7 +2616,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Proximity Walk Modal with Live Search */}
+      {/* Proximity Walk Modal */}
       {isWalkModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box' }}>
@@ -2593,7 +2635,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Live Search Input Inside Modal */}
             <div style={{ position: 'relative', marginBottom: '12px' }}>
               <Search style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#a8a29e', width: '14px', height: '14px' }} />
               <input
@@ -2626,7 +2667,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scrollable Results Area */}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '48vh', paddingRight: '2px' }}>
               {(() => {
                 const curatedMatches = proximitySortedSpots.filter((s: Spot) => {
@@ -2694,7 +2734,6 @@ export default function Home() {
                 );
               })()}
 
-              {/* Live Map Search Results */}
               {walkSearchQuery.trim().length >= 2 && (
                 <>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '8px 4px 2px 4px', borderTop: '1px dashed #e7e5e4', marginTop: '4px' }}>
@@ -2750,7 +2789,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Clear Active Walk Button */}
             {walkTargetSpot && (
               <button
                 onClick={() => {
@@ -2785,7 +2823,6 @@ export default function Home() {
       {viewingSpot && (
         <div className="animate-fade-in" onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 99999, padding: '16px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px))' }}>
           <div className="animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '410px', maxHeight: '78vh', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', border: '1px solid #e7e5e4', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* Top Row: Category Badge & Action Buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '10.5px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>
                 {viewingSpot.category}
@@ -2839,7 +2876,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Full-Width Title and Subtitle Block */}
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1px' }}>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word', width: '100%' }}>
                 {viewingSpot.name}
@@ -2890,7 +2926,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Field Notes Discussion Button to Open Separate Window */}
             <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '10px' }}>
               <button
                 onClick={() => {
@@ -2924,7 +2959,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Separate Field Notes Discussion Window / Modal */}
+      {/* Separate Field Notes Discussion Window */}
       {isDiscussionModalOpen && viewingSpot && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '420px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
@@ -2953,7 +2988,7 @@ export default function Home() {
 
                   return (
                     <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 12px', fontSize: '12.5px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-system', alignItems: 'center', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
                           <span style={{ fontSize: '10px', fontWeight: 700, color: tagColor, backgroundColor: `${tagColor}15`, padding: '1px 6px', borderRadius: '4px' }}>
@@ -3035,7 +3070,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Add / Edit Spot Modal (`isModalOpen`) */}
+      {/* Add / Edit Spot Modal */}
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px' }}>
@@ -3161,9 +3196,8 @@ export default function Home() {
       {/* 5. Public Passport Profile Modal */}
       {viewingProfile && (() => {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
-        const uniqueCountries = Array.from(new Set(viewingProfileSpots.map((s) => (s.country || '').trim()).filter(Boolean)));
-        
-        const resolvedCountry = viewingProfile.country || (viewingProfileSpots.length > 0 && viewingProfileSpots[0].country ? viewingProfileSpots[0].country : 'Philippines');
+        const publicPassportStamps = extractPassportStamps(viewingProfileSpots);
+        const resolvedCountry = viewingProfile.country || (publicPassportStamps.length > 0 ? publicPassportStamps[0].country : 'Philippines');
 
         const filteredProfileSpots = profileCityFilter === 'All' 
           ? viewingProfileSpots 
@@ -3221,22 +3255,71 @@ export default function Home() {
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{publicPassportStamps.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
                 </div>
               </div>
 
-              {/* Passport Stamps Section */}
-              <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Scrollable Visual Passport Stamps Section */}
+              <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
                   </span>
-                  <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{uniqueCountries.length || (viewingProfileSpots.length > 0 ? 1 : 0)} Countries</span>
+                  <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{publicPassportStamps.length} Countries</span>
                 </div>
-                <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
-                  Track your global footprint across unique cities and unmapped field notes.
-                </p>
+
+                {publicPassportStamps.length === 0 ? (
+                  <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No country passport stamps collected yet.</p>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    gap: '10px',
+                    overflowX: 'auto',
+                    paddingBottom: '6px',
+                    paddingTop: '2px',
+                    scrollbarWidth: 'none',
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch',
+                  }}>
+                    {publicPassportStamps.map((st, idx) => (
+                      <div
+                        key={idx}
+                        className="passport-stamp-card"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: `1.8px dashed ${st.color}`,
+                          borderRadius: '14px',
+                          padding: '10px 12px',
+                          minWidth: '135px',
+                          maxWidth: '155px',
+                          boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
+                          position: 'relative',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                            ENTRY STAMP
+                          </span>
+                          <Award style={{ width: '12px', height: '12px', color: st.color }} />
+                        </div>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                          {st.country}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {st.cities.join(', ') || 'Explored'}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px', paddingTop: '4px', borderTop: '1px solid #f5f5f4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 600 }}>
+                          <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
+                          <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {uniqueCities.length > 1 && (
@@ -3442,7 +3525,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer (Field Notes - Slides from Left) */}
+      {/* Slide-Out Drawer (Field Notes - Left) */}
       {(isDrawerOpen || isDrawerClosing) && (
         <div 
           style={{ 
@@ -3471,7 +3554,6 @@ export default function Home() {
               animation: isDrawerClosing ? 'slideOutLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
             }}
           >
-            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
@@ -3479,7 +3561,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
                 <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
@@ -3487,7 +3568,6 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Scrollable Spot List */}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
               {displayedDrawerSpots.map((spot: Spot) => {
                 const color = getCategoryColor(spot.category);
@@ -3567,7 +3647,6 @@ export default function Home() {
               })}
             </div>
 
-            {/* Sticky Travel Essentials Footer */}
             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingLeft: '4px' }}>
                 Travel Essentials
@@ -3609,7 +3688,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Profile Drawer (Slides from Right with matching animation physics) */}
+      {/* Slide-Out Profile Drawer (Right) with Scrollable Passport Stamps */}
       {(isProfileModalOpen || isProfileClosing) && currentUser && (
         <div 
           style={{ 
@@ -3685,17 +3764,68 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Passport Stamps Section in Account Profile */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Visual Scrollable Passport Stamps Section */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
                 </span>
-                <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{myCountriesCount || (mySpotsCount > 0 ? 1 : 0)} Countries</span>
+                <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{myCountriesCount} Countries</span>
               </div>
-              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
-                Track your global footprint across unique cities and unmapped field notes.
-              </p>
+
+              {myPassportStamps.length === 0 ? (
+                <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>
+                  Pin your first spot to earn your first country passport stamp!
+                </p>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  gap: '10px',
+                  overflowX: 'auto',
+                  paddingBottom: '6px',
+                  paddingTop: '2px',
+                  scrollbarWidth: 'none',
+                  scrollSnapType: 'x mandatory',
+                  WebkitOverflowScrolling: 'touch',
+                }}>
+                  {myPassportStamps.map((st, idx) => (
+                    <div
+                      key={idx}
+                      className="passport-stamp-card"
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: `1.8px dashed ${st.color}`,
+                        borderRadius: '14px',
+                        padding: '10px 12px',
+                        minWidth: '135px',
+                        maxWidth: '155px',
+                        boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                          ENTRY STAMP
+                        </span>
+                        <Award style={{ width: '12px', height: '12px', color: st.color }} />
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                        {st.country}
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {st.cities.join(', ') || 'Explored'}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '3px', paddingTop: '4px', borderTop: '1px solid #f5f5f4', fontSize: '9.5px', color: '#a8a29e', fontWeight: 600 }}>
+                        <span>{st.spotCount} {st.spotCount === 1 ? 'Pin' : 'Pins'}</span>
+                        <span>{new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
@@ -3862,7 +3992,7 @@ export default function Home() {
             <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
