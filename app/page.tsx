@@ -2518,7 +2518,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Categories Bar & Proximity Filter with Live Counters */}
+        {/* Categories Bar & Proximity Filter with Live Counters & Refined UI Alignment/Heights */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -2535,7 +2535,9 @@ export default function Home() {
             cursor: isCategoryDragging ? 'grabbing' : 'grab',
             userSelect: 'none',
             WebkitOverflowScrolling: 'touch',
-            transform: 'translateZ(0)'
+            transform: 'translateZ(0)',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {currentUser && (
@@ -2545,22 +2547,24 @@ export default function Home() {
                 setOnlyMySpots(!onlyMySpots);
               }}
               style={{
-                backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 color: onlyMySpots ? '#e05a47' : '#57534e',
                 border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4',
-                padding: '7px 12px',
-                borderRadius: '20px',
+                height: '34px',
+                padding: '0 12px',
+                borderRadius: '18px',
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
+                boxShadow: onlyMySpots ? '0 4px 12px rgba(224, 90, 71, 0.2)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
-                flexShrink: 0
+                flexShrink: 0,
+                boxSizing: 'border-box'
               }}
             >
               <User style={{ width: '13px', height: '13px' }} />
@@ -2576,22 +2580,24 @@ export default function Home() {
               else setMaxRadiusKm(null);
             }}
             style={{
-              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               color: maxRadiusKm !== null ? '#0284c7' : '#57534e',
               border: maxRadiusKm !== null ? '1px solid #bae6fd' : '1px solid #e7e5e4',
-              padding: '7px 12px',
-              borderRadius: '20px',
+              height: '34px',
+              padding: '0 12px',
+              borderRadius: '18px',
               fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
+              boxShadow: maxRadiusKm !== null ? '0 4px 12px rgba(2, 132, 199, 0.2)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
               display: 'flex',
               alignItems: 'center',
               gap: '5px',
               flexShrink: 0,
+              boxSizing: 'border-box'
             }}
           >
             <Compass style={{ width: '13px', height: '13px' }} />
@@ -2623,22 +2629,24 @@ export default function Home() {
                   setSelectedCategory(cat.label);
                 }}
                 style={{ 
-                  backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.9)', 
+                  backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.95)', 
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
                   color: isSelected ? '#fafaf9' : '#57534e', 
                   border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
-                  padding: '7px 12px', 
-                  borderRadius: '20px', 
+                  height: '34px',
+                  padding: '0 12px', 
+                  borderRadius: '18px', 
                   fontSize: '12px', 
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   whiteSpace: 'nowrap', 
-                  boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
+                  boxShadow: isSelected ? '0 6px 16px rgba(28, 25, 23, 0.28)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '6px',
-                  flexShrink: 0 
+                  flexShrink: 0,
+                  boxSizing: 'border-box'
                 }}
               >
                 <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
@@ -2646,7 +2654,7 @@ export default function Home() {
                 <span style={{ 
                   fontSize: '10.5px', 
                   fontWeight: 700, 
-                  backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.06)', 
+                  backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.06)', 
                   padding: '1px 6px', 
                   borderRadius: '10px',
                   color: isSelected ? '#fafaf9' : '#78716c'
