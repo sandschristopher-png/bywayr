@@ -2224,11 +2224,20 @@ export default function Home() {
 
         {/* Category Description Banner */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
-            </span>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', padding: '6px 12px', backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
+              </span>
+            </div>
+            <button
+              onClick={() => { triggerHaptic(6); setSelectedCategory('All'); }}
+              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '2px', flexShrink: 0 }}
+              title="Close Category Description"
+            >
+              <X style={{ width: '14px', height: '14px' }} />
+            </button>
           </div>
         )}
 
@@ -2273,7 +2282,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Close X Button */}
+      {/* Empty State Overlay with Backdrop Blur, Zoom Animation, and Prominent Close X Button */}
       {filteredSpots.length === 0 && !loading && (
         <div 
           className="animate-fade-in" 
@@ -2303,7 +2312,7 @@ export default function Home() {
               borderRadius: '24px',
               boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)',
               border: '1px solid #e7e5e4',
-              padding: '24px',
+              padding: '28px 24px 24px 24px',
               boxSizing: 'border-box',
               cursor: 'default'
             }}
@@ -2312,8 +2321,8 @@ export default function Home() {
               onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setMaxRadiusKm(null); }} 
               style={{ 
                 position: 'absolute', 
-                top: '16px', 
-                right: '16px', 
+                top: '14px', 
+                right: '14px', 
                 border: 'none', 
                 background: '#f5f5f4', 
                 borderRadius: '50%', 
@@ -2323,9 +2332,11 @@ export default function Home() {
                 color: '#78716c', 
                 display: 'flex', 
                 alignItems: 'center', 
-                justifyContent: 'center' 
+                justifyContent: 'center',
+                zIndex: 10,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
               }}
-              title="Dismiss / Show All"
+              title="Close"
             >
               <X style={{ width: '16px', height: '16px' }} />
             </button>
