@@ -968,421 +968,6 @@ export default function Home() {
     }
   };
 
-  const fetchSpots = async () => {
-    try {
-      const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
-      if (!error && data) {
-        setSpots(data as Spot[]);
-        localStorage.setItem('bywayr_cached_spots', JSON.stringify(data));
-      }
-    } catch (err) {
-      console.error('Failed to load spots:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMustTryBookmarks = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.from('bookmarks').select('spot_id').eq('user_id', userId);
-      if (!error && data) setMustTrySpotIds(data.map((item: any) => item.spot_id));
-    } catch (err) {
-      console.error('Failed to load bookmarks:', err);
-    }
-  };
-
-  const toggleMustTry = async (spotId?: string) => {
-    if (!spotId) return;
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-
-    triggerHaptic(12);
-    setSavingBookmark(true);
-    const isBookmarked = mustTrySpotIds.includes(spotId);
-
-    if (isBookmarked) {
-      const { error } = await supabase.from('bookmarks').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
-      if (!error) setMustTrySpotIds((prev) => prev.filter((id) => id !== spotId));
-    } else {
-      const { error } = await supabase.from('bookmarks').insert([{ user_id: activeUser.id, spot_id: spotId }]);
-      if (!error) setMustTrySpotIds((prev) => [...prev, spotId]);
-    }
-    setSavingBookmark(false);
-  };
-
-  const toggleVouch = async (spotId?: string) => {
-    if (!spotId) return;
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-
-    triggerHaptic(12);
-    setSavingVouch(true);
-    const isVouched = vouchedSpotIds.includes(spotId);
-
-    if (isVouched) {
-      const { error } = await supabase.from('vouches').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
-      if (!error) {
-        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
-        setVouchCounts((prev) => ({
-          ...prev,
-          [spotId]: Math.max(0, (prev[spotId] || 1) - 1),
-        }));
-      }
-    } else {
-      const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
-      if (!error) {
-        setVouchedSpotIds((prev) => [...prev, spotId]);
-        setVouchCounts((prev) => ({
-          ...prev,
-          [spotId]: (prev[spotId] || 0) + 1,
-        }));
-      }
-    }
-    setSavingVouch(false);
-  };
-
-  const handleOpenPublicProfile = (userId: string) => {
-    triggerHaptic(8);
-    const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
-    const userSpots = spots.filter((s) => s.user_id === userId);
-    setViewingProfile(profile);
-    setViewingProfileSpots(userSpots);
-    setProfileCityFilter('All');
-    setViewingSpot(null);
-    pushModalHistoryState('publicProfile');
-  };
-
-  const handleCategoryMouseDown = (e: React.MouseEvent) => {
-    if (!categoryScrollRef.current) return;
-    setIsCategoryDragging(true);
-    setCategoryStartX(e.pageX - categoryScrollRef.current.offsetLeft);
-    setCategoryScrollLeft(categoryScrollRef.current.scrollLeft);
-  };
-
-  const handleCategoryMouseLeaveOrUp = () => {
-    setIsCategoryDragging(false);
-  };
-
-  const handleCategoryMouseMove = (e: React.MouseEvent) => {
-    if (!isCategoryDragging || !categoryScrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - categoryScrollRef.current.offsetLeft;
-    const walk = (x - categoryStartX) * 1.5;
-    categoryScrollRef.current.scrollLeft = categoryScrollLeft - walk;
-  };
-
-  const handleCategoryWheel = (e: React.WheelEvent) => {
-    if (!categoryScrollRef.current) return;
-    if (e.deltaY !== 0) {
-      categoryScrollRef.current.scrollLeft += e.deltaY;
-    }
-  };
-
-  const handleSelectSearchResult = (item: any) => {
-    triggerHaptic(8);
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-    setShowDropdown(false);
-    setSearchQuery(item.display_name);
-
-    const placeName = item.name || item.display_name.split(',')[0];
-    const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
-
-    setActiveSearchedSpot({
-      name: placeName,
-      city: placeCity,
-      latitude: lat,
-      longitude: lon,
-    });
-    setViewingSpot(null);
-    pushModalHistoryState('activeSearchedSpot');
-
-    if (map.current) {
-      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-
-      if (previewMarkerRef.current) previewMarkerRef.current.remove();
-      previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
-        .setLngLat([lon, lat])
-        .addTo(map.current);
-    }
-  };
-
-  const handleLocateMe = () => {
-    triggerHaptic(8);
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserCoords({ lat: latitude, lng: longitude });
-        if (!map.current) return;
-
-        if (userLocationMarkerRef.current) {
-          userLocationMarkerRef.current.setLngLat([longitude, latitude]);
-        } else {
-          const el = document.createElement('div');
-          el.style.width = '16px';
-          el.style.height = '16px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#0284c7';
-          el.style.border = '3px solid #ffffff';
-          el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
-          el.className = 'user-location-pulse';
-
-          userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
-            .setLngLat([longitude, latitude])
-            .addTo(map.current);
-        }
-
-        map.current.flyTo({ center: [longitude, latitude], zoom: 16, essential: true });
-        setIsLocating(false);
-      },
-      () => {
-        alert('Could not retrieve your location.');
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const handleModalLocate = () => {
-    triggerHaptic(8);
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
-      return;
-    }
-
-    setIsModalLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setUserCoords({ lat: latitude, lng: longitude });
-        const lat = parseFloat(latitude.toFixed(6));
-        const lon = parseFloat(longitude.toFixed(6));
-
-        if (map.current) {
-          if (previewMarkerRef.current) previewMarkerRef.current.remove();
-          previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
-            .setLngLat([lon, lat])
-            .addTo(map.current);
-          map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-        }
-
-        const geo = await reverseGeocode(lat, lon);
-        setNewSpot((prev) => ({
-          ...prev,
-          latitude: lat,
-          longitude: lon,
-          city: geo.city || prev.city || 'Las Vegas',
-          country: geo.country || prev.country || 'United States',
-          name: prev.name || geo.name || '',
-        }));
-
-        setIsModalLocating(false);
-      },
-      () => {
-        alert('Could not retrieve current location.');
-        setIsModalLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const handleShareSpot = async (spot: Spot) => {
-    if (!spot.id) return;
-    triggerHaptic(8);
-    const shareUrl = `${window.location.origin}${window.location.pathname}?spot=${spot.id}`;
-    const shareText = `Check out ${spot.name} in ${spot.city} on Bywayr!`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
-        return;
-      } catch {}
-    }
-
-    setShareDialogSpot(spot);
-    setShareDialogCopied(false);
-    pushModalHistoryState('share');
-  };
-
-  const handleCopyCoordinates = async (lat: number, lon: number) => {
-    triggerHaptic(10);
-    await navigator.clipboard.writeText(`${lat}, ${lon}`);
-    setCoordsCopied(true);
-    setTimeout(() => setCoordsCopied(false), 2000);
-  };
-
-  const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-
-    if (!map.current) return;
-    triggerHaptic(8);
-    setViewingSpot(null);
-    setActiveSearchedSpot(null);
-    setIsEditing(false);
-
-    if (previewMarkerRef.current) previewMarkerRef.current.remove();
-
-    const previewPin = new maplibregl.Marker({ color: '#e05a47' }).setLngLat([lon, lat]).addTo(map.current);
-    previewMarkerRef.current = previewPin;
-
-    map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-
-    const geo = await reverseGeocode(lat, lon);
-
-    setNewSpot({
-      name: defaultName || geo.name || '',
-      category: 'Hidden Gems',
-      city: geo.city || 'Las Vegas',
-      country: geo.country || 'United States',
-      description: '',
-      latitude: parseFloat(lat.toFixed(6)),
-      longitude: parseFloat(lon.toFixed(6)),
-      image_url: '',
-    });
-
-    setImageFile(null);
-    setImagePreview(null);
-    setIsModalOpen(true);
-    pushModalHistoryState('addSpotModal');
-  };
-
-  const handleOpenEditModal = (spot: Spot) => {
-    const activeUser = currentUserRef.current;
-    if (!activeUser || spot.user_id !== activeUser.id) return;
-    triggerHaptic(8);
-    setIsEditing(true);
-    setNewSpot(spot);
-    setImagePreview(spot.image_url || null);
-    setImageFile(null);
-    setViewingSpot(null);
-    setActiveSearchedSpot(null);
-    setIsModalOpen(true);
-    pushModalHistoryState('editSpotModal');
-  };
-
-  const handleDeleteSpot = async (spot: Spot) => {
-    const activeUser = currentUserRef.current;
-    if (!spot.id || !activeUser || spot.user_id !== activeUser.id) return;
-    if (!confirm(`Are you sure you want to delete "${spot.name}"?`)) return;
-
-    triggerHaptic(15);
-    setDeleting(true);
-    const { error } = await supabase.from('spots').delete().eq('id', spot.id);
-    if (!error) {
-      setSpots((prev) => prev.filter((s) => s.id !== spot.id));
-      setViewingSpot(null);
-    }
-    setDeleting(false);
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleSaveSpot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-    if (!newSpot.name || isNaN(newSpot.latitude) || isNaN(newSpot.longitude)) return;
-
-    triggerHaptic(12);
-    setSaving(true);
-    let uploadedUrl = newSpot.image_url || '';
-
-    if (imageFile) {
-      setUploadingImage(true);
-      const fileToUpload = await compressImageToWebP(imageFile);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
-      const filePath = `spots/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage.from('spot-images').getPublicUrl(filePath);
-        uploadedUrl = publicUrlData.publicUrl;
-      }
-      setUploadingImage(false);
-    }
-
-    if (isEditing && newSpot.id) {
-      const { data, error } = await supabase
-        .from('spots')
-        .update({
-          name: newSpot.name,
-          category: newSpot.category,
-          city: newSpot.city,
-          country: newSpot.country || 'United States',
-          description: newSpot.description,
-          latitude: newSpot.latitude,
-          longitude: newSpot.longitude,
-          image_url: uploadedUrl || null,
-        })
-        .eq('id', newSpot.id)
-        .select();
-
-      if (!error && data && data.length > 0) {
-        setSpots((prev) => prev.map((s) => (s.id === newSpot.id ? (data[0] as Spot) : s)));
-        setViewingSpot(data[0] as Spot);
-        setActiveSearchedSpot(null);
-        dismissModalWithHistory(() => setIsModalOpen(false));
-      }
-    } else {
-      const { data, error } = await supabase
-        .from('spots')
-        .insert([{
-          name: newSpot.name,
-          category: newSpot.category,
-          city: newSpot.city,
-          country: newSpot.country || 'United States',
-          description: newSpot.description,
-          latitude: newSpot.latitude,
-          longitude: newSpot.longitude,
-          image_url: uploadedUrl || null,
-          user_id: activeUser.id,
-        }])
-        .select();
-
-      if (!error && data && data.length > 0) {
-        if (previewMarkerRef.current) {
-          previewMarkerRef.current.remove();
-          previewMarkerRef.current = null;
-        }
-        setSpots((prev) => [data[0] as Spot, ...prev]);
-        dismissModalWithHistory(() => setIsModalOpen(false));
-        setSearchQuery('');
-        setActiveSearchedSpot(null);
-        if (map.current) map.current.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 16 });
-      }
-    }
-    setSaving(false);
-  };
-
   const flyToSpot = (spot: Spot) => {
     if (!map.current || !spot.latitude || !spot.longitude) return;
     map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
@@ -1393,7 +978,7 @@ export default function Home() {
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
-  // Basemap Initialization - Stable High-Resolution Carto Voyager CORS Tiles
+  // Basemap Initialization - Original Standard OpenStreetMap Tiles
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -1412,25 +997,24 @@ export default function Home() {
       style: {
         version: 8,
         sources: {
-          'carto-tiles': {
+          'osm-tiles': {
             type: 'raster',
             tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
             ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors, © CARTO',
+            attribution: '© OpenStreetMap contributors',
           },
         },
         layers: [
           {
-            id: 'carto-layer',
+            id: 'osm-layer',
             type: 'raster',
-            source: 'carto-tiles',
+            source: 'osm-tiles',
             minzoom: 0,
-            maxzoom: 20,
+            maxzoom: 19,
           },
         ],
       },
@@ -1620,6 +1204,35 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const handleSelectSearchResult = (item: any) => {
+    triggerHaptic(8);
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    setShowDropdown(false);
+    setSearchQuery(item.display_name);
+
+    const placeName = item.name || item.display_name.split(',')[0];
+    const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
+
+    setActiveSearchedSpot({
+      name: placeName,
+      city: placeCity,
+      latitude: lat,
+      longitude: lon,
+    });
+    setViewingSpot(null);
+    pushModalHistoryState('activeSearchedSpot');
+
+    if (map.current) {
+      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+
+      if (previewMarkerRef.current) previewMarkerRef.current.remove();
+      previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
+        .setLngLat([lon, lat])
+        .addTo(map.current);
+    }
+  };
+
   const filteredSpots = spots
     .filter((spot: Spot) => {
       if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
@@ -1652,7 +1265,7 @@ export default function Home() {
   const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
   const proximitySortedSpots: Spot[] = [...spots]
     .filter((s: Spot) => s.latitude && s.longitude)
-    .map((spot: Spot) => ({
+    .map((spot) => ({
       ...spot,
       distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
     }))
@@ -1862,7 +1475,7 @@ export default function Home() {
       />
 
       {/* 2. Top Header & Search Bar */}
-      <div style={{ position: 'fixed', top: 'calc(10px + env(safe-area-inset-top, 0px))', left: '12px', right: '12px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -2184,7 +1797,7 @@ export default function Home() {
       {filteredSpots.length === 0 && !loading && (
         <div style={{ 
           position: 'fixed', 
-          top: `calc(${selectedCategory !== 'All' ? 220 : 175}px + ${walkTargetSpot ? 50 : 0}px + env(safe-area-inset-top, 0px))`,
+          top: `${(selectedCategory !== 'All' ? 215 : 170) + (walkTargetSpot ? 50 : 0)}px`,
           left: '16px', 
           right: '16px', 
           maxWidth: '440px', 
@@ -2209,7 +1822,7 @@ export default function Home() {
       )}
 
       {/* 3. Floating Map Controls */}
-      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '14px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: '20px', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '46px', height: '46px', backgroundColor: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #e7e5e4', borderRadius: '16px', boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.15), 0 0 1px 1px rgba(28, 25, 23, 0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '20px', height: '20px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '20px', height: '20px' }} />}
         </button>
@@ -2313,7 +1926,7 @@ export default function Home() {
 
       {/* Active Search Result Bottom Action Sheet */}
       {activeSearchedSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '18px 20px', boxSizing: 'border-box' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
               <span style={{ display: 'inline-block', backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
@@ -2885,7 +2498,7 @@ export default function Home() {
       {/* Universal Share Modal */}
       {shareDialogSpot && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100004, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.28)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <button onClick={() => dismissModalWithHistory(() => setShareDialogSpot(null))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
@@ -3199,7 +2812,7 @@ export default function Home() {
 
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin style={{ width: '16px', height: '16px', color: onlyMySpots ? '#e05a47' : '#78716c' }} />
+                <MapPin style={{ width: '16px', height: '16px' }} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
               </div>
               {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
@@ -3313,11 +2926,11 @@ export default function Home() {
       {/* 9. Claim Handle Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative' }}>
             <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
               <AtSign style={{ width: '24px', height: '24px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', textAlign: 'center' }}>Choose Your Handle</h3>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', textAlign: 'center', letterSpacing: '-0.02em' }}>Choose Your Handle</h3>
             <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
 
             <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -3357,7 +2970,7 @@ export default function Home() {
       {/* 10. Auth Modal */}
       {isAuthModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center' }}>
             <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
@@ -3436,7 +3049,7 @@ export default function Home() {
       {/* 11. Add / Edit Spot Modal */}
       {isModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
