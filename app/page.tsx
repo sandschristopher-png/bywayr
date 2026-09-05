@@ -1850,7 +1850,7 @@ export default function Home() {
       />
 
       {/* 2. Top Header & Search Bar */}
-      <div style={{ position: 'fixed', top: '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'fixed', top: '12px', left: '12px', right: '12px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -1865,6 +1865,29 @@ export default function Home() {
           </div>
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+            {/* 1. Add Spot Button */}
+            <button
+              onClick={() => {
+                triggerHaptic(8);
+                if (!currentUserRef.current) {
+                  setIsAuthModalOpen(true);
+                  pushModalHistoryState('auth');
+                  return;
+                }
+                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                dropPreviewAndOpenModal(center.lat, center.lng);
+              }}
+              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '12px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
+            >
+              <Plus style={{ width: '14px', height: '14px' }} /> Add
+            </button>
+
+            {/* 2. Field Notes (Drawer) Button */}
+            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }} title="Open Field Notes">
+              <List style={{ width: '15px', height: '15px' }} />
+            </button>
+
+            {/* 3. User Profile Button */}
             {currentUser ? (
               <button 
                 onClick={() => {
@@ -1905,26 +1928,6 @@ export default function Home() {
                 <LogIn style={{ width: '13px', height: '13px', flexShrink: 0 }} /> Sign In
               </button>
             )}
-
-            <button
-              onClick={() => {
-                triggerHaptic(8);
-                if (!currentUserRef.current) {
-                  setIsAuthModalOpen(true);
-                  pushModalHistoryState('auth');
-                  return;
-                }
-                const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-                dropPreviewAndOpenModal(center.lat, center.lng);
-              }}
-              style={{ backgroundColor: '#e05a47', border: 'none', borderRadius: '12px', padding: '7px 12px', color: '#ffffff', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 8px rgba(224, 90, 71, 0.3)' }}
-            >
-              <Plus style={{ width: '14px', height: '14px' }} /> Add
-            </button>
-
-            <button onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }} style={{ backgroundColor: '#f5f5f4', border: '1px solid #d6d3d1', borderRadius: '12px', padding: '7px 9px', color: '#44403c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <List style={{ width: '15px', height: '15px' }} />
-            </button>
           </div>
         </div>
 
@@ -2172,7 +2175,7 @@ export default function Home() {
       {filteredSpots.length === 0 && !loading && (
         <div style={{ 
           position: 'fixed', 
-          top: `${(selectedCategory !== 'All' ? 215 : 170) + (walkTargetSpot ? 50 : 0)}px`,
+          top: `${(selectedCategory !== 'All' ? 210 : 165) + (walkTargetSpot ? 50 : 0)}px`,
           left: '16px', 
           right: '16px', 
           maxWidth: '440px', 
@@ -2641,7 +2644,7 @@ export default function Home() {
           {/* Spot Comments / Field Discussion Section */}
           <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, color: '#57534e', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
-              <MessageSquare style={{ width: '13px', height: '13px', color: '#e05a47' }} /> Field Notes Discussion ({spotComments.length})
+              <MessageSquare style={{ width: '13px', height: '13px' }} color="#e05a47" /> Field Notes Discussion ({spotComments.length})
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto', marginBottom: '10px' }}>
