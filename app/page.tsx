@@ -2518,7 +2518,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Categories Bar & Proximity Filter */}
+        {/* Categories Bar & Proximity Filter with Live Counters */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -2601,6 +2601,20 @@ export default function Home() {
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.label.toLowerCase();
             const Icon = cat.icon;
+
+            const categoryCount = spots.filter((spot: Spot) => {
+              if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
+              if (selectedCountryFilter && (spot.country || '').toLowerCase() !== selectedCountryFilter.toLowerCase()) return false;
+              if (maxRadiusKm !== null) {
+                const anchorLat = userCoords ? userCoords.lat : (map.current ? map.current.getCenter().lat : 36.1699);
+                const anchorLng = userCoords ? userCoords.lng : (map.current ? map.current.getCenter().lng : -115.1398);
+                const dist = getDistanceFromLatLonInKm(anchorLat, anchorLng, spot.latitude, spot.longitude);
+                if (dist > maxRadiusKm) return false;
+              }
+              if (cat.label === 'All') return true;
+              return spot.category?.toLowerCase() === cat.label.toLowerCase();
+            }).length;
+
             return (
               <button
                 key={cat.label}
@@ -2628,7 +2642,17 @@ export default function Home() {
                 }}
               >
                 <Icon style={{ width: '12px', height: '12px', color: isSelected ? '#fafaf9' : cat.color }} />
-                {cat.label}
+                <span>{cat.label}</span>
+                <span style={{ 
+                  fontSize: '10.5px', 
+                  fontWeight: 700, 
+                  backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.06)', 
+                  padding: '1px 6px', 
+                  borderRadius: '10px',
+                  color: isSelected ? '#fafaf9' : '#78716c'
+                }}>
+                  {categoryCount}
+                </span>
               </button>
             );
           })}
