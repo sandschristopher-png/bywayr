@@ -390,7 +390,7 @@ export default function Home() {
     }
     return false;
   });
-    const [isInteracting, setIsInteracting] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1799,7 +1799,7 @@ export default function Home() {
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
-          html, body {
+        html, body {
           position: fixed;
           inset: 0;
           width: 100%;
@@ -1810,9 +1810,14 @@ export default function Home() {
           -webkit-tap-highlight-color: transparent;
           user-select: none;
         }
-        #__next, .maplibregl-map {
-          touch-action: none;
+        #__next {
+          position: fixed;
+          inset: 0;
+          overflow: hidden;
+          touch-action: manipulation;
         }
+        .maplibregl-map {
+          touch-action: pan-x pan-y pinch-zoom;
         }
         input, textarea {
           user-select: text;
@@ -1934,8 +1939,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* 2. Top Header & Search Bar */}
-      <div style={{ position: 'fixed', top: isOffline ? '50px' : '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', transition: 'top 0.2s ease' }}>
+      {/* 2. Top Header & Search Bar (Locked with absolute positioning to prevent mobile UI jitter) */}
+      <div style={{ position: 'absolute', top: isOffline ? '50px' : '16px', left: '16px', right: '16px', maxWidth: '440px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', padding: '10px 14px', borderRadius: '20px', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', flexShrink: 0, boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
@@ -2106,7 +2111,9 @@ export default function Home() {
             paddingBottom: '2px', 
             scrollbarWidth: 'none', 
             cursor: isCategoryDragging ? 'grabbing' : 'grab',
-            userSelect: 'none'
+            userSelect: 'none',
+            WebkitOverflowScrolling: 'touch',
+            transform: 'translateZ(0)'
           }}
         >
           {currentUser && (
