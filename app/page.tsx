@@ -573,6 +573,17 @@ export default function Home() {
     }
   }, []);
 
+  const handleCloseModal = () => {
+    if (previewMarkerRef.current && !activeSearchedSpot) {
+      previewMarkerRef.current.remove();
+      previewMarkerRef.current = null;
+    }
+    setImageFile(null);
+    setImagePreview(null);
+    setIsEditing(false);
+    setIsModalOpen(false);
+  };
+
   const closeTopmostSheet = useCallback(() => {
     if (isDeleteAccountModalOpen) { setIsDeleteAccountModalOpen(false); return; }
     if (isClaimUsernameModalOpen) { setIsClaimUsernameModalOpen(false); return; }
@@ -1042,124 +1053,6 @@ export default function Home() {
     }
   };
 
-  const fetchSpots = async () => {
-    try {
-      const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
-      if (!error && data) {
-        setSpots(data as Spot[]);
-        localStorage.setItem('bywayr_cached_spots', JSON.stringify(data));
-      }
-    } catch (err) {
-      console.error('Failed to load spots:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMustTryBookmarks = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.from('bookmarks').select('spot_id').eq('user_id', userId);
-      if (!error && data) setMustTrySpotIds(data.map((item: any) => item.spot_id));
-    } catch (err) {
-      console.error('Failed to load bookmarks:', err);
-    }
-  };
-
-  const toggleMustTry = async (spotId?: string) => {
-    if (!spotId) return;
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-
-    triggerHaptic(12);
-    setSavingBookmark(true);
-    const isBookmarked = mustTrySpotIds.includes(spotId);
-
-    if (isBookmarked) {
-      const { error } = await supabase.from('bookmarks').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
-      if (!error) setMustTrySpotIds((prev) => prev.filter((id) => id !== spotId));
-    } else {
-      const { error } = await supabase.from('bookmarks').insert([{ user_id: activeUser.id, spot_id: spotId }]);
-      if (!error) setMustTrySpotIds((prev) => [...prev, spotId]);
-    }
-    setSavingBookmark(false);
-  };
-
-  const toggleVouch = async (spotId?: string) => {
-    if (!spotId) return;
-    const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
-
-    triggerHaptic(12);
-    setSavingVouch(true);
-    const isVouched = vouchedSpotIds.includes(spotId);
-
-    if (isVouched) {
-      const { error } = await supabase.from('vouches').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
-      if (!error) {
-        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
-        setVouchCounts((prev) => ({
-          ...prev,
-          [spotId]: Math.max(0, (prev[spotId] || 1) - 1),
-        }));
-      }
-    } else {
-      const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
-      if (!error) {
-        setVouchedSpotIds((prev) => [...prev, spotId]);
-        setVouchCounts((prev) => ({
-          ...prev,
-          [spotId]: (prev[spotId] || 0) + 1,
-        }));
-      }
-    }
-    setSavingVouch(false);
-  };
-
-  const handleOpenPublicProfile = (userId: string) => {
-    triggerHaptic(8);
-    const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
-    const userSpots = spots.filter((s) => s.user_id === userId);
-    setViewingProfile(profile);
-    setViewingProfileSpots(userSpots);
-    setProfileCityFilter('All');
-    setViewingSpot(null);
-    pushModalHistoryState('publicProfile');
-  };
-
-  const handleCategoryMouseDown = (e: React.MouseEvent) => {
-    if (!categoryScrollRef.current) return;
-    setIsCategoryDragging(true);
-    setCategoryStartX(e.pageX - categoryScrollRef.current.offsetLeft);
-    setCategoryScrollLeft(categoryScrollRef.current.scrollLeft);
-  };
-
-  const handleCategoryMouseLeaveOrUp = () => {
-    setIsCategoryDragging(false);
-  };
-
-  const handleCategoryMouseMove = (e: React.MouseEvent) => {
-    if (!isCategoryDragging || !categoryScrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - categoryScrollRef.current.offsetLeft;
-    const walk = (x - categoryStartX) * 1.5;
-    categoryScrollRef.current.scrollLeft = categoryScrollLeft - walk;
-  };
-
-  const handleCategoryWheel = (e: React.WheelEvent) => {
-    if (!categoryScrollRef.current) return;
-    if (e.deltaY !== 0) {
-      categoryScrollRef.current.scrollLeft += e.deltaY;
-    }
-  };
-
   const flyToSpot = (spot: Spot) => {
     if (!map.current || !spot.latitude || !spot.longitude) return;
     map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
@@ -1170,274 +1063,14 @@ export default function Home() {
     if (spot.id && typeof window !== 'undefined') window.history.replaceState(null, '', `?spot=${spot.id}`);
   };
 
-  // Basemap Initialization - Stadia Maps OSM Bright (Vibrant & Colorful)
-  useEffect(() => {
-    if (map.current || !mapContainer.current) return;
-
-    let initialCenter: [number, number] = [-115.1398, 36.1699];
-    let initialZoom = 13.5;
-
-    try {
-      const savedCenterStr = localStorage.getItem('bywayr_map_center');
-      const savedZoomStr = localStorage.getItem('bywayr_map_zoom');
-      if (savedCenterStr) initialCenter = JSON.parse(savedCenterStr);
-      if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
-    } catch {}
-
-    const apiKey = '2e0833d1-af3b-42e8-a166-c67424d3a130';
-    const getStadiaStyle = (dark: boolean) => ({
-      version: 8 as const,
-      sources: {
-        'stadia-tiles': {
-          type: 'raster' as const,
-          tiles: [
-            dark
-              ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-              : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
-            dark
-              ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-              : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap contributors, © Stadia Maps',
-        },
-      },
-      layers: [
-        {
-          id: 'stadia-layer',
-          type: 'raster' as const,
-          source: 'stadia-tiles',
-          minzoom: 0,
-          maxzoom: 20,
-        },
-      ],
-    });
-
-    const initializedMap = new maplibregl.Map({
-      container: mapContainer.current,
-      style: getStadiaStyle(isDarkMode),
-      center: initialCenter,
-      zoom: initialZoom,
-      attributionControl: false,
-    });
-
-    initializedMap.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      'bottom-left'
-    );
-
-    initializedMap.on('moveend', () => {
-      const center = initializedMap.getCenter();
-      const zoom = initializedMap.getZoom();
-      localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
-      localStorage.setItem('bywayr_map_zoom', zoom.toString());
-    });
-
-    initializedMap.on('load', () => {
-      const hasSavedPosition = localStorage.getItem('bywayr_map_center');
-      if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude, longitude } = pos.coords;
-            setUserCoords({ lat: latitude, lng: longitude });
-            initializedMap.jumpTo({ center: [longitude, latitude], zoom: 15 });
-
-            if (userLocationMarkerRef.current) {
-              userLocationMarkerRef.current.setLngLat([longitude, latitude]);
-            } else {
-              const el = document.createElement('div');
-              el.style.width = '16px';
-              el.style.height = '16px';
-              el.style.borderRadius = '50%';
-              el.style.backgroundColor = '#0284c7';
-              el.style.border = '3px solid #ffffff';
-              el.style.boxShadow = '0 0 0 0 rgba(2, 132, 199, 0.75)';
-              el.className = 'user-location-pulse';
-
-              userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
-                .setLngLat([longitude, latitude])
-                .addTo(initializedMap);
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, timeout: 8000 }
-        );
-      }
-    });
-
-    initializedMap.on('click', (e) => {
-      setShowDropdown(false);
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-      const originalTarget = e.originalEvent.target as HTMLElement;
-      if (originalTarget?.closest('.maplibregl-marker')) return;
-      const lat = parseFloat(e.lngLat.lat.toFixed(6));
-      const lng = parseFloat(e.lngLat.lng.toFixed(6));
-      dropPreviewAndOpenModal(lat, lng);
-    });
-
-    initializedMap.on('dragstart', () => {
-      setShowDropdown(false);
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    });
-
-    map.current = initializedMap;
-
-    return () => {
-      initializedMap.remove();
-      map.current = null;
-    };
-  }, []);
-
-  // Dynamic Day/Night style toggle for Stadia Maps
-  useEffect(() => {
-    if (map.current) {
-      const apiKey = '2e0833d1-af3b-42e8-a166-c67424d3a130';
-      const getStadiaStyle = (dark: boolean) => ({
-        version: 8 as const,
-        sources: {
-          'stadia-tiles': {
-            type: 'raster' as const,
-            tiles: [
-              dark
-                ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-                : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
-              dark
-                ? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png?api_key=${apiKey}`
-                : `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}.png?api_key=${apiKey}`,
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors, © Stadia Maps',
-          },
-        },
-        layers: [
-          {
-            id: 'stadia-layer',
-            type: 'raster' as const,
-            source: 'stadia-tiles',
-            minzoom: 0,
-            maxzoom: 20,
-          },
-        ],
-      });
-      map.current.setStyle(getStadiaStyle(isDarkMode));
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    if (!loading && spots.length > 0 && map.current) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const spotId = urlParams.get('spot');
-      if (spotId) {
-        const target = spots.find((s) => s.id === spotId);
-        if (target && target.latitude && target.longitude) flyToSpot(target);
-      }
-    }
-  }, [loading, spots]);
-
-  // Main Live Search
-  useEffect(() => {
-    const rawQuery = searchQuery.trim();
-    if (rawQuery.length < 3) {
-      setSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    const codeMatch = rawQuery.match(/([2-9CFGHJMPQRVWX+]{4,8}\+[2-9CFGHJMPQRVWX+]{2,})/i);
-
-    if (codeMatch) {
-      const codePart = codeMatch[1].toUpperCase();
-      const localityHint = rawQuery.replace(codeMatch[0], '').replace(/plus\s*code/gi, '').replace(/[()]/g, '').trim();
-
-      if (isValid(codePart)) {
-        if (isFull(codePart)) {
-          try {
-            const decoded = decode(codePart);
-            const lat = decoded.latitudeCenter;
-            const lon = decoded.longitudeCenter;
-            setSearchResults([{
-              lat: lat.toString(),
-              lon: lon.toString(),
-              display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
-            }]);
-            setShowDropdown(true);
-            return;
-          } catch (err) {
-            console.error('Full code decode error:', err);
-          }
-        } else if (isShort(codePart)) {
-          let isCancelled = false;
-          setIsSearching(true);
-          (async () => {
-            try {
-              let anchorLat = map.current ? map.current.getCenter().lat : 36.1699;
-              let anchorLon = map.current ? map.current.getCenter().lng : -115.1398;
-
-              if (localityHint) {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localityHint)}&limit=1`);
-                const geoData = await geoRes.json();
-                if (!isCancelled && geoData && geoData.length > 0) {
-                  anchorLat = parseFloat(geoData[0].lat);
-                  anchorLon = parseFloat(geoData[0].lon);
-                }
-              }
-
-              const fullCode = recoverNearest(codePart, anchorLat, anchorLon);
-              if (!isCancelled && isFull(fullCode)) {
-                const decoded = decode(fullCode);
-                const lat = decoded.latitudeCenter;
-                const lon = decoded.longitudeCenter;
-                setSearchResults([{
-                  lat: lat.toString(),
-                  lon: lon.toString(),
-                  display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
-                }]);
-                setShowDropdown(true);
-              }
-            } catch (err) {
-              console.error('Short Plus Code resolution error:', err);
-            } finally {
-              if (!isCancelled) setIsSearching(false);
-            }
-          })();
-
-          return () => {
-            isCancelled = true;
-          };
-        }
-      }
-    }
-
-    const coordMatch = rawQuery.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
-    if (coordMatch) {
-      const lat = parseFloat(coordMatch[1]);
-      const lon = parseFloat(coordMatch[3]);
-      setSearchResults([{ lat: lat.toString(), lon: lon.toString(), display_name: `GPS Coordinates: ${lat}, ${lon}` }]);
-      setShowDropdown(true);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}&lat=${center.lat}&lon=${center.lng}&limit=6`);
-        const data = await res.json();
-        setSearchResults(data || []);
-        setShowDropdown(true);
-      } catch (err) {
-        console.error('Search error:', err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+  const proximitySortedSpots: Spot[] = [...spots]
+    .filter((s: Spot) => s.latitude && s.longitude)
+    .map((spot: Spot) => ({
+      ...spot,
+      distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
+    }))
+    .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
 
   const filteredSpots = spots
     .filter((spot: Spot) => {
@@ -2679,7 +2312,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer with Live Distance Badges & Offline Export */}
+      {/* Slide-Out Drawer with Live Distance Badges & Skeleton Loaders */}
       {isDrawerOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(3px)', zIndex: 100000, display: 'flex', justifyContent: 'flex-start' }}>
           <div className="animate-slide-left" style={{ width: '100%', maxWidth: '370px', backgroundColor: '#ffffff', height: '100%', boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box' }}>
