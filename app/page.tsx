@@ -2220,8 +2220,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
@@ -2955,7 +2955,7 @@ export default function Home() {
             padding: '8px 16px',
             borderRadius: '20px',
             fontSize: '12px',
-            fontWeight: 600,
+            fontWeight: '600',
             zIndex: 100010,
             boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
             pointerEvents: 'none',
