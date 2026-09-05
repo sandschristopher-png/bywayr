@@ -2262,13 +2262,13 @@ export default function Home() {
         )}
       </div>
 
-      {/* Empty State Card (Properly Centered and Cleanly Positioned without random wrapper pill) */}
+      {/* Empty State Card (Completely un-wrapped, positioned high up, centered, with integrated close X button) */}
       {filteredSpots.length === 0 && !loading && (
         <div 
           className="animate-scale-up" 
           style={{
             position: 'absolute',
-            top: '210px',
+            top: '185px',
             left: '16px',
             right: '16px',
             maxWidth: '440px',
@@ -2297,7 +2297,8 @@ export default function Home() {
               color: '#78716c', 
               display: 'flex', 
               alignItems: 'center', 
-              justifyContent: 'center' 
+              justifyContent: 'center',
+              zIndex: 10
             }}
             title="Dismiss / Show All"
           >
@@ -3041,8 +3042,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
 
       {/* Universal Share Modal */}
       {shareDialogSpot && (
