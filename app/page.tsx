@@ -427,6 +427,50 @@ export default function Home() {
   const [isControlsHidden, setIsControlsHidden] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Recent Searches state
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('bywayr_recent_searches');
+      if (saved) {
+        try { return JSON.parse(saved); } catch {}
+      }
+    }
+    return [];
+  });
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const addRecentSearch = (query: string) => {
+    const clean = query.trim();
+    if (!clean) return;
+    setRecentSearches((prev) => {
+      const updated = [clean, ...prev.filter(item => item.toLowerCase() !== clean.toLowerCase())].slice(0, 5);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bywayr_recent_searches', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
+  const clearRecentSearches = () => {
+    triggerHaptic(6);
+    setRecentSearches([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bywayr_recent_searches');
+    }
+  };
+
+  const removeRecentSearch = (itemToRemove: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    triggerHaptic(4);
+    setRecentSearches((prev) => {
+      const updated = prev.filter(item => item !== itemToRemove);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bywayr_recent_searches', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
   useEffect(() => {
     if (isInteracting) {
       setIsControlsHidden(true);
@@ -930,6 +974,7 @@ export default function Home() {
     const lon = parseFloat(item.lon);
     setShowDropdown(false);
     setSearchQuery(item.display_name);
+    addRecentSearch(item.display_name);
 
     const placeName = item.name || item.display_name.split(',')[0];
     const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
@@ -1831,7 +1876,6 @@ export default function Home() {
     const rawQuery = searchQuery.trim();
     if (rawQuery.length < 3) {
       setSearchResults([]);
-      setShowDropdown(false);
       return;
     }
 
@@ -1852,7 +1896,6 @@ export default function Home() {
               lon: lon.toString(),
               display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
             }]);
-            setShowDropdown(true);
             return;
           } catch (err) {
             console.error('Full code decode error:', err);
@@ -1884,7 +1927,6 @@ export default function Home() {
                   lon: lon.toString(),
                   display_name: localityHint ? `Plus Code (${codePart}) in ${localityHint}` : `Plus Code (${codePart})`
                 }]);
-                setShowDropdown(true);
               }
             } catch (err) {
               console.error('Short Plus Code resolution error:', err);
@@ -1905,7 +1947,6 @@ export default function Home() {
       const lat = parseFloat(coordMatch[1]);
       const lon = parseFloat(coordMatch[3]);
       setSearchResults([{ lat: lat.toString(), lon: lon.toString(), display_name: `GPS Coordinates: ${lat}, ${lon}` }]);
-      setShowDropdown(true);
       return;
     }
 
@@ -1916,7 +1957,6 @@ export default function Home() {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}&lat=${center.lat}&lon=${center.lng}&limit=6`);
         const data = await res.json();
         setSearchResults(data || []);
-        setShowDropdown(true);
       } catch (err) {
         console.error('Search error:', err);
       } finally {
@@ -2215,7 +2255,7 @@ export default function Home() {
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             padding: '6px 8px 6px 10px',
-            borderRadius: showDropdown ? '24px 24px 0 0' : '28px',
+            borderRadius: (isSearchFocused && (searchQuery.trim().length >= 3 || (searchQuery.trim().length < 3 && recentSearches.length > 0))) ? '24px 24px 0 0' : '28px',
             boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
             border: '1px solid #e7e5e4',
             display: 'flex',
@@ -2246,7 +2286,8 @@ export default function Home() {
                 placeholder="Search places, Plus Codes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',
@@ -2268,7 +2309,6 @@ export default function Home() {
                     onClick={() => {
                       setSearchQuery('');
                       setSearchResults([]);
-                      setShowDropdown(false);
                     }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', display: 'flex', padding: '2px' }}
                     title="Clear search"
@@ -2407,46 +2447,79 @@ export default function Home() {
             </div>
           </div>
 
-          {showDropdown && searchQuery.trim().length >= 3 && (
+          {/* Search Dropdown with Recent Searches & Results */}
+          {isSearchFocused && (searchQuery.trim().length >= 3 || (searchQuery.trim().length < 3 && recentSearches.length > 0)) && (
             <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
-              {searchResults.length === 0 ? (
+              {searchQuery.trim().length < 3 && recentSearches.length > 0 ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px 6px 16px', borderBottom: '1px solid #f5f5f4' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Searches</span>
+                    <button onClick={clearRecentSearches} style={{ background: 'none', border: 'none', fontSize: '11px', fontWeight: 600, color: '#e05a47', cursor: 'pointer' }}>Clear</button>
+                  </div>
+                  {recentSearches.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        triggerHaptic(6);
+                        setSearchQuery(item);
+                        setIsSearchFocused(false);
+                      }} 
+                      style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+                        <Clock style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => removeRecentSearch(item, e)}
+                        style={{ background: 'none', border: 'none', color: '#a8a29e', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                        title="Remove item"
+                      >
+                        <X style={{ width: '13px', height: '13px' }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : searchResults.length === 0 ? (
                 <div style={{ padding: '14px 16px', textAlign: 'center', color: '#78716c', fontSize: '13px' }}>
                   No local places found.
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
-                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                  <div key={idx} onClick={() => { addRecentSearch(item.display_name); handleSelectSearchResult(item); }} style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '9px' }}>
                     <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                   </div>
                 ))
               )}
 
-              <a
-                href="https://aviasales.tpk.lv/Y7mdLlKw"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  backgroundColor: '#fafaf9',
-                  borderTop: '1px solid #e7e5e4',
-                  color: '#44403c',
-                  textDecoration: 'none',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  borderBottomLeftRadius: '24px',
-                  borderBottomRightRadius: '24px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                  <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
-                  <span>Planning a trip? Search flights via Aviasales</span>
-                </div>
-                <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-              </a>
+              {searchQuery.trim().length >= 3 && (
+                <a
+                  href="https://aviasales.tpk.lv/Y7mdLlKw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    backgroundColor: '#fafaf9',
+                    borderTop: '1px solid #e7e5e4',
+                    color: '#44403c',
+                    textDecoration: 'none',
+                    fontSize: '12.5px',
+                    fontWeight: 600,
+                    borderBottomLeftRadius: '24px',
+                    borderBottomRightRadius: '24px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <Plane style={{ width: '14px', height: '14px', color: '#e05a47' }} />
+                    <span>Planning a trip? Search flights via Aviasales</span>
+                  </div>
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -4437,8 +4510,6 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="e.g. United States"
-                  value={authCountry}
-                  onChange={(e) => authCountrySetter(e.target.value)} // Wait, keep authCountry setter
                   value={authCountry}
                   onChange={(e) => setAuthCountry(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
