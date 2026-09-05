@@ -1748,12 +1748,19 @@ export default function Home() {
         el.appendChild(svgIcon);
       }
 
-      el.addEventListener('click', (e) => {
+      // Robust tap/click listener with direct state invocation & history push
+      const handleMarkerClick = (e: MouseEvent | TouchEvent) => {
         e.stopPropagation();
         triggerHaptic(8);
         setActiveSearchedSpot(null);
         flyToSpot(spot);
-      });
+        if (spot.id) {
+          fetchSpotComments(spot.id);
+        }
+      };
+
+      el.addEventListener('click', handleMarkerClick);
+      el.addEventListener('touchend', handleMarkerClick);
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([spot.longitude, spot.latitude])
