@@ -71,6 +71,7 @@ import {
   Mic2,
   Stamp,
   Award,
+  Globe,
 } from 'lucide-react';
 
 interface Spot {
@@ -207,6 +208,26 @@ const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
+const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
+  let cCity = (city || '').trim();
+  let cCountry = (country || '').trim();
+  const lowerCity = cCity.toLowerCase();
+
+  if (lowerCity.includes('chroy changvar') || lowerCity.includes('phnom penh') || lowerCity.includes('siem reap')) {
+    cCountry = 'Cambodia';
+  } else if (lowerCity.includes('hong kong') || lowerCity.includes('kowloon')) {
+    cCountry = 'Hong Kong';
+  } else if (lowerCity.includes('tokyo') || lowerCity.includes('shinjuku') || lowerCity.includes('shibuya') || lowerCity.includes('osaka')) {
+    cCountry = 'Japan';
+  } else if (lowerCity.includes('cebu') || lowerCity.includes('manila') || lowerCity.includes('lapu-lapu') || lowerCity.includes('makati')) {
+    cCountry = 'Philippines';
+  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco')) {
+    cCountry = 'United States';
+  }
+
+  return { city: cCity, country: cCountry };
+};
+
 const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string; country?: string }> => {
   try {
     const res = await fetch(
@@ -220,6 +241,7 @@ const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string
         data.address.municipality ||
         data.address.suburb ||
         data.address.city_district ||
+        data.address.district ||
         data.address.village ||
         data.address.county ||
         '';
@@ -231,8 +253,10 @@ const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string
         data.address.tourism ||
         data.address.road ||
         '';
-      const country = data.address.country || '';
-      return { name, city, country };
+      const rawCountry = data.address.country || '';
+      const sanitized = sanitizeCountryAndCity(city, rawCountry);
+
+      return { name, city: sanitized.city, country: sanitized.country };
     }
   } catch (err) {
     console.error('Reverse geocode error:', err);
@@ -296,12 +320,13 @@ const extractPassportStamps = (userSpots: Spot[]): PassportStampData[] => {
 
   userSpots.forEach((spot) => {
     const rawCountry = (spot.country || '').trim();
-    const country = rawCountry || (spot.city.toLowerCase().includes('vegas') ? 'United States' : 'Curated Territory');
+    const sanitized = sanitizeCountryAndCity(spot.city, rawCountry);
+    const country = sanitized.country || (sanitized.city ? sanitized.city : 'Curated Territory');
     
     if (!groups[country]) {
       groups[country] = { cities: new Set<string>(), spotCount: 0, dates: [] };
     }
-    if (spot.city) groups[country].cities.add(spot.city.trim());
+    if (sanitized.city) groups[country].cities.add(sanitized.city.trim());
     groups[country].spotCount += 1;
     if (spot.created_at) groups[country].dates.push(spot.created_at);
   });
@@ -350,6 +375,11 @@ export default function Home() {
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  // Edit Country state in Profile
+  const [isEditingCountry, setIsEditingCountry] = useState(false);
+  const [editCountryValue, setEditCountryValue] = useState('');
+  const [savingCountry, setSavingCountry] = useState(false);
+
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -367,6 +397,7 @@ export default function Home() {
   const [activeSearchedSpot, setActiveSearchedSpot] = useState<{
     name: string;
     city: string;
+    country?: string;
     latitude: number;
     longitude: number;
   } | null>(null);
@@ -423,12 +454,27 @@ export default function Home() {
 
   const [authEmail, setAuthEmail] = useState('');
   const [authUsername, setAuthUsername] = useState('');
+  const [authCountry, setAuthCountry] = useState('');
   const [authUsernameError, setAuthUsernameError] = useState('');
   const [claimUsername, setClaimUsername] = useState('');
+  const [claimCountry, setClaimCountry] = useState('');
   const [claimUsernameError, setClaimUsernameError] = useState('');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+
+  // Auto-detect signup country from timezone if not provided
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz.includes('Asia/Phnom_Penh')) { setAuthCountry('Cambodia'); setClaimCountry('Cambodia'); }
+      else if (tz.includes('Asia/Hong_Kong')) { setAuthCountry('Hong Kong'); setClaimCountry('Hong Kong'); }
+      else if (tz.includes('Asia/Manila')) { setAuthCountry('Philippines'); setClaimCountry('Philippines'); }
+      else if (tz.includes('Asia/Tokyo')) { setAuthCountry('Japan'); setClaimCountry('Japan'); }
+      else if (tz.includes('America/')) { setAuthCountry('United States'); setClaimCountry('United States'); }
+      else { setAuthCountry('United States'); setClaimCountry('United States'); }
+    } catch {}
+  }, []);
 
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [maxRadiusKm, setMaxRadiusKm] = useState<number | null>(null);
@@ -593,6 +639,7 @@ export default function Home() {
   const handleCloseProfileDrawer = () => {
     triggerHaptic(6);
     setIsProfileClosing(true);
+    setIsEditingCountry(false);
     setTimeout(() => {
       setIsProfileModalOpen(false);
       setIsProfileClosing(false);
@@ -707,8 +754,17 @@ export default function Home() {
     try {
       const { data, error } = await supabase.from('spots').select('*').order('id', { ascending: false });
       if (!error && data) {
-        setSpots(data as Spot[]);
-        localStorage.setItem('bywayr_cached_spots', JSON.stringify(data));
+        // Sanitize existing spots on load
+        const cleaned = (data as Spot[]).map((s) => {
+          const sanitized = sanitizeCountryAndCity(s.city, s.country || '');
+          return {
+            ...s,
+            city: sanitized.city,
+            country: sanitized.country,
+          };
+        });
+        setSpots(cleaned);
+        localStorage.setItem('bywayr_cached_spots', JSON.stringify(cleaned));
       }
     } catch (err) {
       console.error('Failed to load spots:', err);
@@ -830,10 +886,13 @@ export default function Home() {
 
     const placeName = item.name || item.display_name.split(',')[0];
     const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
+    const rawCountry = item.address?.country || '';
+    const sanitized = sanitizeCountryAndCity(placeCity, rawCountry);
 
     setActiveSearchedSpot({
       name: placeName,
-      city: placeCity,
+      city: sanitized.city,
+      country: sanitized.country,
       latitude: lat,
       longitude: lon,
     });
@@ -1070,14 +1129,16 @@ export default function Home() {
       setUploadingImage(false);
     }
 
+    const sanitized = sanitizeCountryAndCity(newSpot.city, newSpot.country || 'United States');
+
     if (isEditing && newSpot.id) {
       const { data, error } = await supabase
         .from('spots')
         .update({
           name: newSpot.name,
           category: newSpot.category,
-          city: newSpot.city,
-          country: newSpot.country || 'United States',
+          city: sanitized.city,
+          country: sanitized.country,
           description: newSpot.description,
           latitude: newSpot.latitude,
           longitude: newSpot.longitude,
@@ -1098,8 +1159,8 @@ export default function Home() {
         .insert([{
           name: newSpot.name,
           category: newSpot.category,
-          city: newSpot.city,
-          country: newSpot.country || 'United States',
+          city: sanitized.city,
+          country: sanitized.country,
           description: newSpot.description,
           latitude: newSpot.latitude,
           longitude: newSpot.longitude,
@@ -1255,6 +1316,30 @@ export default function Home() {
     }
   };
 
+  const handleUpdateCountry = async (newCountry: string) => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || !newCountry.trim()) return;
+
+    setSavingCountry(true);
+    triggerHaptic(10);
+    const cleaned = newCountry.trim();
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: activeUser.id,
+      country: cleaned,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (!error) {
+      const updated = { ...userProfile, id: activeUser.id, country: cleaned };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+      setIsEditingCountry(false);
+      fetchProfiles();
+    }
+    setSavingCountry(false);
+  };
+
   const fetchProfiles = async () => {
     try {
       const { data, error } = await supabase.from('profiles').select('*');
@@ -1377,7 +1462,10 @@ export default function Home() {
       email: authEmail.trim(),
       options: {
         emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-        data: cleanUsername ? { username: cleanUsername } : undefined,
+        data: {
+          username: cleanUsername || undefined,
+          country: authCountry || undefined,
+        },
       },
     });
 
@@ -1418,6 +1506,7 @@ export default function Home() {
     const { error } = await supabase.from('profiles').upsert({
       id: activeUser.id,
       username: clean,
+      country: claimCountry.trim() || userProfile?.country || 'United States',
       updated_at: new Date().toISOString(),
     });
 
@@ -1425,7 +1514,7 @@ export default function Home() {
       setClaimUsernameError(error.message);
     } else {
       triggerHaptic(15);
-      const updated = { ...userProfile, id: activeUser.id, username: clean };
+      const updated = { ...userProfile, id: activeUser.id, username: clean, country: claimCountry.trim() || userProfile?.country || 'United States' };
       setUserProfile(updated);
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
       setIsClaimUsernameModalOpen(false);
@@ -1847,10 +1936,14 @@ export default function Home() {
           const mapped: Spot[] = data.map((item: any) => {
             const lat = parseFloat(item.lat);
             const lon = parseFloat(item.lon);
+            const rawCity = item.address?.city || item.address?.town || item.address?.suburb || 'Nearby';
+            const rawCountry = item.address?.country || '';
+            const sanitized = sanitizeCountryAndCity(rawCity, rawCountry);
+
             return {
               name: item.name || item.display_name.split(',')[0],
-              city: item.address?.city || item.address?.town || item.address?.suburb || 'Nearby',
-              country: item.address?.country || '',
+              city: sanitized.city,
+              country: sanitized.country,
               category: 'Map Location',
               description: item.display_name,
               latitude: lat,
@@ -2106,7 +2199,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Group: Field Notes Button, Ghost Red Add Button & Circular Profile Avatar */}
+            {/* Right Group */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
               <button
                 onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }}
@@ -2218,7 +2311,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Dropdown */}
           {showDropdown && searchQuery.trim().length >= 3 && (
             <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
@@ -2493,7 +2585,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Unified Floating Map Controls Pill */}
+      {/* 3. Floating Map Controls */}
       <div style={{ 
         position: 'fixed', 
         bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
@@ -2584,7 +2676,9 @@ export default function Home() {
                 Map Location
               </span>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{activeSearchedSpot.city}</p>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>
+                {activeSearchedSpot.city}{activeSearchedSpot.country ? ` · ${activeSearchedSpot.country}` : ''}
+              </p>
             </div>
             <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
               <X style={{ width: '19px', height: '19px' }} />
@@ -2881,7 +2975,7 @@ export default function Home() {
                 {viewingSpot.name}
               </h3>
               <p style={{ margin: 0, fontSize: '12px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
-                {viewingSpot.city}
+                {viewingSpot.city}{viewingSpot.country ? ` · ${viewingSpot.country}` : ''}
                 {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
                   <>
                     {' · '}
@@ -3197,7 +3291,7 @@ export default function Home() {
       {viewingProfile && (() => {
         const uniqueCities = Array.from(new Set(viewingProfileSpots.map((s) => s.city.trim()).filter(Boolean)));
         const publicPassportStamps = extractPassportStamps(viewingProfileSpots);
-        const resolvedCountry = viewingProfile.country || (publicPassportStamps.length > 0 ? publicPassportStamps[0].country : 'Philippines');
+        const resolvedCountry = viewingProfile.country || (publicPassportStamps.length > 0 ? publicPassportStamps[0].country : 'United States');
 
         const filteredProfileSpots = profileCityFilter === 'All' 
           ? viewingProfileSpots 
@@ -3235,7 +3329,7 @@ export default function Home() {
                       gap: '4px',
                       border: '1px solid #e7e5e4'
                     }}>
-                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#e05a47' }} />
+                      <Globe style={{ width: '11px', height: '11px', color: '#e05a47' }} />
                       {resolvedCountry}
                     </span>
                   </h3>
@@ -3255,7 +3349,7 @@ export default function Home() {
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{publicPassportStamps.length || (viewingProfileSpots.length > 0 ? 1 : 0)}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{publicPassportStamps.length}</div>
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
                 </div>
               </div>
@@ -3400,7 +3494,9 @@ export default function Home() {
                           </span>
                         </div>
                         <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
-                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>{s.city}</p>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
+                          {s.city}{s.country ? ` · ${s.country}` : ''}
+                        </p>
                       </div>
 
                       <button
@@ -3688,7 +3784,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Profile Drawer (Right) with Scrollable Passport Stamps */}
+      {/* Slide-Out Profile Drawer (Right) with Scrollable Passport Stamps & Country of Origin Editor */}
       {(isProfileModalOpen || isProfileClosing) && currentUser && (
         <div 
           style={{ 
@@ -3742,11 +3838,56 @@ export default function Home() {
 
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
                 {userProfile?.username ? `@${userProfile.username}` : 'Account'}
-                <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setClaimCountry(userProfile?.country || 'United States'); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                   <Pencil style={{ width: '13px', height: '13px' }} />
                 </button>
               </h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>{currentUser.email}</p>
+              
+              <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {!isEditingCountry ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', color: '#78716c', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#f5f5f4', padding: '2px 8px', borderRadius: '8px', border: '1px solid #e7e5e4', fontWeight: 600 }}>
+                      <Globe style={{ width: '11px', height: '11px', color: '#e05a47' }} />
+                      {userProfile?.country || 'United States'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsEditingCountry(true);
+                        setEditCountryValue(userProfile?.country || 'United States');
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }}
+                      title="Edit Country of Origin"
+                    >
+                      <Pencil style={{ width: '11px', height: '11px' }} />
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input
+                      type="text"
+                      value={editCountryValue}
+                      onChange={(e) => setEditCountryValue(e.target.value)}
+                      placeholder="Country of Origin"
+                      style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '8px', border: '1px solid #d6d3d1', outline: 'none', width: '110px' }}
+                    />
+                    <button
+                      onClick={() => handleUpdateCountry(editCountryValue)}
+                      disabled={savingCountry}
+                      style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '8px', padding: '4px 7px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      {savingCountry ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingCountry(false)}
+                      style={{ background: 'none', border: 'none', color: '#78716c', fontSize: '11px', cursor: 'pointer', padding: '2px' }}
+                    >
+                      <X style={{ width: '13px', height: '13px' }} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>{currentUser.email}</p>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
@@ -3941,15 +4082,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Claim Handle Modal */}
+      {/* 9. Claim Handle & Country Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
             <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
               <AtSign style={{ width: '24px', height: '24px' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', textAlign: 'center' }}>Choose Your Handle</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a unique handle for your pins and collections on Bywayr.</p>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', textAlign: 'center' }}>Set Up Profile</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a handle and confirm your country of origin for your field journal.</p>
 
             <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
@@ -3977,8 +4118,20 @@ export default function Home() {
                 {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
               </div>
 
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Country of Origin</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. United States"
+                  value={claimCountry}
+                  onChange={(e) => setClaimCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
               <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Set Username'}
+                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Complete Profile'}
               </button>
             </form>
           </div>
@@ -3992,7 +4145,7 @@ export default function Home() {
             <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
               <X style={{ width: '20px', height: '20px' }} />
             </button>
-            <div style={{ width: '52px', height: '52px', borderRadius: '22.5%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
@@ -4034,6 +4187,17 @@ export default function Home() {
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
                 />
                 {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
+              </div>
+
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country of Origin</label>
+                <input
+                  type="text"
+                  placeholder="e.g. United States"
+                  value={authCountry}
+                  onChange={(e) => setAuthCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
               </div>
 
               <div style={{ textAlign: 'left' }}>
