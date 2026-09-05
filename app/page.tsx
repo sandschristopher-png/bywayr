@@ -1558,7 +1558,13 @@ export default function Home() {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
+      setIsInteracting(true);
     });
+    initializedMap.on('dragend', () => setIsInteracting(false));
+    initializedMap.on('zoomstart', () => setIsInteracting(true));
+    initializedMap.on('zoomend', () => setIsInteracting(false));
+    initializedMap.on('movestart', () => setIsInteracting(true));
+    initializedMap.on('moveend', () => setIsInteracting(false));
 
     map.current = initializedMap;
 
@@ -1790,17 +1796,22 @@ export default function Home() {
   }, [walkSearchQuery]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100dvh', minHeight: '100vh', overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
-        html, body {
+          html, body {
           position: fixed;
+          inset: 0;
           width: 100%;
           height: 100%;
           overflow: hidden;
-          overscroll-behavior-y: none;
+          overscroll-behavior: none;
           touch-action: none;
           -webkit-tap-highlight-color: transparent;
           user-select: none;
+        }
+        #__next, .maplibregl-map {
+          touch-action: none;
+        }
         }
         input, textarea {
           user-select: text;
@@ -1890,8 +1901,9 @@ export default function Home() {
           bottom: 0, 
           zIndex: 0,
           backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
-          transition: 'filter 0.3s ease, background-color 0.3s ease',
+          filter: isDarkMode && !isInteracting ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
+          transition: 'background-color 0.3s ease',
+          touchAction: 'none',
         }} 
       />
 

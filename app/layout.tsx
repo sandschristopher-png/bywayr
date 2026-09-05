@@ -65,6 +65,7 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: 'cover',
   themeColor: '#ffffff',
+  interactiveWidget: 'resizes-content',
 };
 
 export default function RootLayout({
@@ -73,8 +74,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.className} style={{ height: '100dvh', overflow: 'hidden' }}>
-      <body style={{ margin: 0, padding: 0, overflow: 'hidden', height: '100dvh', width: '100vw', overscrollBehavior: 'none' }}>
+    <html lang="en" className={inter.className} style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
+      <body style={{ margin: 0, padding: 0, position: 'fixed', inset: 0, overflow: 'hidden', overscrollBehavior: 'none' }}>
         <ServiceWorkerRegister />
         {children}
       </body>
