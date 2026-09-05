@@ -335,6 +335,7 @@ export default function Home() {
   } | null>(null);
 
   const [viewingSpot, setViewingSpot] = useState<Spot | null>(null);
+  const [isDiscussionModalOpen, setIsDiscussionModalOpen] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -486,6 +487,7 @@ export default function Home() {
     isDrawerOpen ||
     isDrawerClosing ||
     viewingSpot ||
+    isDiscussionModalOpen ||
     viewingProfile ||
     isWalkModalOpen ||
     shareDialogSpot ||
@@ -539,6 +541,10 @@ export default function Home() {
     if (shareDialogSpot) { setShareDialogSpot(null); return; }
     if (isWalkModalOpen) { setIsWalkModalOpen(false); return; }
     if (viewingProfile) { setViewingProfile(null); return; }
+    if (isDiscussionModalOpen) {
+      setIsDiscussionModalOpen(false);
+      return;
+    }
     if (isModalOpen) { handleCloseModal(); return; }
     if (viewingSpot) {
       setViewingSpot(null);
@@ -560,6 +566,7 @@ export default function Home() {
     shareDialogSpot,
     isWalkModalOpen,
     viewingProfile,
+    isDiscussionModalOpen,
     isModalOpen,
     viewingSpot,
     activeSearchedSpot,
@@ -698,6 +705,7 @@ export default function Home() {
     } else {
       const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
       if (!error) {
+        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
         setVouchedSpotIds((prev) => [...prev, spotId]);
         setVouchCounts((prev) => ({
           ...prev,
@@ -895,6 +903,7 @@ export default function Home() {
     if (!map.current) return;
     triggerHaptic(8);
     setViewingSpot(null);
+    setIsDiscussionModalOpen(false);
     setActiveSearchedSpot(null);
     setIsEditing(false);
 
@@ -934,6 +943,7 @@ export default function Home() {
     setImagePreview(spot.image_url || null);
     setImageFile(null);
     setViewingSpot(null);
+    setIsDiscussionModalOpen(false);
     setActiveSearchedSpot(null);
     setIsModalOpen(true);
     pushModalHistoryState('editSpotModal');
@@ -951,6 +961,7 @@ export default function Home() {
     if (!error) {
       setSpots((prev) => prev.filter((s) => s.id !== spot.id));
       setViewingSpot(null);
+      setIsDiscussionModalOpen(false);
     }
     setDeleting(false);
   };
@@ -1048,6 +1059,7 @@ export default function Home() {
     if (!map.current || !spot.latitude || !spot.longitude) return;
     map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
     setViewingSpot(spot);
+    setIsDiscussionModalOpen(false);
     setActiveSearchedSpot(null);
     setIsDrawerOpen(false);
     setIsDrawerClosing(false);
@@ -2687,7 +2699,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet with Comments / Discussion */}
+      {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', maxHeight: '82vh', overflowY: 'auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '10px' }}>
@@ -2695,26 +2707,26 @@ export default function Home() {
               <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
                 {viewingSpot.category}
               </span>
-              <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{viewingSpot.name}</span>
-                <span style={{ fontSize: '12px', fontWeight: 400, color: '#78716c', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  · {viewingSpot.city}
-                  {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username && (
-                    <>
-                      {' · '}
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenPublicProfile(viewingSpot.user_id!);
-                        }}
-                        style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                      >
-                        @{profilesMap[viewingSpot.user_id].username}
-                      </span>
-                    </>
-                  )}
-                </span>
+              <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', lineHeight: 1.25, wordBreak: 'break-word' }}>
+                {viewingSpot.name}
               </h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {viewingSpot.city}
+                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
+                  <>
+                    {' · '}
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenPublicProfile(viewingSpot.user_id!);
+                      }}
+                      style={{ color: '#e05a47', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      @{profilesMap[viewingSpot.user_id].username}
+                    </span>
+                  </>
+                ) : ''}
+              </p>
             </div>
             
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
@@ -2792,15 +2804,60 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Spot Comments / Field Discussion Section */}
-          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, color: '#57534e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              <MessageSquare style={{ width: '13px', height: '13px' }} color="#e05a47" /> Field Notes Discussion ({spotComments.length})
+          {/* Field Notes Discussion Button to Open Separate Window */}
+          <div style={{ borderTop: '1px solid #e7e5e4', paddingTop: '12px' }}>
+            <button
+              onClick={() => {
+                triggerHaptic(8);
+                setIsDiscussionModalOpen(true);
+                pushModalHistoryState('discussionModal');
+              }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 14px',
+                backgroundColor: '#fafaf9',
+                border: '1px solid #e7e5e4',
+                borderRadius: '14px',
+                cursor: 'pointer',
+                color: '#1c1917',
+                fontSize: '12.5px',
+                fontWeight: 600,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare style={{ width: '15px', height: '15px', color: '#e05a47' }} />
+                <span>Field Notes Discussion ({spotComments.length})</span>
+              </div>
+              <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Separate Field Notes Discussion Window / Modal */}
+      {isDiscussionModalOpen && viewingSpot && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '420px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+            <button onClick={() => dismissModalWithHistory(() => setIsDiscussionModalOpen(false))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X style={{ width: '18px', height: '18px' }} />
+            </button>
+
+            <div style={{ marginBottom: '14px', paddingRight: '30px' }}>
+              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
+                {viewingSpot.category}
+              </span>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                Discussion: {viewingSpot.name}
+              </h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c' }}>{viewingSpot.city}</p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', maxHeight: '42vh', paddingRight: '2px' }}>
               {spotComments.length === 0 ? (
-                <p style={{ margin: 0, fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No tips or comments left yet. Be the first!</p>
+                <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center', fontStyle: 'italic' }}>No tips or comments left yet. Be the first!</p>
               ) : (
                 spotComments.map((c) => {
                   const authorProfile = profilesMap[c.user_id];
@@ -2808,17 +2865,17 @@ export default function Home() {
                   const tagColor = c.tag === '[Status: Closed]' ? '#e05a47' : c.tag === '[Menu / Price]' ? '#d97706' : c.tag === '[Work / Wi-Fi]' ? '#2563eb' : '#059669';
 
                   return (
-                    <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '10px', padding: '8px 10px', fontSize: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                    <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 12px', fontSize: '12.5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
-                          <span style={{ fontSize: '9.5px', fontWeight: 700, color: tagColor, backgroundColor: `${tagColor}15`, padding: '1px 5px', borderRadius: '4px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: tagColor, backgroundColor: `${tagColor}15`, padding: '1px 6px', borderRadius: '4px' }}>
                             {c.tag || '[Tip]'}
                           </span>
                         </div>
-                        <span style={{ fontSize: '10px', color: '#a8a29e' }}>{formatRelativeTime(c.created_at)}</span>
+                        <span style={{ fontSize: '10.5px', color: '#a8a29e' }}>{formatRelativeTime(c.created_at)}</span>
                       </div>
-                      <p style={{ margin: '0 0 6px 0', color: '#44403c', lineHeight: 1.35, wordBreak: 'break-word' }}>{c.content}</p>
+                      <p style={{ margin: '0 0 8px 0', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.content}</p>
                       
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <button
@@ -2827,17 +2884,17 @@ export default function Home() {
                             background: isUpvoted ? '#ecfdf5' : '#f5f5f4',
                             border: 'none',
                             borderRadius: '8px',
-                            padding: '3px 7px',
-                            fontSize: '11px',
+                            padding: '4px 8px',
+                            fontSize: '11.5px',
                             fontWeight: 600,
                             color: isUpvoted ? '#059669' : '#78716c',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '3px',
+                            gap: '4px',
                           }}
                         >
-                          <ThumbsUp style={{ width: '11px', height: '11px' }} />
+                          <ThumbsUp style={{ width: '12px', height: '12px' }} />
                           <span>{c.upvotes || 0}</span>
                         </button>
                       </div>
@@ -2847,7 +2904,7 @@ export default function Home() {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', scrollbarWidth: 'none', marginBottom: '10px', flexShrink: 0 }}>
               {COMMENT_TAGS.map((t) => (
                 <button
                   key={t}
@@ -2858,8 +2915,8 @@ export default function Home() {
                     color: commentTag === t ? '#fafaf9' : '#78716c',
                     border: 'none',
                     borderRadius: '8px',
-                    padding: '3px 8px',
-                    fontSize: '10px',
+                    padding: '4px 9px',
+                    fontSize: '11px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
@@ -2870,21 +2927,21 @@ export default function Home() {
               ))}
             </div>
 
-            <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '6px' }}>
+            <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
               <input
                 type="text"
                 placeholder="Leave a quick tip or update..."
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
-                style={{ flex: 1, boxSizing: 'border-box', backgroundColor: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '8px 12px', fontSize: '12px', outline: 'none', color: '#1c1917' }}
+                style={{ flex: 1, boxSizing: 'border-box', backgroundColor: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 14px', fontSize: '12.5px', outline: 'none', color: '#1c1917' }}
               />
               <button
                 type="submit"
                 disabled={submittingComment || !newCommentText.trim()}
-                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '0 12px', cursor: submittingComment || !newCommentText.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '0 14px', cursor: submittingComment || !newCommentText.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title="Send Comment"
               >
-                {submittingComment ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : <Send style={{ width: '13px', height: '13px' }} />}
+                {submittingComment ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <Send style={{ width: '14px', height: '14px' }} />}
               </button>
             </form>
           </div>
