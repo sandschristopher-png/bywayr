@@ -897,9 +897,9 @@ export default function Home() {
     }
   };
 
-  // Generic Stamp Mouse Wheel & Drag Handler
+  // Stamp Drag Scrolling on PC with Left Mouse Button Hold & Drag
   const handleStampMouseDown = (e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>) => {
-    if (!ref.current) return;
+    if (e.button !== 0 || !ref.current) return; // Only left click
     setIsStampDragging(true);
     setStampStartX(e.pageX - ref.current.offsetLeft);
     setStampScrollLeft(ref.current.scrollLeft);
@@ -911,6 +911,10 @@ export default function Home() {
     const x = e.pageX - ref.current.offsetLeft;
     const walk = (x - stampStartX) * 1.6;
     ref.current.scrollLeft = stampScrollLeft - walk;
+  };
+
+  const handleStampMouseUpOrLeave = () => {
+    setIsStampDragging(false);
   };
 
   const handleStampWheel = (e: React.WheelEvent, ref: React.RefObject<HTMLDivElement | null>) => {
@@ -2112,17 +2116,16 @@ export default function Home() {
         }
         .passport-stamp-card {
           flex-shrink: 0;
-          cursor: pointer;
+          cursor: grab;
           user-select: none;
           transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease;
+        }
+        .passport-stamp-card:active {
+          cursor: grabbing;
         }
         .passport-stamp-card:hover {
           transform: translateY(-2px) scale(1.02);
           box-shadow: 0 6px 16px rgba(28, 25, 23, 0.1);
-        }
-        .passport-stamp-card:active {
-          transform: scale(0.95) rotate(-0.5deg);
-          box-shadow: 0 2px 4px rgba(28, 25, 23, 0.12);
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -2201,8 +2204,8 @@ export default function Home() {
       )}
 
       {/* 2. Unified Search & Actions Bar with "Search places, Plus Codes..." */}
-      <div style={{ position: 'absolute', top: isOffline ? '56px' : '16px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto', touchAction: 'none' }}>
-        <div style={{ position: 'relative', width: '100%' }}>
+      <div style={{ position: 'absolute', top: isOffline ? '56px' : '16px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+        <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.92)',
             backdropFilter: 'blur(16px)',
@@ -2216,6 +2219,7 @@ export default function Home() {
             gap: '8px',
             width: '100%',
             boxSizing: 'border-box',
+            pointerEvents: 'auto',
           }}>
             {/* Far Left: Circular Bywayr Logo */}
             <div style={{
@@ -2272,9 +2276,20 @@ export default function Home() {
             </div>
 
             {/* Right Group */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, pointerEvents: 'auto' }}>
               <button
-                onClick={() => { triggerHaptic(8); setIsDrawerOpen(true); pushModalHistoryState('drawer'); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerHaptic(8);
+                  setIsDrawerOpen(true);
+                  pushModalHistoryState('drawer');
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  triggerHaptic(8);
+                  setIsDrawerOpen(true);
+                  pushModalHistoryState('drawer');
+                }}
                 style={{
                   backgroundColor: '#f5f5f4',
                   border: '1px solid #e7e5e4',
@@ -2287,14 +2302,27 @@ export default function Home() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  pointerEvents: 'auto',
                 }}
                 title="Open Field Notes"
               >
-                <List style={{ width: '16px', height: '16px' }} />
+                <List style={{ width: '16px', height: '16px', pointerEvents: 'none' }} />
               </button>
 
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerHaptic(8);
+                  if (!currentUserRef.current) {
+                    setIsAuthModalOpen(true);
+                    pushModalHistoryState('auth');
+                    return;
+                  }
+                  const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+                  dropPreviewAndOpenModal(center.lat, center.lng);
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
                   triggerHaptic(8);
                   if (!currentUserRef.current) {
                     setIsAuthModalOpen(true);
@@ -2316,15 +2344,23 @@ export default function Home() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  pointerEvents: 'auto',
                 }}
                 title="Add Curated Spot"
               >
-                <Plus style={{ width: '18px', height: '18px', strokeWidth: 2.5 }} />
+                <Plus style={{ width: '18px', height: '18px', strokeWidth: 2.5, pointerEvents: 'none' }} />
               </button>
 
               {currentUser ? (
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerHaptic(8);
+                    setIsProfileModalOpen(true);
+                    pushModalHistoryState('profile');
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
                     triggerHaptic(8);
                     setIsProfileModalOpen(true);
                     pushModalHistoryState('profile');
@@ -2342,13 +2378,14 @@ export default function Home() {
                     overflow: 'hidden',
                     padding: 0,
                     flexShrink: 0,
+                    pointerEvents: 'auto',
                   }}
                   title="View Account Profile"
                 >
                   {userProfile?.avatar_url ? (
-                    <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
                   ) : (
-                    <User style={{ width: '19px', height: '19px', color: '#78716c' }} />
+                    <User style={{ width: '19px', height: '19px', color: '#78716c', pointerEvents: 'none' }} />
                   )}
                 </button>
               ) : (
@@ -3457,8 +3494,8 @@ export default function Home() {
                   <div 
                     ref={publicStampScrollRef}
                     onMouseDown={(e) => handleStampMouseDown(e, publicStampScrollRef)}
-                    onMouseLeave={handleCategoryMouseLeaveOrUp}
-                    onMouseUp={handleCategoryMouseLeaveOrUp}
+                    onMouseLeave={handleStampMouseUpOrLeave}
+                    onMouseUp={handleStampMouseUpOrLeave}
                     onMouseMove={(e) => handleStampMouseMove(e, publicStampScrollRef)}
                     onWheel={(e) => handleStampWheel(e, publicStampScrollRef)}
                     style={{
@@ -3478,6 +3515,7 @@ export default function Home() {
                         key={idx}
                         className="passport-stamp-card"
                         onClick={() => {
+                          if (isStampDragging) return;
                           triggerHaptic(8);
                           setSelectedCountryFilter(st.country);
                           dismissModalWithHistory(() => setViewingProfile(null));
@@ -3486,34 +3524,34 @@ export default function Home() {
                           backgroundColor: '#fbfbfa',
                           border: `2px dashed ${st.color}`,
                           borderRadius: '50%',
-                          width: '108px',
-                          height: '108px',
-                          minWidth: '108px',
+                          width: '98px',
+                          height: '98px',
+                          minWidth: '98px',
                           boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                           position: 'relative',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '10px',
+                          padding: '8px',
                           boxSizing: 'border-box',
                           textAlign: 'center',
                           overflow: 'hidden',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: st.color, marginBottom: '1px' }}>
-                          <Plane style={{ width: '9px', height: '9px', transform: 'rotate(-45deg)' }} />
-                          <span style={{ fontSize: '7px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
-                            JAPAN
+                          <Plane style={{ width: '8px', height: '8px', transform: 'rotate(-45deg)' }} />
+                          <span style={{ fontSize: '6.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
+                            VISA
                           </span>
                         </div>
-                        <div style={{ fontSize: '10.5px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '2px 0', margin: '1px 0' }}>
+                        <div style={{ fontSize: '9.5px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
                           {st.country}
                         </div>
-                        <div style={{ fontSize: '8px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
-                          {st.cities[0] ? st.cities[0].toUpperCase() : 'TOKYO'}
+                        <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
+                          {st.cities[0] ? st.cities[0].toUpperCase() : 'ENTRY'}
                         </div>
-                        <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
+                        <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
                           {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
                         </div>
                       </div>
