@@ -1814,10 +1814,10 @@ export default function Home() {
           position: fixed;
           inset: 0;
           overflow: hidden;
-          touch-action: manipulation;
+          touch-action: none;
         }
         .maplibregl-map {
-          touch-action: pan-x pan-y pinch-zoom;
+          touch-action: none !important;
         }
         input, textarea {
           user-select: text;
