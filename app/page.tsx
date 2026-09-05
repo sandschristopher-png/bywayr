@@ -3941,13 +3941,13 @@ export default function Home() {
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                 </a>
 
-                <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
+                <a href="https://saily.tpk.lv/W8d7Lkw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/saily.svg" alt="Klook" style={{ width: '15px', height: '15px', objectFit: 'contain' }} />
+                      <img src="/saily.svg" alt="Saily" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Klook</span>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Saily</span>
                       <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Affordable eSIM Data</span>
                     </div>
                   </div>
@@ -3967,13 +3967,13 @@ export default function Home() {
                   <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                 </a>
 
-                <a href="https://kiwi.tpk.lv/TLbclkiu" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
+                <a href="https://kiwi.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
                       <img src="/kiwi.svg" alt="Kiwi.com" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>KKDay</span>
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Kiwi.com</span>
                       <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Low Cost Travel</span>
                     </div>
                   </div>
@@ -4437,6 +4437,8 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="e.g. United States"
+                  value={authCountry}
+                  onChange={(e) => authCountrySetter(e.target.value)} // Wait, keep authCountry setter
                   value={authCountry}
                   onChange={(e) => setAuthCountry(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
