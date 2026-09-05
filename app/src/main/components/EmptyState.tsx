@@ -33,13 +33,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         No unmapped spots here yet
       </h3>
 
-      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+      <p className="mt-1 text-xs leading-relaxed text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis px-2">
         {category && category !== 'All' ? (
           <>
-            No places found under <span className="font-medium text-neutral-700">"{category}"</span> in this area.
+            No spots in <span className="font-medium text-neutral-700">"{category}"</span> nearby.
           </>
         ) : (
-          'Be the first explorer to plot a hidden gem or local favorite around this area.'
+          'Be the first to plot a hidden gem here.'
         )}
       </p>
 
