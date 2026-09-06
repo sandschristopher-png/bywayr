@@ -2012,30 +2012,30 @@ export default function Home() {
       {isOffline && (
         <div className="animate-fade-in" style={{
           position: 'fixed',
-          top: 'calc(20px + env(safe-area-inset-top, 0px))',
+          top: 'calc(10px + env(safe-area-inset-top, 0px))',
           left: '50%',
           transform: 'translateX(-50%)',
           backgroundColor: '#1c1917',
           color: '#fafaf9',
-          padding: '8px 16px',
-          borderRadius: '22px',
-          fontSize: '13px',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '12px',
           fontWeight: 600,
           zIndex: 100015,
           boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '6px',
           whiteSpace: 'nowrap',
           pointerEvents: 'none',
         }}>
-          <WifiOff style={{ width: '15px', height: '15px', color: '#e05a47' }} />
+          <WifiOff style={{ width: '14px', height: '14px', color: '#e05a47' }} />
           <span>Offline mode active · Using cached field notes</span>
         </div>
       )}
 
-      {/* 2. Unified Search & Actions Bar with Safe-Area Inset Support */}
-      <div style={{ position: 'absolute', top: isOffline ? 'calc(68px + env(safe-area-inset-top, 0px))' : 'calc(20px + env(safe-area-inset-top, 0px))', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      {/* 2. Unified Search & Actions Bar with Corrected Top Alignment */}
+      <div style={{ position: 'absolute', top: isOffline ? 'calc(52px + env(safe-area-inset-top, 0px))' : 'calc(12px + env(safe-area-inset-top, 0px))', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.92)',
