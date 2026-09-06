@@ -1800,6 +1800,7 @@ export default function Home() {
     const containerEl = mapContainer.current;
     if (containerEl) {
       const preventDefaultTouch = (e: TouchEvent) => {
+        if (e.touches.length > 1) return;
         const target = e.target as HTMLElement;
         if (target?.closest('button, input, textarea, a, select, [role="button"], .passport-stamp-card')) {
           return;
@@ -1913,7 +1914,7 @@ export default function Home() {
           overscroll-behavior: none;
         }
         .maplibregl-map {
-          touch-action: pan-x pan-y !important;
+          touch-action: none !important;
           overscroll-behavior: none !important;
         }
         input, textarea {
@@ -4358,7 +4359,7 @@ export default function Home() {
                 {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
               </div>
 
-              <div style={{ textAlign: 'left' style={{}}>
+              <div style={{ textAlign: 'left' }}>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country of Origin</label>
                 <input
                   type="text"
