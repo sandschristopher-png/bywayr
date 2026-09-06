@@ -382,6 +382,24 @@ export default function Home() {
     }
   };
 
+  // Continuous zoom hold refs and handlers
+  const zoomHoldRef = useRef<NodeJS.Timeout | null>(null);
+  const zoomRepeatRef = useRef<NodeJS.Timeout | null>(null);
+  const stopZoomHold = () => {
+    if (zoomHoldRef.current) { clearTimeout(zoomHoldRef.current); zoomHoldRef.current = null; }
+    if (zoomRepeatRef.current) { clearInterval(zoomRepeatRef.current); zoomRepeatRef.current = null; }
+  };
+  const startZoomHold = (direction: 1 | -1) => {
+    stopZoomHold();
+    triggerHaptic(8);
+    map.current?.[direction === 1 ? 'zoomIn' : 'zoomOut']();
+    zoomHoldRef.current = setTimeout(() => {
+      zoomRepeatRef.current = setInterval(() => {
+        map.current?.[direction === 1 ? 'zoomIn' : 'zoomOut']();
+      }, 160);
+    }, 350);
+  };
+
   const [currentUser, setCurrentUser] = useState<any>(null);
   const currentUserRef = useRef<any>(null);
 
@@ -2655,10 +2673,24 @@ export default function Home() {
 
         <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
 
-        <button onClick={() => map.current?.zoomIn()} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917' }} title="Zoom In">
+        <button 
+          onPointerDown={() => startZoomHold(1)}
+          onPointerUp={stopZoomHold}
+          onPointerLeave={stopZoomHold}
+          onPointerCancel={stopZoomHold}
+          style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }} 
+          title="Zoom In (hold for continuous)"
+        >
           <Plus style={{ width: '18px', height: '18px' }} />
         </button>
-        <button onClick={() => map.current?.zoomOut()} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917' }} title="Zoom Out">
+        <button 
+          onPointerDown={() => startZoomHold(-1)}
+          onPointerUp={stopZoomHold}
+          onPointerLeave={stopZoomHold}
+          onPointerCancel={stopZoomHold}
+          style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917', touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }} 
+          title="Zoom Out (hold for continuous)"
+        >
           <Minus style={{ width: '18px', height: '18px' }} />
         </button>
       </div>
