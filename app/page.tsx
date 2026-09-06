@@ -361,6 +361,27 @@ export default function Home() {
   const [stampStartX, setStampStartX] = useState(0);
   const [stampScrollLeft, setStampScrollLeft] = useState(0);
 
+  // Category bounce on reaching scroll edges
+  const [catBounce, setCatBounce] = useState<'left' | 'right' | null>(null);
+  const lastBounceTimeRef = useRef<number>(0);
+  const handleCategoryScroll = () => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const now = Date.now();
+    if (now - lastBounceTimeRef.current < 600) return;
+    if (el.scrollLeft <= 2) {
+      lastBounceTimeRef.current = now;
+      triggerHaptic(8);
+      setCatBounce('left');
+      setTimeout(() => setCatBounce(null), 380);
+    } else if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2) {
+      lastBounceTimeRef.current = now;
+      triggerHaptic(8);
+      setCatBounce('right');
+      setTimeout(() => setCatBounce(null), 380);
+    }
+  };
+
   const [currentUser, setCurrentUser] = useState<any>(null);
   const currentUserRef = useRef<any>(null);
 
@@ -1945,6 +1966,8 @@ export default function Home() {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0);
           }
         }
+        @keyframes bounceRight {  0% { transform: translateZ(0); }  35% { transform: translateX(-12px) translateZ(0); }  100% { transform: translateZ(0); }}
+        @keyframes bounceLeft {  0% { transform: translateZ(0); }  35% { transform: translateX(12px) translateZ(0); }  100% { transform: translateZ(0); }}
         .passport-stamp-card {
           flex-shrink: 0;
           cursor: grab;
@@ -2299,6 +2322,7 @@ export default function Home() {
           onMouseUp={handleCategoryMouseLeaveOrUp}
           onMouseMove={handleCategoryMouseMove}
           onWheel={handleCategoryWheel}
+          onScroll={handleCategoryScroll}
           style={{ 
             display: 'flex', 
             gap: '6px', 
@@ -2310,7 +2334,8 @@ export default function Home() {
             WebkitOverflowScrolling: 'touch',
             transform: 'translateZ(0)',
             width: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            animation: catBounce === 'left' ? 'bounceLeft 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' : catBounce === 'right' ? 'bounceRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
           }}
         >
           {currentUser && (
