@@ -2035,7 +2035,7 @@ export default function Home() {
       )}
 
       {/* 2. Unified Search & Actions Bar with Corrected Top Alignment */}
-      <div style={{ position: 'absolute', top: isOffline ? 'calc(52px + env(safe-area-inset-top, 0px))' : 'calc(12px + env(safe-area-inset-top, 0px))', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ position: 'absolute', top: isOffline ? '52px' : '12px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.92)',
