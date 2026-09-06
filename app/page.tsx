@@ -1966,8 +1966,7 @@ export default function Home() {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0);
           }
         }
-        @keyframes bounceRight {  0% { transform: translateZ(0); }  35% { transform: translateX(-12px) translateZ(0); }  100% { transform: translateZ(0); }}
-        @keyframes bounceLeft {  0% { transform: translateZ(0); }  35% { transform: translateX(12px) translateZ(0); }  100% { transform: translateZ(0); }}
+        @keyframes bounceRight {  0% { transform: translateZ(0); }  35% { transform: translateX(-12px) translateZ(0); }  100% { transform: translateZ(0); }}@keyframes bounceLeft {  0% { transform: translateZ(0); }  35% { transform: translateX(12px) translateZ(0); }  100% { transform: translateZ(0); }}
         .passport-stamp-card {
           flex-shrink: 0;
           cursor: grab;
@@ -2025,8 +2024,8 @@ export default function Home() {
           bottom: 0, 
           zIndex: 0,
           backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: isDarkMode && !isInteracting ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
-          transition: 'background-color 0.3s ease',
+          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
+          transition: 'filter 0.6s ease, background-color 0.3s ease',
           touchAction: 'pan-x pan-y',
         }} 
       />
@@ -2650,7 +2649,7 @@ export default function Home() {
           }}
           title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
         >
-          {isDarkMode ? <MoonStar style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px' }} />}
+          <div key={isDarkMode ? 'moon' : 'sun'} style={{ animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards', display: 'flex' }}>  {isDarkMode ? <MoonStar style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px' }} />}</div>
         </button>
 
         <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
