@@ -3760,7 +3760,7 @@ export default function Home() {
 
             {/* Recents Section (Last 3 Pins) */}
             {currentUser && drawerTab === 'fieldNotes' && recentUserSpots.length > 0 && (
-              <div style={{ marginBottom: '14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 12px', flexShrink: 0 }}>
+              <div style={{ marginBottom: '18px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 12px', flexShrink: 0 }}>
                 <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <Clock style={{ width: '12px', height: '12px', color: '#e05a47' }} /> Recent Pins
                 </div>
