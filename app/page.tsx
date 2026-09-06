@@ -3718,7 +3718,7 @@ export default function Home() {
 
             {/* Sort Toggle for Field Notes */}
             {drawerTab === 'fieldNotes' && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>
                   <SlidersHorizontal style={{ width: '13px', height: '13px', color: '#e05a47' }} />
                   <span>Sort Order:</span>
@@ -3802,7 +3802,7 @@ export default function Home() {
               </div>
             )}
             
-            <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, height: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin' }}>
+            <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, height: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px' }}>
               {displayedDrawerSpots.map((spot: Spot) => {
                 const color = getCategoryColor(spot.category);
                 const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
@@ -3881,12 +3881,12 @@ export default function Home() {
               })}
             </div>
 
-            <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingLeft: '4px' }}>
+            <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
                 Travel Essentials
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
