@@ -3769,7 +3769,7 @@ export default function Home() {
               </div>
             )}
             
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', minHeight: 0 }}>
+            <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, height: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin' }}>
               {displayedDrawerSpots.map((spot: Spot) => {
                 const color = getCategoryColor(spot.category);
                 const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
@@ -4358,7 +4358,7 @@ export default function Home() {
                 {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
               </div>
 
-              <div style={{ textAlign: 'left' }}>
+              <div style={{ textAlign: 'left' style={{}}>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country of Origin</label>
                 <input
                   type="text"
