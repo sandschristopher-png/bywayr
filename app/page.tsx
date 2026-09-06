@@ -3665,6 +3665,7 @@ export default function Home() {
               flexDirection: 'column', 
               padding: '20px', 
               boxSizing: 'border-box',
+              overflow: 'hidden',
               animation: isDrawerClosing ? 'drawerOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInLeft 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards'
             }}
           >
