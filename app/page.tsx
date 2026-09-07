@@ -1500,7 +1500,9 @@ export default function Home() {
       }
     };
     const loadAndOpen = async () => {
-      const timer = await new Promise<void>((resolve) => setTimeout(resolve, 400));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 400);
+      });
       if (cancelled) return;
       const existing = spots.find((s: Spot) => s.id === spotId);
       if (existing) {
