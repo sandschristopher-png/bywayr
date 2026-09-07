@@ -1488,6 +1488,7 @@ export default function Home() {
     const spotId = params.get('spot');
     if (!spotId) return;
     let cancelled = false;
+
     const openSharedSpot = (spot: Spot) => {
       if (!map.current || !spot.latitude || !spot.longitude) return;
       map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
@@ -1499,28 +1500,56 @@ export default function Home() {
         previewMarkerRef.current = null;
       }
     };
+
     const loadAndOpen = async () => {
       await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 400);
+        setTimeout(resolve, 400);
       });
       if (cancelled) return;
-      const existing = spots.find((s: Spot) => s.id === spotId);
+
+      const existing = spots.find((s: Spot) => String(s.id) === String(spotId));
       if (existing) {
-        openSharedSpot(existing);
+        if (map.current) {
+          openSharedSpot(existing);
+        } else {
+          const interval = setInterval(() => {
+            if (cancelled) {
+              clearInterval(interval);
+              return;
+            }
+            if (map.current) {
+              clearInterval(interval);
+              openSharedSpot(existing);
+            }
+          }, 100);
+        }
         return;
       }
+
       const { data } = await supabase.from('spots').select('*').eq('id', spotId).maybeSingle();
-      if (cancelled) return;
-      if (data) {
-        const row = data as Spot;
-        const sanitized = sanitizeCountryAndCity(row.city, row.country || '');
-        openSharedSpot({ ...row, city: sanitized.city, country: sanitized.country });
-      }
+      if (cancelled || !data) return;
+      const sanitized = sanitizeCountryAndCity(data.city, data.country || '');
+      const spotObj = {
+        ...(data as Spot),
+        city: sanitized.city,
+        country: sanitized.country,
+      };
+
+      const waitForMap = setInterval(() => {
+        if (cancelled) {
+          clearInterval(waitForMap);
+          return;
+        }
+        if (map.current) {
+          clearInterval(waitForMap);
+          openSharedSpot(spotObj);
+        }
+      }, 100);
     };
+
     loadAndOpen();
     window.history.replaceState(null, '', window.location.pathname);
+
     return () => {
       cancelled = true;
     };
