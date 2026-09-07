@@ -3,8 +3,8 @@
 # min_api: 23
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: e29694f
-# pg_map_hash: SHA-256 e29694fbef230e50434e36c0004d18c78e4587e74660155725ca925604118af0
+# pg_map_id: e902c12
+# pg_map_hash: SHA-256 e902c12047310f922a2c14b5f5606d3300002092dd4007455b1103f4c0c68892
 android.app.AppComponentFactory -> android.app.AppComponentFactory:
 # {"id":"com.android.tools.r8.synthesized"}
     void <clinit>() -> <clinit>
@@ -32566,17 +32566,17 @@ com.android.billingclient.api.zzei -> com.android.billingclient.api.c0:
       # {"id":"com.android.tools.r8.residualsignature","signature":"(LP/G;)V"}
 com.android.billingclient.api.zzz -> com.android.billingclient.api.d0:
 # {"id":"sourceFile","fileName":"com.android.billingclient:billing@@8.3.0"}
-com.bywayr.twa.Application -> com.bywayr.twa.Application:
+com.bywayr.app.Application -> com.bywayr.app.Application:
 # {"id":"sourceFile","fileName":"Application.java"}
     1:4:void <init>():20:20 -> <init>
     1:4:void onCreate():26:26 -> onCreate
-com.bywayr.twa.DelegationService -> com.bywayr.twa.DelegationService:
+com.bywayr.app.DelegationService -> com.bywayr.app.DelegationService:
 # {"id":"sourceFile","fileName":"DelegationService.java"}
     1:4:void <init>():9:9 -> <init>
     1:3:void onCreate():13:13 -> onCreate
     4:11:void onCreate():16:16 -> onCreate
     12:24:void onCreate():18:18 -> onCreate
-com.bywayr.twa.LauncherActivity -> com.bywayr.twa.LauncherActivity:
+com.bywayr.app.LauncherActivity -> com.bywayr.app.LauncherActivity:
 # {"id":"sourceFile","fileName":"LauncherActivity.java"}
     1:4:void <init>():25:25 -> <init>
     1:5:android.net.Uri getLaunchingUrl():48:48 -> i

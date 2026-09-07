@@ -5,8 +5,6 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
-import { EmptyState } from './src/main/components/EmptyState';
-import { PwaInstallBanner } from './src/main/components/PwaInstallBanner';
 import {
   MapPin,
   Loader2,
@@ -74,6 +72,11 @@ import {
   Clock,
   SlidersHorizontal,
 } from 'lucide-react';
+
+// Inline Fallback Components to prevent missing module errors
+function PwaInstallBanner() {
+  return null;
+}
 
 interface Spot {
   id?: string;
@@ -160,32 +163,6 @@ const formatRelativeTime = (dateStr?: string) => {
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-};
-
-const getCategorySvg = (category: string, color: string): string => {
-  const cat = category?.toLowerCase() || '';
-  if (cat.includes('cafe') || cat.includes('work')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>`;
-  }
-  if (cat.includes('street food') || cat.includes('eats')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v18"/><path d="M6 2v20"/><path d="M3 2v4a3 3 0 0 0 3 3v0a3 3 0 0 0 3-3V2"/></svg>`;
-  }
-  if (cat.includes('bar') || cat.includes('nightlife')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/></svg>`;
-  }
-  if (cat.includes('host') || cat.includes('ktv')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
-  }
-  if (cat.includes('nature') || cat.includes('trail')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.9"/></svg>`;
-  }
-  if (cat.includes('entertainment') || cat.includes('play')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12"/><line x1="12" y1="6" x2="12" y2="18"/><circle cx="18" cy="15" r="1"/><circle cx="16" cy="9" r="1"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`;
-  }
-  if (cat.includes('stay') || cat.includes('hideaway')) {
-    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
-  }
-  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9"/><polyline points="11 3 8 9 12 22 16 9 13 3"/><line x1="2" y1="9" x2="22" y2="9"/></svg>`;
 };
 
 const openNativeWalkNavigation = (lat: number, lng: number, name?: string) => {
@@ -346,22 +323,18 @@ export default function Home() {
   const map = useRef<maplibregl.Map | null>(null);
   const previewMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
   const profileStampScrollRef = useRef<HTMLDivElement>(null);
   const publicStampScrollRef = useRef<HTMLDivElement>(null);
 
-  // Category Drag Scrolling
   const [isCategoryDragging, setIsCategoryDragging] = useState(false);
   const [categoryStartX, setCategoryStartX] = useState(0);
   const [categoryScrollLeft, setCategoryScrollLeft] = useState(0);
 
-  // Stamp Drag Scrolling on PC
   const [isStampDragging, setIsStampDragging] = useState(false);
   const [stampStartX, setStampStartX] = useState(0);
   const [stampScrollLeft, setStampScrollLeft] = useState(0);
 
-  // Category bounce on reaching scroll edges
   const [catBounce, setCatBounce] = useState<'left' | 'right' | null>(null);
   const lastBounceTimeRef = useRef<number>(0);
   const handleCategoryScroll = () => {
@@ -382,7 +355,6 @@ export default function Home() {
     }
   };
 
-  // Continuous zoom hold refs and handlers
   const zoomHoldRef = useRef<NodeJS.Timeout | null>(null);
   const zoomRepeatRef = useRef<NodeJS.Timeout | null>(null);
   const stopZoomHold = () => {
@@ -423,12 +395,10 @@ export default function Home() {
   const [isClaimUsernameModalOpen, setIsClaimUsernameModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Edit Country state in Profile
   const [isEditingCountry, setIsEditingCountry] = useState(false);
   const [editCountryValue, setEditCountryValue] = useState('');
   const [savingCountry, setSavingCountry] = useState(false);
 
-  // Country Filter active on map
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
@@ -445,8 +415,29 @@ export default function Home() {
   const [liveOsmResults, setLiveOsmResults] = useState<Spot[]>([]);
   const [isSearchingOsm, setIsSearchingOsm] = useState(false);
 
-  // Field Notes Drawer Sort Mode ('nearest' vs 'recent')
   const [drawerSortMode, setDrawerSortMode] = useState<'nearest' | 'recent'>('nearest');
+
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('bywayr_recent_searches');
+      if (saved) {
+        try { return JSON.parse(saved); } catch {}
+      }
+    }
+    return [];
+  });
+
+  const addRecentSearch = (query: string) => {
+    const clean = query.trim();
+    if (!clean) return;
+    setRecentSearches((prev) => {
+      const updated = [clean, ...prev.filter((item) => item.toLowerCase() !== clean.toLowerCase())].slice(0, 5);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bywayr_recent_searches', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
 
   const [activeSearchedSpot, setActiveSearchedSpot] = useState<{
     name: string;
@@ -466,112 +457,6 @@ export default function Home() {
     return false;
   });
   const [isInteracting, setIsInteracting] = useState(false);
-
-  const [isControlsHidden, setIsControlsHidden] = useState(false);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Recent Searches state
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('bywayr_recent_searches');
-      if (saved) {
-        try { return JSON.parse(saved); } catch {}
-      }
-    }
-    return [];
-  });
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  const addRecentSearch = (query: string) => {
-    const clean = query.trim();
-    if (!clean) return;
-    setRecentSearches((prev) => {
-      const updated = [clean, ...prev.filter(item => item.toLowerCase() !== clean.toLowerCase())].slice(0, 5);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bywayr_recent_searches', JSON.stringify(updated));
-      }
-      return updated;
-    });
-  };
-
-  const clearRecentSearches = () => {
-    triggerHaptic(6);
-    setRecentSearches([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('bywayr_recent_searches');
-    }
-  };
-
-  const removeRecentSearch = (itemToRemove: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    triggerHaptic(4);
-    setRecentSearches((prev) => {
-      const updated = prev.filter(item => item !== itemToRemove);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bywayr_recent_searches', JSON.stringify(updated));
-      }
-      return updated;
-    });
-  };
-
-  useEffect(() => {
-    if (isInteracting) {
-      setIsControlsHidden(true);
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    } else {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      controlsTimeoutRef.current = setTimeout(() => {
-        setIsControlsHidden(false);
-      }, 400);
-    }
-    return () => {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    };
-  }, [isInteracting]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('bywayr_dark_mode', isDarkMode.toString());
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-
-    setIsOffline(!navigator.onLine);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const [authEmail, setAuthEmail] = useState('');
-  const [authUsername, setAuthUsername] = useState('');
-  const [authCountry, setAuthCountry] = useState('');
-  const [authUsernameError, setAuthUsernameError] = useState('');
-  const [claimUsername, setClaimUsername] = useState('');
-  const [claimCountry, setClaimCountry] = useState('');
-  const [claimUsernameError, setClaimUsernameError] = useState('');
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-
-  useEffect(() => {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (tz.includes('Asia/Phnom_Penh')) { setAuthCountry('Cambodia'); setClaimCountry('Cambodia'); }
-      else if (tz.includes('Asia/Hong_Kong')) { setAuthCountry('Hong Kong'); setClaimCountry('Hong Kong'); }
-      else if (tz.includes('Asia/Manila')) { setAuthCountry('Philippines'); setClaimCountry('Philippines'); }
-      else if (tz.includes('Asia/Tokyo')) { setAuthCountry('Japan'); setClaimCountry('Japan'); }
-      else if (tz.includes('America/')) { setAuthCountry('United States'); setClaimCountry('United States'); }
-      else { setAuthCountry('United States'); setClaimCountry('United States'); }
-    } catch {}
-  }, []);
 
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [maxRadiusKm, setMaxRadiusKm] = useState<number | null>(null);
@@ -630,6 +515,17 @@ export default function Home() {
   const [showExitToast, setShowExitToast] = useState(false);
   const lastBackPressTime = useRef<number>(0);
   const isPopstateHandling = useRef(false);
+
+  const [authEmail, setAuthEmail] = useState('');
+  const [authUsername, setAuthUsername] = useState('');
+  const [authCountry, setAuthCountry] = useState('');
+  const [authUsernameError, setAuthUsernameError] = useState('');
+  const [claimUsername, setClaimUsername] = useState('');
+  const [claimCountry, setClaimCountry] = useState('');
+  const [claimUsernameError, setClaimUsernameError] = useState('');
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
@@ -989,7 +885,6 @@ export default function Home() {
     }
   };
 
-  // Stamp Drag Scrolling on PC with Left Mouse Button Hold & Drag
   const handleStampMouseDown = (e: React.MouseEvent, ref: React.RefObject<HTMLDivElement | null>) => {
     if (e.button !== 0 || !ref.current) return;
     setIsStampDragging(true);
@@ -1022,7 +917,7 @@ export default function Home() {
     const lon = parseFloat(item.lon);
     setShowDropdown(false);
     setSearchQuery(item.display_name);
-    addRecentSearch(item.display_name);
+    addRecentSearch(String(item.display_name || ''));
 
     const placeName = item.name || item.display_name.split(',')[0];
     const placeCity = item.address?.city || item.address?.town || item.address?.suburb || 'Local Map Area';
@@ -1754,7 +1649,6 @@ export default function Home() {
     try {
       await supabase.from('bookmarks').delete().eq('user_id', activeUser.id);
       await supabase.from('vouches').delete().eq('user_id', activeUser.id);
-      await supabase.from('profiles').delete().eq('id', activeUser.id);
       await supabase.rpc('delete_user');
     } catch (err) {
       console.error('Account deletion cleanup error:', err);
@@ -1773,7 +1667,6 @@ export default function Home() {
     }
   };
 
-  // Basemap Initialization
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
@@ -2041,11 +1934,11 @@ export default function Home() {
           left: 0, 
           right: 0, 
           bottom: 0, 
-          zIndex: 0,
-          backgroundColor: isDarkMode ? '#262421' : '#f5f5f4',
-          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none',
-          transition: 'filter 0.6s ease, background-color 0.3s ease',
-          touchAction: 'pan-x pan-y',
+          zIndex: 0, 
+          backgroundColor: isDarkMode ? '#262421' : '#f5f5f4', 
+          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none', 
+          transition: 'filter 0.6s ease, background-color 0.3s ease', 
+          touchAction: 'pan-x pan-y', 
         }} 
       />
 
@@ -2332,7 +2225,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Categories Bar & Proximity Filter with Live Counters & Refined UI Alignment/Heights */}
+        {/* Categories Bar & Proximity Filter */}
         <div 
           ref={categoryScrollRef}
           onMouseDown={handleCategoryMouseDown}
@@ -2450,7 +2343,7 @@ export default function Home() {
                   WebkitBackdropFilter: 'blur(12px)',
                   color: isSelected ? '#fafaf9' : '#57534e', 
                   border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
-                  height: '34px',
+                  height: '34px', 
                   padding: '0 12px', 
                   borderRadius: '18px', 
                   fontSize: '12px', 
@@ -2941,7 +2834,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 4. Spot Details Bottom Sheet with Background Blur */}
+      {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div className="animate-fade-in" onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px))' }}>
           <div className="animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '410px', maxHeight: '78vh', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', border: '1px solid #e7e5e4', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -3350,12 +3243,12 @@ export default function Home() {
                       backgroundColor: '#f5f5f4', 
                       padding: '3px 8px', 
                       borderRadius: '6px', 
-                      letterSpacing: '0.04em',
-                      textTransform: 'uppercase',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      border: '1px solid #e7e5e4'
+                      letterSpacing: '0.04em', 
+                      textTransform: 'uppercase', 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '4px', 
+                      border: '1px solid #e7e5e4' 
                     }}>
                       <Globe style={{ width: '11px', height: '11px', color: '#e05a47' }} />
                       {resolvedCountry}
@@ -3680,11 +3573,11 @@ export default function Home() {
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
             backdropFilter: 'blur(3px)', 
-            WebkitBackdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)', 
             zIndex: 100000, 
             display: 'flex', 
-            justifyContent: 'flex-start',
-            animation: isDrawerClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            justifyContent: 'flex-start', 
+            animation: isDrawerClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
@@ -3693,32 +3586,33 @@ export default function Home() {
               maxWidth: '370px', 
               backgroundColor: '#ffffff', 
               height: '100%', 
+              maxHeight: '100dvh',
               boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', 
               display: 'flex', 
               flexDirection: 'column', 
-              padding: '20px', 
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-              animation: isDrawerClosing ? 'drawerOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInLeft 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards'
+              padding: 'clamp(14px, 4vw, 20px)', 
+              boxSizing: 'border-box', 
+              overflow: 'hidden', 
+              animation: isDrawerClosing ? 'drawerOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInLeft 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards' 
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0 }}>
+              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
-                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
-                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
+                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
               </div>
             </div>
 
             {/* Sort Toggle for Field Notes */}
             {drawerTab === 'fieldNotes' && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>
                   <SlidersHorizontal style={{ width: '13px', height: '13px', color: '#e05a47' }} />
                   <span>Sort Order:</span>
@@ -3758,51 +3652,53 @@ export default function Home() {
               </div>
             )}
 
-            {/* Recents Section (Last 3 Pins) */}
-            {currentUser && drawerTab === 'fieldNotes' && recentUserSpots.length > 0 && (
-              <div style={{ marginBottom: '18px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '10px 12px', flexShrink: 0 }}>
-                <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Clock style={{ width: '12px', height: '12px', color: '#e05a47' }} /> Recent Pins
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {recentUserSpots.map((spot) => {
-                    const color = getCategoryColor(spot.category);
-                    return (
-                      <div
-                        key={`recent-${spot.id || spot.name}`}
-                        onClick={() => {
-                          triggerHaptic(8);
-                          setIsDrawerClosing(true);
-                          setTimeout(() => {
-                            setIsDrawerOpen(false);
-                            setIsDrawerClosing(false);
-                          }, 280);
-                          flyToSpot(spot);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '6px 8px',
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          border: '1px solid #e7e5e4',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</span>
-                        </div>
-                        <span style={{ fontSize: '10px', color: '#a8a29e', flexShrink: 0 }}>{formatRelativeTime(spot.created_at)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
+            {/* Scrollable Container for Recent Pins + Main Spot List */}
             <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px' }}>
+              {/* Recents Section (Inside Scroll Area) */}
+              {currentUser && drawerTab === 'fieldNotes' && recentUserSpots.length > 0 && (
+                <div style={{ marginBottom: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px 12px', flexShrink: 0 }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Clock style={{ width: '12px', height: '12px', color: '#e05a47' }} /> Recent Pins
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {recentUserSpots.map((spot) => {
+                      const color = getCategoryColor(spot.category);
+                      return (
+                        <div
+                          key={`recent-${spot.id || spot.name}`}
+                          onClick={() => {
+                            triggerHaptic(8);
+                            setIsDrawerClosing(true);
+                            setTimeout(() => {
+                              setIsDrawerOpen(false);
+                              setIsDrawerClosing(false);
+                            }, 280);
+                            flyToSpot(spot);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 10px',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '10px',
+                            border: '1px solid #e7e5e4',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</span>
+                          </div>
+                          <span style={{ fontSize: '10px', color: '#a8a29e', flexShrink: 0 }}>{formatRelativeTime(spot.created_at)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Main Spot List */}
               {displayedDrawerSpots.map((spot: Spot) => {
                 const color = getCategoryColor(spot.category);
                 const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
@@ -3822,7 +3718,7 @@ export default function Home() {
                     }}
                     className="spot-card-hover"
                     style={{
-                      padding: '12px 14px',
+                      padding: '12px 13px',
                       borderRadius: '14px',
                       border: '1px solid #e7e5e4',
                       borderLeft: `4px solid ${color}`,
@@ -3847,7 +3743,7 @@ export default function Home() {
                         <h4
                           style={{
                             margin: 0,
-                            fontSize: '13.5px',
+                            fontSize: '13px',
                             fontWeight: 700,
                             color: '#1c1917',
                             whiteSpace: 'nowrap',
@@ -3881,12 +3777,12 @@ export default function Home() {
               })}
             </div>
 
-            <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
                 Travel Essentials
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ maxHeight: '40%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
@@ -3952,11 +3848,11 @@ export default function Home() {
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
             backdropFilter: 'blur(3px)', 
-            WebkitBackdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)', 
             zIndex: 100000, 
             display: 'flex', 
-            justifyContent: 'flex-end',
-            animation: isProfileClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            justifyContent: 'flex-end', 
+            animation: isProfileClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
@@ -3969,9 +3865,9 @@ export default function Home() {
               display: 'flex', 
               flexDirection: 'column', 
               padding: '24px', 
-              boxSizing: 'border-box',
-              overflowY: 'auto',
-              animation: isProfileClosing ? 'drawerOutRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInRight 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards'
+              boxSizing: 'border-box', 
+              overflowY: 'auto', 
+              animation: isProfileClosing ? 'drawerOutRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInRight 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards' 
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>

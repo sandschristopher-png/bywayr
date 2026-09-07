@@ -8211,15 +8211,15 @@ com.android.billingclient.api.zzv
 com.android.billingclient.api.zzw
 com.android.billingclient.api.zzx
 com.android.billingclient.api.zzy
-com.bywayr.twa.R$bool
-com.bywayr.twa.R$color
-com.bywayr.twa.R$drawable
-com.bywayr.twa.R$integer
-com.bywayr.twa.R$mipmap
-com.bywayr.twa.R$raw
-com.bywayr.twa.R$string
-com.bywayr.twa.R$xml
-com.bywayr.twa.R
+com.bywayr.app.R$bool
+com.bywayr.app.R$color
+com.bywayr.app.R$drawable
+com.bywayr.app.R$integer
+com.bywayr.app.R$mipmap
+com.bywayr.app.R$raw
+com.bywayr.app.R$string
+com.bywayr.app.R$xml
+com.bywayr.app.R
 com.google.android.datatransport.BuildConfig
 com.google.android.datatransport.Event:
     public static com.google.android.datatransport.Event ofData(int,java.lang.Object)
