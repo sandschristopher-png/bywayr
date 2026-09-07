@@ -527,6 +527,9 @@ export default function Home() {
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
+  const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
+
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
     category: 'Hidden Gems',
@@ -1478,6 +1481,282 @@ export default function Home() {
     }
   }, [currentUser]);
 
+  // Deep Link Auto-Focus: open ?spot=ID or ?curator=ID shared links automatically
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const spotId = params.get('spot');
+    const curatorId = params.get('curator');
+
+    if (!spotId && !curatorId) return;
+
+    // Handle Curator Profile Deep Link
+    if (curatorId) {
+      const handleCuratorDeepLink = async () => {
+        let profile = profilesMap[curatorId];
+        if (!profile) {
+          const { data } = await supabase.from('profiles').select('*').eq('id', curatorId).maybeSingle();
+          if (data) profile = data;
+        }
+        if (profile) {
+          const userSpots = spots.length > 0 ? spots.filter((s) => s.user_id === curatorId) : [];
+          setViewingProfile(profile);
+          setViewingProfileSpots(userSpots);
+          setProfileCityFilter('All');
+          pushModalHistoryState('publicProfile');
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      };
+      handleCuratorDeepLink();
+      return;
+    }
+
+    // Handle Spot Deep Link
+    if (spotId) {
+      const openSharedSpot = (spot: Spot) => {
+        if (!map.current || !spot.latitude || !spot.longitude) return;
+        map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+        setViewingSpot(spot);
+        setActiveSearchedSpot(null);
+        setIsDiscussionModalOpen(false);
+        if (previewMarkerRef.current) {
+          previewMarkerRef.current.remove();
+          previewMarkerRef.current = null;
+        }
+        window.history.replaceState(null, '', window.location.pathname);
+      };
+
+      const existing = spots.find((s: Spot) => String(s.id) === String(spotId));
+      if (existing) {
+        if (map.current) {
+          openSharedSpot(existing);
+        } else {
+          const interval = setInterval(() => {
+            if (map.current) {
+              clearInterval(interval);
+              openSharedSpot(existing);
+            }
+          }, 100);
+          return () => clearInterval(interval);
+        }
+        return;
+      }
+
+      // Spot not in local cache yet — fetch it directly from Supabase
+      let cancelled = false;
+      supabase
+        .from('spots')
+        .select('*')
+        .eq('id', spotId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (cancelled || !data) return;
+          const sanitized = sanitizeCountryAndCity(data.city, data.country || '');
+          const spotObj = {
+            ...(data as Spot),
+            city: sanitized.city,
+            country: sanitized.country,
+          };
+          
+          const waitForMap = setInterval(() => {
+            if (map.current) {
+              clearInterval(waitForMap);
+              openSharedSpot(spotObj);
+            }
+          }, 100);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [spots, profilesMap, pushModalHistoryState]);
+
+  // Marker Clustering Effect
+  useEffect(() => {
+    if (!map.current) return;
+    const mapInstance = map.current;
+
+    const updateClustering = () => {
+      const geojson: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: filteredSpots.map((spot) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [spot.longitude, spot.latitude],
+          },
+          properties: {
+            id: spot.id,
+            name: spot.name,
+            category: spot.category,
+            city: spot.city,
+            image_url: spot.image_url || '',
+            color: getCategoryColor(spot.category),
+          },
+        })),
+      };
+
+      const sourceId = 'spots-cluster-source';
+      const clusterLayerId = 'clusters';
+      const clusterCountLayerId = 'cluster-count';
+      const unclusteredLayerId = 'unclustered-point';
+
+      if (mapInstance.getSource(sourceId)) {
+        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).setData(geojson);
+        return;
+      }
+
+      // Add Source with Clustering Enabled
+      mapInstance.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50,
+      });
+
+      // Layer: Cluster Circles
+      mapInstance.addLayer({
+        id: clusterLayerId,
+        type: 'circle',
+        source: sourceId,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#e05a47', // < 10 spots
+            10,
+            '#d97706', // 10-25 spots
+            25,
+            '#0284c7', // 25+ spots
+          ],
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            20,
+            10,
+            24,
+            25,
+            28,
+          ],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // Layer: Cluster Count Numbers
+      mapInstance.addLayer({
+        id: clusterCountLayerId,
+        type: 'symbol',
+        source: sourceId,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#ffffff',
+        },
+      });
+
+      // Layer: Individual Unclustered Pins
+      mapInstance.addLayer({
+        id: unclusteredLayerId,
+        type: 'circle',
+        source: sourceId,
+        filter: ['!has', 'point_count'],
+        paint: {
+          'circle-radius': 8,
+          'circle-color': ['get', 'color'],
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // Click handler: Zoom into clusters on click
+      mapInstance.on('click', clusterLayerId, (e) => {
+        const features = mapInstance.queryRenderedFeatures(e.point, { layers: [clusterLayerId] });
+        const clusterId = features[0].properties.cluster_id;
+        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).getClusterExpansionZoom(
+          clusterId,
+          (err, zoom) => {
+            if (err || !features[0].geometry) return;
+            const coords = (features[0].geometry as GeoJSON.Point).coordinates;
+            mapInstance.flyTo({
+              center: [coords[0], coords[1]],
+              zoom: zoom || 16,
+              essential: true,
+            });
+          }
+        );
+      });
+
+      // Click handler: Open spot details sheet on individual pin click
+      mapInstance.on('click', unclusteredLayerId, (e) => {
+        if (!e.features || e.features.length === 0) return;
+        const props = e.features[0].properties;
+        const clickedSpot = spots.find((s) => String(s.id) === String(props.id));
+        if (clickedSpot) {
+          triggerHaptic(8);
+          flyToSpot(clickedSpot);
+        }
+      });
+
+      // Pointer cursor styles on hover
+      mapInstance.on('mouseenter', clusterLayerId, () => {
+        mapInstance.getCanvas().style.cursor = 'pointer';
+      });
+      mapInstance.on('mouseleave', clusterLayerId, () => {
+        mapInstance.getCanvas().style.cursor = '';
+      });
+      mapInstance.on('mouseenter', unclusteredLayerId, () => {
+        mapInstance.getCanvas().style.cursor = 'pointer';
+      });
+      mapInstance.on('mouseleave', unclusteredLayerId, () => {
+        mapInstance.getCanvas().style.cursor = '';
+      });
+    };
+
+    if (mapInstance.isStyleLoaded()) {
+      updateClustering();
+    } else {
+      mapInstance.on('load', updateClustering);
+    }
+  }, [filteredSpots, spots]);
+
+  // Proximity Alert Watcher
+  useEffect(() => {
+    if (!navigator.geolocation || mustTrySpotIds.length === 0) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        
+        // Find Must-Try spots within 100 meters (0.1 km) that haven't been dismissed
+        const nearbyMustTrySpot = spots.find((spot) => {
+          if (!spot.id || !mustTrySpotIds.includes(spot.id)) return false;
+          if (dismissedAlertIds.includes(spot.id)) return false;
+          if (activeProximityAlert?.id === spot.id) return false;
+
+          const dist = getDistanceFromLatLonInKm(latitude, longitude, spot.latitude, spot.longitude);
+          return dist <= 0.1; // 100 meters threshold
+        });
+
+        if (nearbyMustTrySpot) {
+          triggerHaptic(25);
+          setActiveProximityAlert(nearbyMustTrySpot);
+        }
+      },
+      (err) => console.error('Geolocation watch error:', err),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [spots, mustTrySpotIds, dismissedAlertIds, activeProximityAlert]);
+
   useEffect(() => {
     if (viewingSpot?.id) {
       fetchSpotComments(viewingSpot.id);
@@ -1941,6 +2220,79 @@ export default function Home() {
           touchAction: 'pan-x pan-y', 
         }} 
       />
+
+      {/* Proximity Alert Toast */}
+      {activeProximityAlert && (
+        <div className="animate-slide-up" style={{
+          position: 'fixed',
+          top: 'calc(70px + env(safe-area-inset-top, 0px))',
+          left: '16px',
+          right: '16px',
+          maxWidth: '420px',
+          margin: '0 auto',
+          backgroundColor: '#1c1917',
+          color: '#fafaf9',
+          padding: '12px 16px',
+          borderRadius: '20px',
+          boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)',
+          zIndex: 100020,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          border: '1px solid #44403c',
+          boxSizing: 'border-box',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(224, 90, 71, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+              <Compass style={{ width: '16px', height: '16px' }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#e05a47', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Must-Try Nearby!
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {activeProximityAlert.name}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                triggerHaptic(8);
+                const spot = activeProximityAlert;
+                setActiveProximityAlert(null);
+                flyToSpot(spot);
+              }}
+              style={{
+                backgroundColor: '#e05a47',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '6px 10px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              View
+            </button>
+            <button
+              onClick={() => {
+                triggerHaptic(6);
+                if (activeProximityAlert.id) {
+                  setDismissedAlertIds((prev) => [...prev, activeProximityAlert.id!]);
+                }
+                setActiveProximityAlert(null);
+              }}
+              style={{ background: 'none', border: 'none', color: '#a8a29e', cursor: 'pointer', padding: '4px', display: 'flex' }}
+            >
+              <X style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Offline Notification Banner */}
       {isOffline && (

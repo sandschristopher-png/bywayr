@@ -23,8 +23,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.bywayr.app"
-    android:versionCode="6"
-    android:versionName="1.0.1" >
+    android:versionCode="8"
+    android:versionName="1.0.2" >
 
     <uses-sdk
         android:minSdkVersion="23"

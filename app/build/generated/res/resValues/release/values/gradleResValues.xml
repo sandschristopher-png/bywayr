@@ -8,19 +8,19 @@
     <!-- Value from default config. -->
     <bool name="enableSiteSettingsShortcut">true</bool>
     <!-- Value from default config. -->
-    <color name="backgroundColor">#FFFFFF</color>
+    <color name="backgroundColor">#F5F5F4</color>
     <!-- Value from default config. -->
-    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimary">#1C1917</color>
     <!-- Value from default config. -->
-    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorPrimaryDark">#262421</color>
     <!-- Value from default config. -->
-    <color name="navigationColor">#000000</color>
+    <color name="navigationColor">#1C1917</color>
     <!-- Value from default config. -->
-    <color name="navigationColorDark">#000000</color>
+    <color name="navigationColorDark">#262421</color>
     <!-- Value from default config. -->
-    <color name="navigationDividerColor">#000000</color>
+    <color name="navigationDividerColor">#E7E5E4</color>
     <!-- Value from default config. -->
-    <color name="navigationDividerColorDark">#000000</color>
+    <color name="navigationDividerColorDark">#44403C</color>
     <!-- Value from default config. -->
     <integer name="splashScreenFadeOutDuration">300</integer>
     <!-- Value from default config. -->

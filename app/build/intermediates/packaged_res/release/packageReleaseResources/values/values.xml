@@ -2,13 +2,13 @@
 <resources>
     <bool name="enableNotification">true</bool>
     <bool name="enableSiteSettingsShortcut">true</bool>
-    <color name="backgroundColor">#FFFFFF</color>
-    <color name="colorPrimary">#FFFFFF</color>
-    <color name="colorPrimaryDark">#000000</color>
-    <color name="navigationColor">#000000</color>
-    <color name="navigationColorDark">#000000</color>
-    <color name="navigationDividerColor">#000000</color>
-    <color name="navigationDividerColorDark">#000000</color>
+    <color name="backgroundColor">#F5F5F4</color>
+    <color name="colorPrimary">#1C1917</color>
+    <color name="colorPrimaryDark">#262421</color>
+    <color name="navigationColor">#1C1917</color>
+    <color name="navigationColorDark">#262421</color>
+    <color name="navigationDividerColor">#E7E5E4</color>
+    <color name="navigationDividerColorDark">#44403C</color>
     <color name="shortcut_background">#F5F5F5</color>
     <integer name="splashScreenFadeOutDuration">300</integer>
     <string name="appName" translatable="false">Bywayr - Your Pocket Field Guide</string>
