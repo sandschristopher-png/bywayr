@@ -1481,96 +1481,46 @@ export default function Home() {
     }
   }, [currentUser]);
 
-  // Deep Link Auto-Focus: open ?spot=ID or ?curator=ID shared links automatically
+  // Deep Link Auto-Focus: open ?spot=ID shared links automatically
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const spotId = params.get('spot');
-    const curatorId = params.get('curator');
-
-    if (!spotId && !curatorId) return;
-
-    // Handle Curator Profile Deep Link
-    if (curatorId) {
-      const handleCuratorDeepLink = async () => {
-        let profile = profilesMap[curatorId];
-        if (!profile) {
-          const { data } = await supabase.from('profiles').select('*').eq('id', curatorId).maybeSingle();
-          if (data) profile = data;
-        }
-        if (profile) {
-          const userSpots = spots.length > 0 ? spots.filter((s) => s.user_id === curatorId) : [];
-          setViewingProfile(profile);
-          setViewingProfileSpots(userSpots);
-          setProfileCityFilter('All');
-          pushModalHistoryState('publicProfile');
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      };
-      handleCuratorDeepLink();
-      return;
-    }
-
-    // Handle Spot Deep Link
-    if (spotId) {
-      const openSharedSpot = (spot: Spot) => {
-        if (!map.current || !spot.latitude || !spot.longitude) return;
-        map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
-        setViewingSpot(spot);
-        setActiveSearchedSpot(null);
-        setIsDiscussionModalOpen(false);
-        if (previewMarkerRef.current) {
-          previewMarkerRef.current.remove();
-          previewMarkerRef.current = null;
-        }
-        window.history.replaceState(null, '', window.location.pathname);
-      };
-
-      const existing = spots.find((s: Spot) => String(s.id) === String(spotId));
+    if (!spotId) return;
+    let cancelled = false;
+    const openSharedSpot = (spot: Spot) => {
+      if (!map.current || !spot.latitude || !spot.longitude) return;
+      map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+      setViewingSpot(spot);
+      setActiveSearchedSpot(null);
+      setIsDiscussionModalOpen(false);
+      if (previewMarkerRef.current) {
+        previewMarkerRef.current.remove();
+        previewMarkerRef.current = null;
+      }
+    };
+    const loadAndOpen = async () => {
+      const timer = await new Promise<void>((resolve) => setTimeout(resolve, 400));
+      if (cancelled) return;
+      const existing = spots.find((s: Spot) => s.id === spotId);
       if (existing) {
-        if (map.current) {
-          openSharedSpot(existing);
-        } else {
-          const interval = setInterval(() => {
-            if (map.current) {
-              clearInterval(interval);
-              openSharedSpot(existing);
-            }
-          }, 100);
-          return () => clearInterval(interval);
-        }
+        openSharedSpot(existing);
         return;
       }
-
-      // Spot not in local cache yet — fetch it directly from Supabase
-      let cancelled = false;
-      supabase
-        .from('spots')
-        .select('*')
-        .eq('id', spotId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (cancelled || !data) return;
-          const sanitized = sanitizeCountryAndCity(data.city, data.country || '');
-          const spotObj = {
-            ...(data as Spot),
-            city: sanitized.city,
-            country: sanitized.country,
-          };
-          
-          const waitForMap = setInterval(() => {
-            if (map.current) {
-              clearInterval(waitForMap);
-              openSharedSpot(spotObj);
-            }
-          }, 100);
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }
-  }, [spots, profilesMap, pushModalHistoryState]);
+      const { data } = await supabase.from('spots').select('*').eq('id', spotId).maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        const row = data as Spot;
+        const sanitized = sanitizeCountryAndCity(row.city, row.country || '');
+        openSharedSpot({ ...row, city: sanitized.city, country: sanitized.country });
+      }
+    };
+    loadAndOpen();
+    window.history.replaceState(null, '', window.location.pathname);
+    return () => {
+      cancelled = true;
+    };
+  }, [spots]);
 
   // Marker Clustering Effect
   useEffect(() => {
