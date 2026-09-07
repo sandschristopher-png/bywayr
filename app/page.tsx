@@ -3596,6 +3596,7 @@ export default function Home() {
               animation: isDrawerClosing ? 'drawerOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInLeft 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards' 
             }}
           >
+            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
@@ -3603,6 +3604,7 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexShrink: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
                 <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
@@ -3610,7 +3612,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Sort Toggle for Field Notes */}
+            {/* Sort Toggle */}
             {drawerTab === 'fieldNotes' && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>
@@ -3652,9 +3654,9 @@ export default function Home() {
               </div>
             )}
 
-            {/* Scrollable Container for Recent Pins + Main Spot List */}
+            {/* Middle Scrollable Container (Recent Pins + Spots List) */}
             <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px' }}>
-              {/* Recents Section (Inside Scroll Area) */}
+              {/* Recents Section */}
               {currentUser && drawerTab === 'fieldNotes' && recentUserSpots.length > 0 && (
                 <div style={{ marginBottom: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px 12px', flexShrink: 0 }}>
                   <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -3777,12 +3779,27 @@ export default function Home() {
               })}
             </div>
 
-            <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e7e5e4', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Travel Essentials Footer (Direct Child, Bottom Anchored) */}
+            <div
+              style={{
+                marginTop: 'auto',
+                flexShrink: 0,
+                paddingTop: '12px',
+                borderTop: '1px solid #e7e5e4',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                maxHeight: '38%',
+                overflowY: 'auto',
+                scrollbarWidth: 'thin',
+              }}
+            >
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
                 Travel Essentials
               </div>
               
-              <div style={{ maxHeight: '40%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
