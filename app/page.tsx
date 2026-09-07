@@ -1659,22 +1659,23 @@ export default function Home() {
         },
       });
 
-      // Click handler: Zoom into clusters on click
+// Click handler: Zoom into clusters on click
       mapInstance.on('click', clusterLayerId, (e) => {
         const features = mapInstance.queryRenderedFeatures(e.point, { layers: [clusterLayerId] });
         const clusterId = features[0].properties.cluster_id;
-        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).getClusterExpansionZoom(
-          clusterId,
-          (err: any, zoom: number | null) => {
-            if (err || zoom === null || !features[0].geometry) return;
+        const source = mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource;
+        source
+          .getClusterExpansionZoom(clusterId)
+          .then((zoom: number) => {
+            if (!features[0].geometry) return;
             const coords = (features[0].geometry as GeoJSON.Point).coordinates;
             mapInstance.flyTo({
               center: [coords[0], coords[1]],
               zoom: zoom || 16,
               essential: true,
             });
-          }
-        );
+          })
+          .catch(() => {});
       });
 
       // Click handler: Open spot details sheet on individual pin click
