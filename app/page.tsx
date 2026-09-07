@@ -2841,7 +2841,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* 3. Floating Map Controls */}
+      {/* {/* 3. Floating Map Controls */}
       <div style={{ 
         position: 'fixed', 
         bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', 
@@ -2858,12 +2858,9 @@ export default function Home() {
         boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.18), 0 0 1px 1px rgba(28, 25, 23, 0.04)', 
         gap: '6px', 
         pointerEvents: 'auto',
-        opacity: isInteracting ? 0 : 1,
-        transform: isInteracting ? 'translateX(90px) scale(0.92)' : 'translateX(0) scale(1)',
-        visibility: isInteracting ? 'hidden' : 'visible',
-        transition: isInteracting 
-          ? 'opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.25s' 
-          : 'opacity 0.3s ease 0.05s, transform 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) 0.05s, visibility 0s linear 0s',
+        opacity: 1,
+        transform: 'none',
+        visibility: 'visible',
       }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '18px', height: '18px' }} />}
