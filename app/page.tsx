@@ -748,7 +748,8 @@ useEffect(() => {
           spotObj: spot
         })).slice(0, 4);
 
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5`);
+        const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&lat=${center.lat}&lon=${center.lng}&bounded=0`);
         const osmData = await res.json();
         
         const combined = [...localMatches, ...(osmData || [])];
