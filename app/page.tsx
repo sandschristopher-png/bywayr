@@ -75,10 +75,7 @@ import {
   CloudDownload,
 } from 'lucide-react';
 
-// Inline Fallback Components to prevent missing module errors
-function PwaInstallBanner() {
-  return null;
-}
+// Core application layout
 
 interface Spot {
   id?: string;
