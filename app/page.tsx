@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
-import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
