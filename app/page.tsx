@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { supabase } from '../lib/supabase';
-import { Purchases, PURCHASE_TYPE } from '@capgo/native-purchases';
+import { supabase } from '../lib/supabase'; 
 
 const handleGooglePlayCheckout = async () => {
   if (!currentUser) {
@@ -2164,16 +2163,18 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
     setIsClaimUsernameModalOpen(false);
   };
 const handleGooglePlayCheckout = async () => {
-    if (!currentUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
+  if (!currentUser) {
+    setIsAuthModalOpen(true);
+    pushModalHistoryState('auth');
+    return;
+  }
 
-    try {
-      triggerHaptic(12);
+  try {
+    triggerHaptic(12);
+    
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      const { Purchases, PURCHASE_TYPE } = await import('@capgo/native-purchases');
       const productId = 'bywayr_plus_lifetime'; 
-      
       const purchaseResult = await Purchases.purchaseProduct({
         productId: productId,
         productType: PURCHASE_TYPE.INAPP,
@@ -2181,43 +2182,47 @@ const handleGooglePlayCheckout = async () => {
 
       if (purchaseResult && purchaseResult.transaction) {
         setIsPlusSubscriber(true);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bywayr_is_plus', 'true');
-        }
+        localStorage.setItem('bywayr_is_plus', 'true');
         setIsPlusModalOpen(false);
         alert('Thank you for upgrading to Bywayr Plus!');
       }
-    } catch (err: any) {
-      console.error('Google Play purchase failed:', err);
-      if (err.message && !err.message.includes('Canceled')) {
-        alert(`Purchase error: ${err.message}`);
-      }
+    } else {
+      alert('Google Play billing is only available in the native Android app.');
     }
-  };
+  } catch (err: any) {
+    console.error('Google Play purchase failed:', err);
+    if (err.message && !err.message.includes('Canceled')) {
+      alert(`Purchase error: ${err.message}`);
+    }
+  }
+};
 
-  const handleRestorePurchases = async () => {
-    try {
-      triggerHaptic(8);
+const handleRestorePurchases = async () => {
+  try {
+    triggerHaptic(8);
+    
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      const { Purchases } = await import('@capgo/native-purchases');
       const restored = await Purchases.restorePurchases();
-      
       const hasPlus = restored?.transactions?.some(
         (tx: any) => tx.productId === 'bywayr_plus_lifetime'
       );
 
       if (hasPlus) {
         setIsPlusSubscriber(true);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bywayr_is_plus', 'true');
-        }
+        localStorage.setItem('bywayr_is_plus', 'true');
         alert('Purchases restored successfully!');
         setIsPlusModalOpen(false);
       } else {
         alert('No previous Bywayr Plus purchases found.');
       }
-    } catch (err: any) {
-      alert(`Restore failed: ${err.message}`);
+    } else {
+      alert('Purchase restoration is only available in the native Android app.');
     }
-  };
+  } catch (err: any) {
+    alert(`Restore failed: ${err.message}`);
+  }
+};
   const getDriveToken = (): string | null => {
     const t = localStorage.getItem('bywayr_gdrive_token');
     const ts = localStorage.getItem('bywayr_gdrive_token_time');
