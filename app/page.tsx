@@ -559,11 +559,6 @@ export default function Home() {
 
   const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
   const myPassportStamps = extractPassportStamps(myUserSpots);
-  const recentUserSpots = [...myUserSpots].sort((a, b) => {
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return timeB - timeA;
-  }).slice(0, 3);
 
   const filteredSpots = spots
     .filter((spot: Spot) => {
@@ -4163,53 +4158,9 @@ const getDriveToken = (): string | null => {
               </div>
             )}
 
-            {/* Middle Scrollable Container (Recent Pins + Spots List) */}
+            {/* Middle Scrollable Container (Spots List) */}
             <div className="animate-slide-up" style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px', animationDelay: '0.16s' }}>
-              {/* Recents Section */}
-              {currentUser && drawerTab === 'fieldNotes' && recentUserSpots.length > 0 && (
-                <div style={{ marginBottom: '6px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', padding: '12px 12px', flexShrink: 0 }}>
-                  <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#78716c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <Clock style={{ width: '12px', height: '12px', color: '#e05a47' }} /> Recent Pins
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {recentUserSpots.map((spot) => {
-                      const color = getCategoryColor(spot.category);
-                      return (
-                        <div
-                          key={`recent-${spot.id || spot.name}`}
-                          onClick={() => {
-                            triggerHaptic(8);
-                            setIsDrawerClosing(true);
-                            setTimeout(() => {
-                              setIsDrawerOpen(false);
-                              setIsDrawerClosing(false);
-                            }, 280);
-                            flyToSpot(spot);
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '8px 10px',
-                            backgroundColor: '#ffffff',
-                            borderRadius: '10px',
-                            border: '1px solid #e7e5e4',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spot.name}</span>
-                          </div>
-                          <span style={{ fontSize: '10px', color: '#a8a29e', flexShrink: 0 }}>{formatRelativeTime(spot.created_at)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Main Spot List */}
+              {/* Main Spot List */}  
               {displayedDrawerSpots.map((spot: Spot) => {
                 const color = getCategoryColor(spot.category);
                 const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
