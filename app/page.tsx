@@ -3837,38 +3837,32 @@ export default function Home() {
                           dismissModalWithHistory(() => setViewingProfile(null));
                         }}
                         style={{
-                          backgroundColor: '#fbfbfa',
-                          border: `2px dashed ${st.color}`,
+                          backgroundColor: '#fafaf9',
+                          border: `2px double ${st.color}`,
                           borderRadius: '50%',
                           width: '76px',
                           height: '76px',
                           minWidth: '76px',
-                          boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
+                          boxShadow: '0 4px 12px rgba(28, 25, 23, 0.04)',
                           position: 'relative',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '8px',
+                          padding: '6px',
                           boxSizing: 'border-box',
                           textAlign: 'center',
                           overflow: 'hidden',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: st.color, marginBottom: '1px' }}>
-                          <Plane style={{ width: '8px', height: '8px', transform: 'rotate(-45deg)' }} />
-                          <span style={{ fontSize: '6.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
-                            VISA
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '6.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
+                        <div style={{ fontSize: '8px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.04em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, paddingBottom: '2px', marginBottom: '2px' }}>
                           {st.country}
                         </div>
-                        <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
-                          {st.cities[0] ? st.cities[0].toUpperCase() : 'ENTRY'}
+                        <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                          {st.cities[0] ? st.cities[0].toUpperCase() : 'EXPLORED'}
                         </div>
-                        <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
-                          {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
+                        <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.8, letterSpacing: '0.02em' }}>
+                          {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
                         </div>
                       </div>
                     ))}
@@ -4473,38 +4467,32 @@ export default function Home() {
                         handleCloseProfileDrawer();
                       }}
                       style={{
-                        backgroundColor: '#fbfbfa',
-                        border: `2px dashed ${st.color}`,
+                        backgroundColor: '#fafaf9',
+                        border: `2px double ${st.color}`,
                         borderRadius: '50%',
                         width: '76px',
                         height: '76px',
                         minWidth: '76px',
-                        boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
+                        boxShadow: '0 4px 12px rgba(28, 25, 23, 0.04)',
                         position: 'relative',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: '8px',
+                        padding: '6px',
                         boxSizing: 'border-box',
                         textAlign: 'center',
                         overflow: 'hidden',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: st.color, marginBottom: '1px' }}>
-                        <Plane style={{ width: '8px', height: '8px', transform: 'rotate(-45deg)' }} />
-                        <span style={{ fontSize: '6.5px', fontWeight: 900, textTransform: 'uppercase', color: st.color, letterSpacing: '0.06em' }}>
-                          VISA
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '8px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
+                      <div style={{ fontSize: '8px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.04em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, paddingBottom: '2px', marginBottom: '2px' }}>
                         {st.country}
                       </div>
-                      <div style={{ fontSize: '6.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
-                        {st.cities[0] ? st.cities[0].toUpperCase() : 'ENTRY'}
+                      <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                        {st.cities[0] ? st.cities[0].toUpperCase() : 'EXPLORED'}
                       </div>
-                      <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
-                        {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
+                      <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.8, letterSpacing: '0.02em' }}>
+                        {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
                       </div>
                     </div>
                   ))}
