@@ -201,7 +201,7 @@ const sanitizeCountryAndCity = (city: string, country: string): { city: string; 
     cCountry = 'Japan';
   } else if (lowerCity.includes('cebu') || lowerCity.includes('manila') || lowerCity.includes('lapu-lapu') || lowerCity.includes('makati') || lowerCountry.includes('philippines')) {
     cCountry = 'Philippines';
-  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco') || lowerCountry.includes('usa') || lowerCountry.includes('usa')) {
+  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco') || lowerCountry.includes('usa')) {
     cCountry = 'United States';
   }
 
@@ -479,7 +479,7 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
-  const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry'>('fieldNotes');
+  const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry' | 'essentials'>('fieldNotes');
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
@@ -530,7 +530,7 @@ export default function Home() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
 
-   const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
 
   const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -544,7 +544,6 @@ export default function Home() {
   const [isBackingUpDrive, setIsBackingUpDrive] = useState(false);
   const [isRestoringDrive, setIsRestoringDrive] = useState(false);
   const [driveStatusMessage, setDriveStatusMessage] = useState<string | null>(null);
-  
 
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
@@ -753,14 +752,6 @@ export default function Home() {
   }, [currentUser]);
 
   useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
-    if (!hasSeenWelcome) {
-      setShowWelcome(true);
-      pushModalHistoryState('welcome');
-    }
-  }, [pushModalHistoryState]);
-
-  useEffect(() => {
     if (typeof document !== 'undefined') {
       let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
       if (!link) {
@@ -772,6 +763,14 @@ export default function Home() {
       link.type = 'image/png';
     }
   }, []);
+
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+      pushModalHistoryState('welcome');
+    }
+  }, [pushModalHistoryState]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
@@ -1690,7 +1689,7 @@ export default function Home() {
         },
       });
 
-// Click handler: Zoom into clusters on click
+      // Click handler: Zoom into clusters on click
       mapInstance.on('click', clusterLayerId, (e) => {
         const features = mapInstance.queryRenderedFeatures(e.point, { layers: [clusterLayerId] });
         const clusterId = features[0].properties.cluster_id;
@@ -1941,7 +1940,8 @@ export default function Home() {
     setIsProfileModalOpen(false);
     setIsClaimUsernameModalOpen(false);
   };
-const getDriveToken = (): string | null => {
+
+  const getDriveToken = (): string | null => {
     const t = localStorage.getItem('bywayr_gdrive_token');
     const ts = localStorage.getItem('bywayr_gdrive_token_time');
     if (!t || !ts) return null;
@@ -2088,6 +2088,7 @@ const getDriveToken = (): string | null => {
     };
     reader.readAsText(file);
   };
+
   const handleDeleteAccount = async () => {
     const activeUser = currentUserRef.current;
     if (!activeUser || deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
@@ -2488,7 +2489,7 @@ const getDriveToken = (): string | null => {
         </div>
       )}
 
-      {/* 2. Unified Search & Actions Bar with Corrected Top Alignment */}
+      {/* 2. Unified Search & Actions Bar */}
       <div style={{ position: 'absolute', top: isOffline ? '52px' : '12px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
@@ -2520,7 +2521,7 @@ const getDriveToken = (): string | null => {
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
 
-            {/* Middle: Integrated Search Input with Requested Placeholder */}
+            {/* Middle: Integrated Search Input */}
             <div style={{ flex: 1, position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
               <input
                 type="text"
@@ -3078,7 +3079,9 @@ const getDriveToken = (): string | null => {
           }}
           title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
         >
-          <div key={isDarkMode ? 'moon' : 'sun'} style={{ animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards', display: 'flex' }}>  {isDarkMode ? <MoonStar style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px' }} />}</div>
+          <div key={isDarkMode ? 'moon' : 'sun'} style={{ animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards', display: 'flex' }}>
+            {isDarkMode ? <MoonStar style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px' }} />}
+          </div>
         </button>
 
         <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
@@ -4082,7 +4085,7 @@ const getDriveToken = (): string | null => {
         </div>
       )}
 
-      {/* Slide-Out Drawer (Field Notes - Left) */}
+      {/* Slide-Out Drawer (Field Notes, Must-Try & Travel Essentials Tabs - Left) */}
       {(isDrawerOpen || isDrawerClosing) && (
         <div 
           style={{ 
@@ -4115,21 +4118,24 @@ const getDriveToken = (): string | null => {
           >
             {/* Header */}
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
-              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{drawerTab === 'fieldNotes' ? 'Field Notes' : 'Must-Try'}</h2>
+              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                {drawerTab === 'fieldNotes' ? 'Field Notes' : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
+              </h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="animate-slide-up" style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', flex: 1 }}>
-                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Field Notes</button>
-                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 0', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Must-Try ({mustTrySpotIds.length})</button>
+            {/* Navigation Tabs (3-Way: Notes, Must-Try, Essentials) */}
+            <div className="animate-slide-up" style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', width: '100%' }}>
+                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
+                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
+                <button onClick={() => { triggerHaptic(6); setDrawerTab('essentials'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
               </div>
             </div>
 
-            {/* Sort Toggle */}
+            {/* Sort Toggle (Only for Field Notes tab) */}
             {drawerTab === 'fieldNotes' && (
               <div className="animate-slide-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0, animationDelay: '0.12s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>
@@ -4171,150 +4177,132 @@ const getDriveToken = (): string | null => {
               </div>
             )}
 
-            {/* Middle Scrollable Container (Spots List) */}
+            {/* Middle Scrollable Container */}
             <div className="animate-slide-up" style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px', animationDelay: '0.16s' }}>
-              {/* Main Spot List */}  
-              {displayedDrawerSpots.map((spot: Spot) => {
-                const color = getCategoryColor(spot.category);
-                const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
-                const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
+              {drawerTab === 'essentials' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
+                    Curated Booking Tools
+                  </div>
 
-                return (
-                  <div
-                    key={spot.id || spot.name}
-                    onClick={() => {
-                      triggerHaptic(8);
-                      setIsDrawerClosing(true);
-                      setTimeout(() => {
-                        setIsDrawerOpen(false);
-                        setIsDrawerClosing(false);
-                      }, 280);
-                      flyToSpot(spot);
-                    }}
-                    className="spot-card-hover"
-                    style={{
-                      padding: '12px 13px',
-                      borderRadius: '14px',
-                      border: '1px solid #e7e5e4',
-                      borderLeft: `4px solid ${color}`,
-                      backgroundColor: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {spot.image_url && (
-                      <img
-                        src={spot.image_url}
-                        alt={spot.name}
-                        style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
-                      />
-                    )}
+                  <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                        <Plane style={{ width: '16px', height: '16px', color: '#e05a47' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Aviasales</span>
+                        <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>Compare & search global flight deals</span>
+                      </div>
+                    </div>
+                    <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                  </a>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <h4
+                  <a href="https://saily.tpk.lv/W8d7Lkw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                        <Globe style={{ width: '16px', height: '16px', color: '#0284c7' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Saily eSIM</span>
+                        <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>Affordable instant mobile data worldwide</span>
+                      </div>
+                    </div>
+                    <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                  </a>
+
+                  <a href="https://kiwi.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
+                        <Compass style={{ width: '16px', height: '16px', color: '#059669' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Kiwi.com</span>
+                        <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>Low cost multi-city travel booking</span>
+                      </div>
+                    </div>
+                    <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
+                  </a>
+                </div>
+              ) : (
+                /* Main Spot List */
+                displayedDrawerSpots.map((spot: Spot) => {
+                  const color = getCategoryColor(spot.category);
+                  const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
+                  const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
+
+                  return (
+                    <div
+                      key={spot.id || spot.name}
+                      onClick={() => {
+                        triggerHaptic(8);
+                        setIsDrawerClosing(true);
+                        setTimeout(() => {
+                          setIsDrawerOpen(false);
+                          setIsDrawerClosing(false);
+                        }, 280);
+                        flyToSpot(spot);
+                      }}
+                      className="spot-card-hover"
+                      style={{
+                        padding: '12px 13px',
+                        borderRadius: '14px',
+                        border: '1px solid #e7e5e4',
+                        borderLeft: `4px solid ${color}`,
+                        backgroundColor: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {spot.image_url && (
+                        <img
+                          src={spot.image_url}
+                          alt={spot.name}
+                          style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      )}
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <h4
+                            style={{
+                              margin: 0,
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              color: '#1c1917',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {spot.name}
+                          </h4>
+                          {distanceText && (
+                            <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>
+                              {distanceText}
+                            </span>
+                          )}
+                        </div>
+                        <p
                           style={{
                             margin: 0,
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: '#1c1917',
+                            fontSize: '11px',
+                            color: '#78716c',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}
                         >
-                          {spot.name}
-                        </h4>
-                        {distanceText && (
-                          <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>
-                            {distanceText}
-                          </span>
-                        )}
+                          {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                        </p>
                       </div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: '11px',
-                          color: '#78716c',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
-                      </p>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Travel Essentials Footer (Direct Child, Bottom Anchored) */}
-            <div
-              className="animate-slide-up"
-              style={{
-                marginTop: 'auto',
-                flexShrink: 0,
-                paddingTop: '12px',
-                borderTop: '1px solid #e7e5e4',
-                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                maxHeight: '38%',
-                overflowY: 'auto',
-                scrollbarWidth: 'thin',
-                animationDelay: '0.2s',
-              }}
-            >
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
-                Travel Essentials
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/aviasales.svg" alt="Aviasales" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Aviasales</span>
-                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Flight Search</span>
-                    </div>
-                  </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
-                </a>
-
-                <a href="https://saily.tpk.lv/W8d7Lkw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/saily.svg" alt="Saily" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Saily</span>
-                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Affordable eSIM Data</span>
-                    </div>
-                  </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
-                </a>
-
-
-                <a href="https://kiwi.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', color: '#1c1917', textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                      <img src="/kiwi.svg" alt="Kiwi.com" style={{ width: '15px', height: '15px', objectFit: 'contain' }} onError={(e)=>{(e.target as HTMLElement).style.display='none'}} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Kiwi.com</span>
-                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Low Cost Travel</span>
-                    </div>
-                  </div>
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
-                </a>
-              </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -4484,7 +4472,7 @@ const getDriveToken = (): string | null => {
                         setSelectedCountryFilter(st.country);
                         handleCloseProfileDrawer();
                       }}
-                     style={{
+                      style={{
                         backgroundColor: '#fbfbfa',
                         border: `2px dashed ${st.color}`,
                         borderRadius: '50%',
@@ -4523,75 +4511,77 @@ const getDriveToken = (): string | null => {
                 </div>
               )}
             </div>
-        {/* Bywayr Plus — Cloud Sync Card */}
-        <div style={{ backgroundColor: '#fffbfb', border: '1.5px solid #fed7aa', borderRadius: '18px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Crown style={{ width: '16px', height: '16px', color: '#e05a47' }} /> Bywayr Plus — Cloud Sync
-            </span>
-            <span style={{ backgroundColor: '#fff1ee', color: '#e05a47', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fecdd3' }}>Google Drive</span>
-          </div>
 
-          <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
-            Securely back up your curated field notes and restore your passport data directly to your personal Google Drive account.
-          </p>
+            {/* Bywayr Plus — Cloud Sync Card */}
+            <div style={{ backgroundColor: '#fffbfb', border: '1.5px solid #fed7aa', borderRadius: '18px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Crown style={{ width: '16px', height: '16px', color: '#e05a47' }} /> Bywayr Plus — Cloud Sync
+                </span>
+                <span style={{ backgroundColor: '#fff1ee', color: '#e05a47', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fecdd3' }}>Google Drive</span>
+              </div>
 
-          {driveStatusMessage && (
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#059669', backgroundColor: '#ecfdf5', padding: '6px 10px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
-              {driveStatusMessage}
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
+                Securely back up your curated field notes and restore your passport data directly to your personal Google Drive account.
+              </p>
+
+              {driveStatusMessage && (
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#059669', backgroundColor: '#ecfdf5', padding: '6px 10px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+                  {driveStatusMessage}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                <button
+                  onClick={handleGoogleDriveBackup}
+                  disabled={isBackingUpDrive}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#e05a47',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '10px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: isBackingUpDrive ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)',
+                  }}
+                >
+                  {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
+                  {isBackingUpDrive ? 'Backing Up...' : 'Backup to Google Drive'}
+                </button>
+
+                <label
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#f5f5f4',
+                    color: '#1c1917',
+                    border: '1px solid #d6d3d1',
+                    borderRadius: '12px',
+                    padding: '10px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: isRestoringDrive ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
+                  <span>{isRestoringDrive ? 'Restoring...' : 'Restore from Backup File'}</span>
+                  <input type="file" accept="application/json" onChange={handleGoogleDriveRestore} disabled={isRestoringDrive} style={{ display: 'none' }} />
+                </label>
+              </div>
             </div>
-          )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-            <button
-              onClick={handleGoogleDriveBackup}
-              disabled={isBackingUpDrive}
-              style={{
-                width: '100%',
-                backgroundColor: '#e05a47',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '10px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: isBackingUpDrive ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)',
-              }}
-            >
-              {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
-              {isBackingUpDrive ? 'Backing Up...' : 'Backup to Google Drive'}
-            </button>
-
-            <label
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                backgroundColor: '#f5f5f4',
-                color: '#1c1917',
-                border: '1px solid #d6d3d1',
-                borderRadius: '12px',
-                padding: '10px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: isRestoringDrive ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                textAlign: 'center',
-              }}
-            >
-              {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
-              <span>{isRestoringDrive ? 'Restoring...' : 'Restore from Backup File'}</span>
-              <input type="file" accept="application/json" onChange={handleGoogleDriveRestore} disabled={isRestoringDrive} style={{ display: 'none' }} />
-            </label>
-          </div>
-        </div>
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
