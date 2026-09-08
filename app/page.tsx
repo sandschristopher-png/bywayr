@@ -528,9 +528,9 @@ export default function Home() {
   const [isSavingUsername, setIsSavingUsername] = useState(false);
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-
   const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
-  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
+
+   const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
 
   const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1774,7 +1774,14 @@ export default function Home() {
     triggerHaptic(10);
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+      options: {
+        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        queryParams: {
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     });
   };
 
