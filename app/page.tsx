@@ -424,12 +424,10 @@ export default function Home() {
     if (now - lastBounceTimeRef.current < 600) return;
     if (el.scrollLeft <= 2) {
       lastBounceTimeRef.current = now;
-      triggerHaptic(8);
       setCatBounce('left');
       setTimeout(() => setCatBounce(null), 380);
     } else if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2) {
       lastBounceTimeRef.current = now;
-      triggerHaptic(8);
       setCatBounce('right');
       setTimeout(() => setCatBounce(null), 380);
     }
@@ -768,7 +766,6 @@ export default function Home() {
   };
 
   const handleCloseDrawer = () => {
-    triggerHaptic(6);
     setIsDrawerClosing(true);
     setTimeout(() => {
       setIsDrawerOpen(false);
@@ -780,7 +777,6 @@ export default function Home() {
   };
 
   const handleCloseProfileDrawer = () => {
-    triggerHaptic(6);
     setIsProfileClosing(true);
     setIsEditingCountry(false);
     setTimeout(() => {
@@ -864,7 +860,6 @@ export default function Home() {
   }, [closeTopmostSheet]);
 
   const dismissModalWithHistory = (closeFn: () => void) => {
-    triggerHaptic(6);
     closeFn();
     if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
       window.history.back();
@@ -2897,18 +2892,15 @@ export default function Home() {
             cursor: isCategoryDragging ? 'grabbing' : 'grab',
             userSelect: 'none',
             WebkitOverflowScrolling: 'touch',
-            transform: 'translateZ(0)',
             width: '100%',
             boxSizing: 'border-box',
+            pointerEvents: 'auto',
             animation: catBounce === 'left' ? 'bounceLeft 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' : catBounce === 'right' ? 'bounceRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
           }}
         >
           {currentUser && (
             <button
-              onClick={() => {
-                triggerHaptic(6);
-                setOnlyMySpots(!onlyMySpots);
-              }}
+              onClick={() => setOnlyMySpots(!onlyMySpots)}
               style={{
                 backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(12px)',
@@ -2937,7 +2929,6 @@ export default function Home() {
 
           <button
             onClick={() => {
-              triggerHaptic(6);
               if (maxRadiusKm === null) setMaxRadiusKm(5);
               else if (maxRadiusKm === 5) setMaxRadiusKm(25);
               else setMaxRadiusKm(null);
@@ -2987,10 +2978,7 @@ export default function Home() {
             return (
               <button
                 key={cat.label}
-                onClick={() => {
-                  triggerHaptic(6);
-                  setSelectedCategory(cat.label);
-                }}
+                onClick={() => setSelectedCategory(cat.label)}
                 style={{ 
                   backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.95)', 
                   backdropFilter: 'blur(12px)',
@@ -3236,10 +3224,7 @@ export default function Home() {
         <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
 
         <button
-          onClick={() => {
-            triggerHaptic(6);
-            setIsDarkMode(!isDarkMode);
-          }}
+          onClick={() => setIsDarkMode(!isDarkMode)}
           style={{
             width: '42px',
             height: '42px',
@@ -4324,9 +4309,9 @@ export default function Home() {
             {/* Navigation Tabs (3-Way: Notes, Must-Try, Essentials) */}
             <div className="animate-slide-up" style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', width: '100%' }}>
-                <button onClick={() => { triggerHaptic(6); setDrawerTab('fieldNotes'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
-                <button onClick={() => { triggerHaptic(6); if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
-                <button onClick={() => { triggerHaptic(6); setDrawerTab('essentials'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
+                <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
+                <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
+                <button onClick={() => setDrawerTab('essentials')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
               </div>
             </div>
 
@@ -4340,7 +4325,6 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <button
                     onClick={() => {
-                      triggerHaptic(4);
                       setDrawerSortMode('nearest');
                       if (!userCoords && typeof navigator !== 'undefined' && navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
@@ -4364,7 +4348,7 @@ export default function Home() {
                     Nearest
                   </button>
                   <button
-                    onClick={() => { triggerHaptic(4); setDrawerSortMode('recent'); }}
+                    onClick={() => setDrawerSortMode('recent')}
                     style={{
                       backgroundColor: drawerSortMode === 'recent' ? '#1c1917' : '#f5f5f4',
                       color: drawerSortMode === 'recent' ? '#fafaf9' : '#78716c',
