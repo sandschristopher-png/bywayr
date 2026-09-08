@@ -2910,13 +2910,13 @@ export default function Home() {
             style={{
               position: 'relative',
               width: '100%',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              borderRadius: '20px',
-              boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+              backgroundColor: 'rgba(255, 255, 255, 0.96)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              borderRadius: '22px',
+              boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.14), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
               border: '1px solid #e7e5e4',
-              padding: '16px',
+              padding: '16px 18px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
@@ -2925,28 +2925,58 @@ export default function Home() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
-                No unmapped spots here yet
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                  <Compass style={{ width: '15px', height: '15px' }} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                  No spots found in this view
+                </h3>
+              </div>
               <button 
-                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setSelectedCountryFilter(null); setMaxRadiusKm(null); }} 
+                onClick={() => {
+                  triggerHaptic(6);
+                  setSelectedCategory('All');
+                  setSelectedCountryFilter(null);
+                  setMaxRadiusKm(null);
+                  setOnlyMySpots(false);
+                }} 
                 style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                title="Dismiss"
+                title="Reset all filters"
               >
                 <X style={{ width: '14px', height: '14px' }} />
               </button>
             </div>
             
-            <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.4 }}>
-              No spots in "{selectedCategory}"{selectedCountryFilter ? ` in ${selectedCountryFilter}` : ''} nearby.
+            <p style={{ margin: 0, fontSize: '12px', color: '#78716c', lineHeight: 1.45 }}>
+              {onlyMySpots
+                ? "You haven't pinned any spots matching the active filters."
+                : `No pinned field notes matching "${selectedCategory}"${selectedCountryFilter ? ` in ${selectedCountryFilter}` : ''}${maxRadiusKm !== null ? ` within ${maxRadiusKm}km` : ''}.`}
             </p>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
               <button
-                onClick={() => { triggerHaptic(6); setSelectedCategory('All'); setSelectedCountryFilter(null); setMaxRadiusKm(null); }}
-                style={{ flex: 1, padding: '10px', backgroundColor: '#f5f5f4', color: '#1c1917', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                onClick={() => {
+                  triggerHaptic(6);
+                  setSelectedCategory('All');
+                  setSelectedCountryFilter(null);
+                  setMaxRadiusKm(null);
+                  setOnlyMySpots(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#f5f5f4',
+                  color: '#1c1917',
+                  border: '1px solid #e7e5e4',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
               >
-                Show All Spots
+                Reset Filters
               </button>
               <button
                 onClick={() => {
@@ -2958,9 +2988,21 @@ export default function Home() {
                   const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
                   dropPreviewAndOpenModal(center.lat, center.lng);
                 }}
-                style={{ flex: 1, padding: '10px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)' }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#e05a47',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)',
+                  whiteSpace: 'nowrap',
+                }}
               >
-                + Drop a Pin
+                + Pin Spot Here
               </button>
             </div>
           </div>
