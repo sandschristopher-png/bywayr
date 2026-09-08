@@ -73,6 +73,10 @@ import {
   SlidersHorizontal,
   CloudUpload,
   CloudDownload,
+  ShieldCheck,
+  HardDrive,
+  Download,
+  Sparkle,
 } from 'lucide-react';
 
 // Core application layout
@@ -626,6 +630,14 @@ export default function Home() {
 
   const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
 
+  const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bywayr_is_plus') === 'true';
+    }
+    return false;
+  });
+  const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
+
   const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const t = localStorage.getItem('bywayr_gdrive_token');
@@ -714,6 +726,7 @@ export default function Home() {
     .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
 
   const isAnyOverlayActive = !!(
+    isPlusModalOpen ||
     isModalOpen ||
     isDrawerOpen ||
     isDrawerClosing ||
@@ -780,6 +793,7 @@ export default function Home() {
   };
 
   const closeTopmostSheet = useCallback(() => {
+    if (isPlusModalOpen) { setIsPlusModalOpen(false); return; }
     if (isDeleteAccountModalOpen) { setIsDeleteAccountModalOpen(false); return; }
     if (isClaimUsernameModalOpen) { setIsClaimUsernameModalOpen(false); return; }
     if (isProfileModalOpen) { handleCloseProfileDrawer(); return; }
@@ -805,6 +819,7 @@ export default function Home() {
     if (isDrawerOpen) { handleCloseDrawer(); return; }
     if (showWelcome) { handleDismissWelcome(); return; }
   }, [
+    isPlusModalOpen,
     isDeleteAccountModalOpen,
     isClaimUsernameModalOpen,
     isProfileModalOpen,
@@ -4723,17 +4738,22 @@ export default function Home() {
               )}
             </div>
 
-            {/* Bywayr Plus — Cloud Sync Card */}
-            <div style={{ backgroundColor: '#fffbfb', border: '1.5px solid #fed7aa', borderRadius: '18px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
+            {/* Bywayr Plus — Membership Card */}
+            <div style={{ backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', border: isPlusSubscriber ? '1.5px solid #bbf7d0' : '1.5px solid #fed7aa', borderRadius: '20px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isPlusSubscriber ? '0 4px 16px rgba(5, 150, 105, 0.08)' : '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Crown style={{ width: '16px', height: '16px', color: '#e05a47' }} /> Bywayr Plus — Cloud Sync
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Crown style={{ width: '16px', height: '16px', color: isPlusSubscriber ? '#059669' : '#e05a47' }} /> 
+                  Bywayr Plus
                 </span>
-                <span style={{ backgroundColor: '#fff1ee', color: '#e05a47', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fecdd3' }}>Google Drive</span>
+                <span style={{ backgroundColor: isPlusSubscriber ? '#dcfce7' : '#fff1ee', color: isPlusSubscriber ? '#16a34a' : '#e05a47', fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: isPlusSubscriber ? '1px solid #86efac' : '1px solid #fecdd3' }}>
+                  {isPlusSubscriber ? 'LIFETIME ACTIVE' : 'PREMIUM'}
+                </span>
               </div>
 
-              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
-                Securely back up your curated field notes and restore your passport data directly to your personal Google Drive account.
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
+                {isPlusSubscriber
+                  ? 'Your lifetime membership is active. Enjoy Google Drive cloud syncing, offline map caches, and unlimited curated notes.'
+                  : 'Unlock Google Drive cloud sync, unlimited passport entries, and offline field note backups forever.'}
               </p>
 
               {driveStatusMessage && (
@@ -4742,55 +4762,83 @@ export default function Home() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+              {isPlusSubscriber ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+                  <button
+                    onClick={handleGoogleDriveBackup}
+                    disabled={isBackingUpDrive}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#1c1917',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: isBackingUpDrive ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
+                    {isBackingUpDrive ? 'Backing Up...' : 'Backup to Google Drive'}
+                  </button>
+
+                  <label
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      backgroundColor: '#ffffff',
+                      color: '#1c1917',
+                      border: '1px solid #d6d3d1',
+                      borderRadius: '12px',
+                      padding: '9px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: isRestoringDrive ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
+                    <span>{isRestoringDrive ? 'Restoring...' : 'Restore Backup File'}</span>
+                    <input type="file" accept="application/json" onChange={handleGoogleDriveRestore} disabled={isRestoringDrive} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              ) : (
                 <button
-                  onClick={handleGoogleDriveBackup}
-                  disabled={isBackingUpDrive}
+                  onClick={() => {
+                    triggerHaptic(8);
+                    setIsPlusModalOpen(true);
+                    pushModalHistoryState('plusModal');
+                  }}
                   style={{
                     width: '100%',
                     backgroundColor: '#e05a47',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '12px',
-                    padding: '10px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: isBackingUpDrive ? 'not-allowed' : 'pointer',
+                    padding: '11px',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
                     boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)',
+                    marginTop: '2px',
                   }}
                 >
-                  {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
-                  {isBackingUpDrive ? 'Backing Up...' : 'Backup to Google Drive'}
+                  <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus — $19.99
                 </button>
-
-                <label
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#f5f5f4',
-                    color: '#1c1917',
-                    border: '1px solid #d6d3d1',
-                    borderRadius: '12px',
-                    padding: '10px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: isRestoringDrive ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    textAlign: 'center',
-                  }}
-                >
-                  {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
-                  <span>{isRestoringDrive ? 'Restoring...' : 'Restore from Backup File'}</span>
-                  <input type="file" accept="application/json" onChange={handleGoogleDriveRestore} disabled={isRestoringDrive} style={{ display: 'none' }} />
-                </label>
-              </div>
+              )}
             </div>
 
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '10px' }}>
@@ -5069,7 +5117,130 @@ export default function Home() {
           </div>
         </div>
       )}
+{/* Bywayr Plus Upgrade Modal */}
+      {isPlusModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                Bywayr Plus
+              </h3>
+              <button 
+                onClick={() => dismissModalWithHistory(() => setIsPlusModalOpen(false))} 
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
 
+            {/* Hero Graphic Card */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '18px 0 14px 0' }}>
+              <div style={{ width: '84px', height: '84px', borderRadius: '28px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', boxShadow: '0 12px 28px -6px rgba(224, 90, 71, 0.28)', marginBottom: '8px', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
+                <Crown style={{ width: '42px', height: '42px' }} />
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Lifetime Curator Pass
+              </div>
+            </div>
+
+            {/* Feature Highlights List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '10px 0 20px 0' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <HardDrive style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Google Drive Cloud Sync</strong> — Automatically backup & sync your pinned notes and passport stamps across all your devices.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <Download style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Offline Map Caching</strong> — Download offline city regions so your field journal is always ready in remote areas.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <ShieldCheck style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Verified Curator Badge</strong> — Stand out with an authentic gold checkmark on your public passport stamps.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <Sparkle style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Primary Purchase CTA */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => {
+                  triggerHaptic(15);
+                  setIsPlusSubscriber(true);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('bywayr_is_plus', 'true');
+                  }
+                  dismissModalWithHistory(() => setIsPlusModalOpen(false));
+                }}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#44403c',
+                  color: '#fafaf9',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '14px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
+                  letterSpacing: '0.01em',
+                }}
+              >
+                One-time Payment — $19.99
+              </button>
+
+              <button
+                onClick={() => {
+                  triggerHaptic(6);
+                  setIsPlusSubscriber(true);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('bywayr_is_plus', 'true');
+                  }
+                  alert('Purchases restored successfully!');
+                  dismissModalWithHistory(() => setIsPlusModalOpen(false));
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#78716c',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '6px',
+                }}
+              >
+                Restore Purchase
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
       {/* Welcome / Intro Modal */}
       {showWelcome && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100030, padding: '16px' }}>
