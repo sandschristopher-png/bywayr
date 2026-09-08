@@ -5,6 +5,68 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 import { Purchases, PURCHASE_TYPE } from '@capgo/native-purchases';
+
+const handleGooglePlayCheckout = async () => {
+  if (!currentUser) {
+    setIsAuthModalOpen(true);
+    pushModalHistoryState('auth');
+    return;
+  }
+
+  try {
+    triggerHaptic(12);
+    
+    // Check if running inside a native Capacitor mobile container
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      const productId = 'bywayr_plus_lifetime'; 
+      const purchaseResult = await Purchases.purchaseProduct({
+        productId: productId,
+        productType: PURCHASE_TYPE.INAPP,
+      });
+
+      if (purchaseResult && purchaseResult.transaction) {
+        setIsPlusSubscriber(true);
+        localStorage.setItem('bywayr_is_plus', 'true');
+        setIsPlusModalOpen(false);
+        alert('Thank you for upgrading to Bywayr Plus!');
+      }
+    } else {
+      // Fallback behavior for web preview if needed
+      alert('Google Play billing is only available in the native Android app.');
+    }
+  } catch (err: any) {
+    console.error('Google Play purchase failed:', err);
+    if (err.message && !err.message.includes('Canceled')) {
+      alert(`Purchase error: ${err.message}`);
+    }
+  }
+};
+
+const handleRestorePurchases = async () => {
+  try {
+    triggerHaptic(8);
+    
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      const restored = await Purchases.restorePurchases();
+      const hasPlus = restored?.transactions?.some(
+        (tx: any) => tx.productId === 'bywayr_plus_lifetime'
+      );
+
+      if (hasPlus) {
+        setIsPlusSubscriber(true);
+        localStorage.setItem('bywayr_is_plus', 'true');
+        alert('Purchases restored successfully!');
+        setIsPlusModalOpen(false);
+      } else {
+        alert('No previous Bywayr Plus purchases found.');
+      }
+    } else {
+      alert('Purchase restoration is only available in the native Android app.');
+    }
+  } catch (err: any) {
+    alert(`Restore failed: ${err.message}`);
+  }
+};
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
