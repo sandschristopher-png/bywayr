@@ -201,7 +201,7 @@ const sanitizeCountryAndCity = (city: string, country: string): { city: string; 
     cCountry = 'Japan';
   } else if (lowerCity.includes('cebu') || lowerCity.includes('manila') || lowerCity.includes('lapu-lapu') || lowerCity.includes('makati') || lowerCountry.includes('philippines')) {
     cCountry = 'Philippines';
-  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco') || lowerCountry.includes('united states') || lowerCountry.includes('usa')) {
+  } else if (lowerCity.includes('vegas') || lowerCity.includes('los angeles') || lowerCity.includes('san francisco') || lowerCountry.includes('usa') || lowerCountry.includes('usa')) {
     cCountry = 'United States';
   }
 
