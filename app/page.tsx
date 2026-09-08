@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
+import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
@@ -317,6 +318,83 @@ const extractPassportStamps = (userSpots: Spot[]): PassportStampData[] => {
   }));
 };
 
+function PwaInstallBanner() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showBanner, setShowBanner] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowBanner(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowBanner(false);
+    }
+    setDeferredPrompt(null);
+  };
+
+  if (!showBanner) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '80px',
+        left: '16px',
+        right: '16px',
+        maxWidth: '380px',
+        margin: '0 auto',
+        backgroundColor: '#1c1917',
+        color: '#fafaf9',
+        padding: '12px 16px',
+        borderRadius: '16px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.35)',
+        zIndex: 100010,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        border: '1px solid #44403c',
+      }}
+    >
+      <div style={{ fontSize: '12px', fontWeight: 600 }}>Install Bywayr for offline map access</div>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <button
+          onClick={handleInstallClick}
+          style={{
+            backgroundColor: '#e05a47',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            padding: '6px 10px',
+            fontSize: '11.5px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          Install
+        </button>
+        <button
+          onClick={() => setShowBanner(false)}
+          style={{ background: 'none', border: 'none', color: '#a8a29e', cursor: 'pointer', padding: '4px' }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -570,22 +648,37 @@ export default function Home() {
       return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
     })
     .sort((a, b) => {
-      if (drawerSortMode === 'nearest' && userCoords) {
-        const distA = getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, a.latitude, a.longitude);
-        const distB = getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, b.latitude, b.longitude);
+      if (drawerSortMode === 'nearest') {
+        const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+        const refLat = 'lat' in center ? center.lat : 36.1699;
+        const refLng = 'lng' in center ? center.lng : -115.1398;
+        const distA = getDistanceFromLatLonInKm(refLat, refLng, a.latitude, a.longitude);
+        const distB = getDistanceFromLatLonInKm(refLat, refLng, b.latitude, b.longitude);
         return distA - distB;
       }
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (timeA !== timeB) return timeB - timeA;
       const idA = a.id ? Number(a.id) : 0;
       const idB = b.id ? Number(b.id) : 0;
-      if (!isNaN(idA) && !isNaN(idB) && idA !== idB) {
-        return idB - idA;
+      return idB - idA;
+    });
+
+  const mustTryList = spots
+    .filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id))
+    .sort((a, b) => {
+      if (drawerSortMode === 'nearest') {
+        const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+        const refLat = 'lat' in center ? center.lat : 36.1699;
+        const refLng = 'lng' in center ? center.lng : -115.1398;
+        return getDistanceFromLatLonInKm(refLat, refLng, a.latitude, a.longitude) - getDistanceFromLatLonInKm(refLat, refLng, b.latitude, b.longitude);
       }
       const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return timeB - timeA;
     });
 
-  const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : spots.filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id));
+  const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : mustTryList;
   const mySpotsCount = myUserSpots.length;
   const myCitiesCount = currentUser ? new Set(myUserSpots.map((s) => s.city.trim())).size : 0;
   const myCountriesCount = myPassportStamps.length;
@@ -648,7 +741,7 @@ export default function Home() {
     setTimeout(() => {
       setIsDrawerOpen(false);
       setIsDrawerClosing(false);
-    }, 320);
+    }, 280);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
       window.history.back();
     }
@@ -661,7 +754,7 @@ export default function Home() {
     setTimeout(() => {
       setIsProfileModalOpen(false);
       setIsProfileClosing(false);
-    }, 320);
+    }, 280);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
       window.history.back();
     }
@@ -2162,9 +2255,8 @@ export default function Home() {
           return;
         }
         if (target?.closest('.maplibregl-canvas, .maplibregl-map')) {
-          if (e.cancelable) {
-            e.preventDefault();
-          }
+          // Let native MapLibre touch handlers manage pan & pinch gestures
+          return;
         }
       };
       containerEl.addEventListener('touchstart', preventDefaultTouch, { passive: false });
@@ -2278,38 +2370,35 @@ export default function Home() {
           touch-action: manipulation;
         }
         @keyframes slideUp {
-          from { transform: translateY(24px) translateZ(0); opacity: 0; }
+          from { transform: translateY(18px) translateZ(0); opacity: 0; }
           to { transform: translateY(0) translateZ(0); opacity: 1; }
         }
         @keyframes drawerInLeft {
-          0% { transform: translateX(-100%) translateZ(0); opacity: 0.5; }
-          60% { transform: translateX(12px) translateZ(0); opacity: 1; }
-          100% { transform: translateX(0) translateZ(0); opacity: 1; }
+          from { transform: translateX(-100%) translateZ(0); opacity: 0.7; }
+          to { transform: translateX(0) translateZ(0); opacity: 1; }
         }
         @keyframes drawerOutLeft {
-          0% { transform: translateX(0) translateZ(0); opacity: 1; }
-          100% { transform: translateX(-100%) translateZ(0); opacity: 0; }
+          from { transform: translateX(0) translateZ(0); opacity: 1; }
+          to { transform: translateX(-100%) translateZ(0); opacity: 0; }
         }
         @keyframes drawerInRight {
-          0% { transform: translateX(100%) translateZ(0); opacity: 0.5; }
-          60% { transform: translateX(-12px) translateZ(0); opacity: 1; }
-          100% { transform: translateX(0) translateZ(0); opacity: 1; }
+          from { transform: translateX(100%) translateZ(0); opacity: 0.7; }
+          to { transform: translateX(0) translateZ(0); opacity: 1; }
         }
         @keyframes drawerOutRight {
-          0% { transform: translateX(0) translateZ(0); opacity: 1; }
-          100% { transform: translateX(100%) translateZ(0); opacity: 0; }
+          from { transform: translateX(0) translateZ(0); opacity: 1; }
+          to { transform: translateX(100%) translateZ(0); opacity: 0; }
         }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateZ(0); }
           to { opacity: 1; transform: translateZ(0); }
         }
         @keyframes fadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
+          from { opacity: 1; transform: translateZ(0); }
+          to { opacity: 0; transform: translateZ(0); }
         }
         @keyframes scaleUp {
-          0% { transform: scale(0.8) translateZ(0); opacity: 0; }
-          70% { transform: scale(1.03) translateZ(0); opacity: 1; }
+          0% { transform: scale(0.92) translateZ(0); opacity: 0; }
           100% { transform: scale(1) translateZ(0); opacity: 1; }
         }
         @keyframes gpsRadarPulse {
@@ -2341,16 +2430,16 @@ export default function Home() {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .animate-slide-up {
-          animation: slideUp 0.35s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+          animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
           will-change: transform, opacity;
           backface-visibility: hidden;
         }
         .animate-fade-in {
-          animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
           will-change: opacity;
         }
         .animate-scale-up {
-          animation: scaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+          animation: scaleUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
           will-change: transform, opacity;
           backface-visibility: hidden;
         }
@@ -2487,7 +2576,22 @@ export default function Home() {
       )}
 
       {/* 2. Unified Search & Actions Bar */}
-      <div style={{ position: 'absolute', top: isOffline ? '52px' : '12px', left: '16px', right: '16px', maxWidth: '460px', margin: '0 auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+      <div style={{ 
+        position: 'absolute', 
+        top: isOffline ? '52px' : '12px', 
+        left: '16px', 
+        right: '16px', 
+        maxWidth: '460px', 
+        margin: '0 auto', 
+        zIndex: 99999, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '8px', 
+        pointerEvents: isInteracting ? 'none' : 'auto',
+        opacity: isInteracting ? 0 : 1,
+        transform: isInteracting ? 'translateY(-20px)' : 'translateY(0)',
+        transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.92)',
@@ -3065,10 +3169,10 @@ export default function Home() {
         padding: '6px', 
         boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.18), 0 0 1px 1px rgba(28, 25, 23, 0.04)', 
         gap: '6px', 
-        pointerEvents: 'auto',
-        opacity: 1,
-        transform: 'none',
-        visibility: 'visible',
+        pointerEvents: isInteracting ? 'none' : 'auto',
+        opacity: isInteracting ? 0 : 1,
+        transform: isInteracting ? 'translateY(16px)' : 'translateY(0)',
+        transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
         <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
           {isLocating ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '18px', height: '18px' }} />}
@@ -3865,46 +3969,70 @@ export default function Home() {
                       transform: 'translateZ(0)',
                     }}
                   >
-                    {publicPassportStamps.map((st, idx) => (
-                      <div
-                        key={idx}
-                        className="passport-stamp-card"
-                        onClick={() => {
-                          if (isStampDragging) return;
-                          triggerHaptic(8);
-                          setSelectedCountryFilter(st.country);
-                          dismissModalWithHistory(() => setViewingProfile(null));
-                        }}
-                        style={{
-                          backgroundColor: '#fafaf9',
-                          border: `2px double ${st.color}`,
-                          borderRadius: '50%',
-                          width: '76px',
-                          height: '76px',
-                          minWidth: '76px',
-                          boxShadow: '0 4px 12px rgba(28, 25, 23, 0.04)',
-                          position: 'relative',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '6px',
-                          boxSizing: 'border-box',
-                          textAlign: 'center',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div style={{ fontSize: '8px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.04em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, paddingBottom: '2px', marginBottom: '2px' }}>
-                          {st.country}
+                    {publicPassportStamps.map((st, idx) => {
+                      const d = new Date(st.firstVisit || Date.now());
+                      const day = d.toLocaleDateString('en-US', { day: '2-digit' });
+                      const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                      const year = d.getFullYear();
+
+                      return (
+                        <div
+                          key={idx}
+                          className="passport-stamp-card"
+                          onClick={() => {
+                            if (isStampDragging) return;
+                            triggerHaptic(8);
+                            setSelectedCountryFilter(st.country);
+                            dismissModalWithHistory(() => setViewingProfile(null));
+                          }}
+                          style={{
+                            backgroundColor: '#fffdfa',
+                            border: `2px solid ${st.color}`,
+                            borderRadius: '16px',
+                            minWidth: '92px',
+                            maxWidth: '105px',
+                            height: '74px',
+                            boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '6px 7px',
+                            boxSizing: 'border-box',
+                            textAlign: 'center',
+                            outline: `1.5px dashed ${st.color}55`,
+                            outlineOffset: '-4px',
+                            transform: `rotate(${((idx % 5) - 2) * 1.5}deg)`,
+                          }}
+                        >
+                          <div style={{ fontSize: '7px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+                            ENTRY · IMMIGRATION
+                          </div>
+                          
+                          <div style={{
+                            fontSize: st.country.length > 13 ? '8.5px' : '9.5px',
+                            fontWeight: 900,
+                            color: st.color,
+                            lineHeight: 1.15,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            width: '100%',
+                            wordBreak: 'normal',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}>
+                            {st.country}
+                          </div>
+
+                          <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, letterSpacing: '0.06em', fontFamily: 'monospace' }}>
+                            {day} {month} {year}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                          {st.cities[0] ? st.cities[0].toUpperCase() : 'EXPLORED'}
-                        </div>
-                        <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.8, letterSpacing: '0.02em' }}>
-                          {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -4125,12 +4253,12 @@ export default function Home() {
             position: 'fixed', 
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
-            backdropFilter: 'blur(3px)', 
-            WebkitBackdropFilter: 'blur(3px)', 
+            backdropFilter: 'blur(4px)', 
+            WebkitBackdropFilter: 'blur(4px)', 
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-start', 
-            animation: isDrawerClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
+            animation: isDrawerClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
@@ -4146,7 +4274,7 @@ export default function Home() {
               padding: 'clamp(14px, 4vw, 20px)', 
               boxSizing: 'border-box', 
               overflow: 'hidden', 
-              animation: isDrawerClosing ? 'drawerOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInLeft 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards' 
+              animation: isDrawerClosing ? 'drawerOutLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
             {/* Header */}
@@ -4177,7 +4305,17 @@ export default function Home() {
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <button
-                    onClick={() => { triggerHaptic(4); setDrawerSortMode('nearest'); }}
+                    onClick={() => {
+                      triggerHaptic(4);
+                      setDrawerSortMode('nearest');
+                      if (!userCoords && typeof navigator !== 'undefined' && navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                          () => {},
+                          { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                      }
+                    }}
                     style={{
                       backgroundColor: drawerSortMode === 'nearest' ? '#1c1917' : '#f5f5f4',
                       color: drawerSortMode === 'nearest' ? '#fafaf9' : '#78716c',
@@ -4261,8 +4399,11 @@ export default function Home() {
                 /* Main Spot List */
                 displayedDrawerSpots.map((spot: Spot) => {
                   const color = getCategoryColor(spot.category);
-                  const distanceVal = userCoords ? getDistanceFromLatLonInKm(userCoords.lat, userCoords.lng, spot.latitude, spot.longitude) : null;
-                  const distanceText = distanceVal !== null ? (distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`) : null;
+                  const refPoint = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+                  const refLat = 'lat' in refPoint ? refPoint.lat : 36.1699;
+                  const refLng = 'lng' in refPoint ? refPoint.lng : -115.1398;
+                  const distanceVal = getDistanceFromLatLonInKm(refLat, refLng, spot.latitude, spot.longitude);
+                  const distanceText = distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`;
 
                   return (
                     <div
@@ -4348,12 +4489,12 @@ export default function Home() {
             position: 'fixed', 
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
-            backdropFilter: 'blur(3px)', 
-            WebkitBackdropFilter: 'blur(3px)', 
+            backdropFilter: 'blur(4px)', 
+            WebkitBackdropFilter: 'blur(4px)', 
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-end', 
-            animation: isProfileClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
+            animation: isProfileClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
@@ -4368,7 +4509,7 @@ export default function Home() {
               padding: '24px', 
               boxSizing: 'border-box', 
               overflowY: 'auto', 
-              animation: isProfileClosing ? 'drawerOutRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'drawerInRight 0.35s cubic-bezier(0.34, 1.25, 0.64, 1) forwards' 
+              animation: isProfileClosing ? 'drawerOutRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
@@ -4495,46 +4636,70 @@ export default function Home() {
                     transform: 'translateZ(0)',
                   }}
                 >
-                  {myPassportStamps.map((st, idx) => (
-                    <div
-                      key={idx}
-                      className="passport-stamp-card"
-                      onClick={() => {
-                        if (isStampDragging) return;
-                        triggerHaptic(8);
-                        setSelectedCountryFilter(st.country);
-                        handleCloseProfileDrawer();
-                      }}
-                      style={{
-                        backgroundColor: '#fafaf9',
-                        border: `2px double ${st.color}`,
-                        borderRadius: '50%',
-                        width: '76px',
-                        height: '76px',
-                        minWidth: '76px',
-                        boxShadow: '0 4px 12px rgba(28, 25, 23, 0.04)',
-                        position: 'relative',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '6px',
-                        boxSizing: 'border-box',
-                        textAlign: 'center',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div style={{ fontSize: '8px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.04em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, paddingBottom: '2px', marginBottom: '2px' }}>
-                        {st.country}
+                  {myPassportStamps.map((st, idx) => {
+                    const d = new Date(st.firstVisit || Date.now());
+                    const day = d.toLocaleDateString('en-US', { day: '2-digit' });
+                    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                    const year = d.getFullYear();
+
+                    return (
+                      <div
+                        key={idx}
+                        className="passport-stamp-card"
+                        onClick={() => {
+                          if (isStampDragging) return;
+                          triggerHaptic(8);
+                          setSelectedCountryFilter(st.country);
+                          handleCloseProfileDrawer();
+                        }}
+                        style={{
+                          backgroundColor: '#fffdfa',
+                          border: `2px solid ${st.color}`,
+                          borderRadius: '16px',
+                          minWidth: '92px',
+                          maxWidth: '105px',
+                          height: '74px',
+                          boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
+                          position: 'relative',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 7px',
+                          boxSizing: 'border-box',
+                          textAlign: 'center',
+                          outline: `1.5px dashed ${st.color}55`,
+                          outlineOffset: '-4px',
+                          transform: `rotate(${((idx % 5) - 2) * 1.5}deg)`,
+                        }}
+                      >
+                        <div style={{ fontSize: '7px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+                          ENTRY · IMMIGRATION
+                        </div>
+
+                        <div style={{
+                          fontSize: st.country.length > 13 ? '8.5px' : '9.5px',
+                          fontWeight: 900,
+                          color: st.color,
+                          lineHeight: 1.15,
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                          width: '100%',
+                          wordBreak: 'normal',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}>
+                          {st.country}
+                        </div>
+
+                        <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, letterSpacing: '0.06em', fontFamily: 'monospace' }}>
+                          {day} {month} {year}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                        {st.cities[0] ? st.cities[0].toUpperCase() : 'EXPLORED'}
-                      </div>
-                      <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '2px', opacity: 0.8, letterSpacing: '0.02em' }}>
-                        {new Date(st.firstVisit || Date.now()).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -4952,8 +5117,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* PWA Web Install Banner */}
-      <PwaInstallBanner />
-    </div>
+      </div>
   );
 }
