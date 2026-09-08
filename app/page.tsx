@@ -761,6 +761,19 @@ export default function Home() {
   }, [pushModalHistoryState]);
 
   useEffect(() => {
+    if (typeof document !== 'undefined') {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = '/icon-192.png';
+      link.type = 'image/png';
+    }
+  }, []);
+
+  useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch((err) => {
         console.error('Service worker registration failed:', err);
