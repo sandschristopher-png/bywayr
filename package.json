@@ -9,6 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capgo/native-purchases": "^8.7.0",
     "@erikmichelson/open-location-code-ts": "^1.20250411.0",
     "@supabase/supabase-js": "^2.112.4",
     "lucide-react": "^1.39.0",

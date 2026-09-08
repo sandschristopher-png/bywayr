@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import * as maplibregl from 'maplibre-gl';
+import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase'; 
 
@@ -495,8 +495,8 @@ export default function Home() {
     }
   };
 
-  const zoomHoldRef = useRef<NodeJS.Timeout | null>(null);
-  const zoomRepeatRef = useRef<NodeJS.Timeout | null>(null);
+  const zoomHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoomRepeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopZoomHold = useCallback(() => {
     if (zoomHoldRef.current) {
@@ -838,7 +838,7 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
     viewingProfile ||
     isWalkModalOpen ||
     shareDialogSpot ||
-    shareDialogCustomUrl ||
+    Boolean(shareDialogCustomUrl) ||
     isAuthModalOpen ||
     isClaimUsernameModalOpen ||
     isDeleteAccountModalOpen ||
@@ -874,7 +874,7 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
       setIsDrawerOpen(false);
       setIsDrawerClosing(false);
     }, 280);
-    if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
+    if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
       window.history.back();
     }
   };
@@ -886,7 +886,7 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
       setIsProfileModalOpen(false);
       setIsProfileClosing(false);
     }, 280);
-    if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
+    if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
       window.history.back();
     }
   };
@@ -964,7 +964,7 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
 
   const dismissModalWithHistory = (closeFn: () => void) => {
     closeFn();
-    if (!isPopstateHandling.current && typeof window !== 'undefined' && window.history.state?.bywayr_sheet) {
+    if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
       window.history.back();
     }
   };
