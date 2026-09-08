@@ -4834,6 +4834,9 @@ export default function Home() {
                   onChange={(e) => setAuthEmail(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                 />
+                <span style={{ fontSize: '10.5px', color: '#78716c', display: 'block', marginTop: '4px' }}>
+                  🔒 Your email is never shared publicly or displayed on your profile.
+                </span>
               </div>
 
               <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
