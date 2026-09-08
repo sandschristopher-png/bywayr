@@ -4847,6 +4847,72 @@ export default function Home() {
         </div>
       )}
 
+      {/* Welcome / Intro Modal */}
+      {showWelcome && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100030, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 12px auto', boxShadow: '0 6px 16px rgba(224, 90, 71, 0.18)', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
+              <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              Welcome to Bywayr
+            </h3>
+            
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
+              Your pocket field journal for discovering, pinning, and protecting unindexed local gems and backstreet favorites.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px 14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                  <Gem style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917' }}>Curate Hidden Spots</div>
+                  <div style={{ fontSize: '11px', color: '#78716c' }}>Pin hole-in-the-wall eats, quiet cafes, and night spots.</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7', flexShrink: 0 }}>
+                  <Compass style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917' }}>Earn Passport Stamps</div>
+                  <div style={{ fontSize: '11px', color: '#78716c' }}>Collect entry stamps automatically as you pin across cities.</div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                triggerHaptic(10);
+                dismissModalWithHistory(handleDismissWelcome);
+              }}
+              style={{
+                width: '100%',
+                backgroundColor: '#1c1917',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '12px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(28, 25, 23, 0.2)',
+              }}
+            >
+              Start Exploring <ArrowRight style={{ width: '15px', height: '15px' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* PWA Web Install Banner */}
       <PwaInstallBanner />
     </div>
