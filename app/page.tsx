@@ -3829,9 +3829,9 @@ const getDriveToken = (): string | null => {
                           backgroundColor: '#fbfbfa',
                           border: `2px dashed ${st.color}`,
                           borderRadius: '50%',
-                          width: '98px',
-                          height: '98px',
-                          minWidth: '98px',
+                          width: '76px',
+                          height: '76px',
+                          minWidth: '76px',
                           boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                           position: 'relative',
                           display: 'flex',
@@ -3850,7 +3850,7 @@ const getDriveToken = (): string | null => {
                             VISA
                           </span>
                         </div>
-                        <div style={{ fontSize: '9.5px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
+                        <div style={{ fontSize: '6.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
                           {st.country}
                         </div>
                         <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
@@ -4500,7 +4500,7 @@ const getDriveToken = (): string | null => {
                   onWheel={(e) => handleStampWheel(e, profileStampScrollRef)}
                   style={{
                     display: 'flex',
-                    gap: '12px',
+                    gap: '8px',
                     overflowX: 'auto',
                     paddingBottom: '12px',
                     paddingTop: '6px',
@@ -4520,13 +4520,13 @@ const getDriveToken = (): string | null => {
                         setSelectedCountryFilter(st.country);
                         handleCloseProfileDrawer();
                       }}
-                      style={{
+                     style={{
                         backgroundColor: '#fbfbfa',
                         border: `2px dashed ${st.color}`,
                         borderRadius: '50%',
-                        width: '98px',
-                        height: '98px',
-                        minWidth: '98px',
+                        width: '76px',
+                        height: '76px',
+                        minWidth: '76px',
                         boxShadow: '0 4px 14px rgba(28, 25, 23, 0.05)',
                         position: 'relative',
                         display: 'flex',
@@ -4545,10 +4545,10 @@ const getDriveToken = (): string | null => {
                           VISA
                         </span>
                       </div>
-                      <div style={{ fontSize: '9.5px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
+                      <div style={{ fontSize: '8px', fontWeight: 900, color: st.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em', textTransform: 'uppercase', width: '100%', borderBottom: `1px solid ${st.color}40`, borderTop: `1px solid ${st.color}40`, padding: '1.5px 0', margin: '1px 0' }}>
                         {st.country}
                       </div>
-                      <div style={{ fontSize: '7.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
+                      <div style={{ fontSize: '6.5px', color: st.color, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', opacity: 0.85 }}>
                         {st.cities[0] ? st.cities[0].toUpperCase() : 'ENTRY'}
                       </div>
                       <div style={{ fontSize: '7px', color: st.color, fontWeight: 800, marginTop: '1px', opacity: 0.7 }}>
