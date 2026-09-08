@@ -5238,7 +5238,7 @@ export default function Home() {
             </h3>
             
             <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
-              Your pocket field journal for discovering, pinning, and protecting unindexed local gems and backstreet favorites.
+              Your pocket field guide for discovering, pinning, and archiving unindexed local gems and backstreet favorites.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px 14px', marginBottom: '18px' }}>
