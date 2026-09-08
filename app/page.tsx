@@ -71,6 +71,8 @@ import {
   Globe,
   Clock,
   SlidersHorizontal,
+  CloudUpload,
+  CloudDownload,
 } from 'lucide-react';
 
 // Inline Fallback Components to prevent missing module errors
@@ -529,6 +531,20 @@ export default function Home() {
 
   const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
   const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
+
+  const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const t = localStorage.getItem('bywayr_gdrive_token');
+      const ts = localStorage.getItem('bywayr_gdrive_token_time');
+      return !!t && !!ts && Date.now() - parseInt(ts) < 55 * 60 * 1000;
+    }
+    return false;
+  });
+
+  const [isBackingUpDrive, setIsBackingUpDrive] = useState(false);
+  const [isRestoringDrive, setIsRestoringDrive] = useState(false);
+  const [driveStatusMessage, setDriveStatusMessage] = useState<string | null>(null);
+  
 
   const [newSpot, setNewSpot] = useState<Spot>({
     name: '',
@@ -1448,14 +1464,21 @@ export default function Home() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
       setCurrentUser(user);
       currentUserRef.current = user;
       if (user) {
         setIsAuthModalOpen(false);
         fetchUserUpvotes(user.id);
+        // Persist the Google provider token (only present right after OAuth sign-in)
+        if (session?.provider_token) {
+          localStorage.setItem('bywayr_gdrive_token', session.provider_token);
+          localStorage.setItem('bywayr_gdrive_token_time', Date.now().toString());
+        }
       } else {
+        localStorage.removeItem('bywayr_gdrive_token');
+        localStorage.removeItem('bywayr_gdrive_token_time');
         setUserProfile(null);
         setUpvotedCommentIds([]);
         localStorage.removeItem('bywayr_user_profile');
@@ -1903,7 +1926,153 @@ export default function Home() {
     setIsProfileModalOpen(false);
     setIsClaimUsernameModalOpen(false);
   };
+const getDriveToken = (): string | null => {
+    const t = localStorage.getItem('bywayr_gdrive_token');
+    const ts = localStorage.getItem('bywayr_gdrive_token_time');
+    if (!t || !ts) return null;
+    if (Date.now() - parseInt(ts) > 55 * 60 * 1000) {
+      localStorage.removeItem('bywayr_gdrive_token');
+      return null;
+    }
+    return t;
+  };
 
+  const handleGoogleDriveBackup = async () => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) {
+      setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
+      return;
+    }
+
+    triggerHaptic(12);
+    setIsBackingUpDrive(true);
+    setDriveStatusMessage('Preparing backup data...');
+
+    try {
+      const backupPayload = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        user_id: activeUser.id,
+        spots: myUserSpots,
+        mustTryIds: mustTrySpotIds,
+        profile: userProfile,
+      };
+      const fileContent = JSON.stringify(backupPayload, null, 2);
+      const accessToken = getDriveToken();
+
+      if (!accessToken) {
+        const blob = new Blob([fileContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bywayr_gdrive_backup_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setDriveStatusMessage('Not connected to Drive — backup downloaded instead');
+      } else {
+        const fileMetadata = {
+          name: `bywayr_backup_${activeUser.id}_${Date.now()}.json`,
+          mimeType: 'application/json',
+        };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+        form.append('file', new Blob([JSON.stringify(backupPayload)], { type: 'application/json' }));
+
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: new Headers({ Authorization: `Bearer ${accessToken}` }),
+          body: form,
+        });
+
+        if (!res.ok) throw new Error('Failed to upload to Google Drive. Try signing in again.');
+        setIsDriveConnected(true);
+        setDriveStatusMessage('Successfully backed up to Google Drive!');
+      }
+
+      setTimeout(() => setDriveStatusMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Google Drive backup error:', err);
+      setDriveStatusMessage(`Backup failed: ${err.message || 'Please reconnect Google Drive'}`);
+      setTimeout(() => setDriveStatusMessage(null), 6000);
+    } finally {
+      setIsBackingUpDrive(false);
+    }
+  };
+
+  const handleGoogleDriveRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    triggerHaptic(12);
+    setIsRestoringDrive(true);
+    setDriveStatusMessage('Restoring backup from file...');
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+
+        if (!parsed.spots || !Array.isArray(parsed.spots)) {
+          throw new Error('Invalid backup file structure.');
+        }
+
+        const activeUser = currentUserRef.current;
+        if (!activeUser) throw new Error('You must be signed in to restore spots.');
+
+        const keyFor = (spot: any) =>
+          `${String(spot.name).toLowerCase().trim()}|${Number(spot.latitude).toFixed(5)},${Number(spot.longitude).toFixed(5)}`;
+        const existingKeys = new Set(
+          spots
+            .filter((s: Spot) => s.user_id === activeUser.id)
+            .map((s) => keyFor(s))
+        );
+        const toInsert = parsed.spots.filter((spot: any) => !existingKeys.has(keyFor(spot)));
+
+        let restoredCount = 0;
+        if (toInsert.length > 0) {
+          const { error } = await supabase.from('spots').insert(
+            toInsert.map((spot: any) => ({
+              name: spot.name,
+              category: spot.category,
+              city: spot.city,
+              country: spot.country || 'United States',
+              description: spot.description,
+              latitude: spot.latitude,
+              longitude: spot.longitude,
+              image_url: spot.image_url || null,
+              user_id: activeUser.id,
+            }))
+          );
+          if (error) throw error;
+          restoredCount = toInsert.length;
+        }
+
+        if (Array.isArray(parsed.mustTryIds) && parsed.mustTryIds.length > 0) {
+          setMustTrySpotIds((prev) => Array.from(new Set([...prev, ...parsed.mustTryIds])));
+        }
+
+        await fetchSpots();
+        setIsDriveConnected(true);
+        setDriveStatusMessage(`Restored ${restoredCount} spots (${parsed.spots.length - restoredCount} already existed)`);
+        setTimeout(() => setDriveStatusMessage(null), 4000);
+      } catch (err: any) {
+        setDriveStatusMessage(`Restore failed: ${err.message || 'Corrupted backup file'}`);
+        setTimeout(() => setDriveStatusMessage(null), 6000);
+      } finally {
+        setIsRestoringDrive(false);
+        e.target.value = '';
+      }
+    };
+    reader.onerror = () => {
+      setIsRestoringDrive(false);
+      setDriveStatusMessage(null);
+    };
+    reader.readAsText(file);
+  };
   const handleDeleteAccount = async () => {
     const activeUser = currentUserRef.current;
     if (!activeUser || deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
@@ -4383,7 +4552,75 @@ export default function Home() {
                 </div>
               )}
             </div>
+        {/* Bywayr Plus — Cloud Sync Card */}
+        <div style={{ backgroundColor: '#fffbfb', border: '1.5px solid #fed7aa', borderRadius: '18px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Crown style={{ width: '16px', height: '16px', color: '#e05a47' }} /> Bywayr Plus — Cloud Sync
+            </span>
+            <span style={{ backgroundColor: '#fff1ee', color: '#e05a47', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fecdd3' }}>Google Drive</span>
+          </div>
 
+          <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.4 }}>
+            Securely back up your curated field notes and restore your passport data directly to your personal Google Drive account.
+          </p>
+
+          {driveStatusMessage && (
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#059669', backgroundColor: '#ecfdf5', padding: '6px 10px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+              {driveStatusMessage}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+            <button
+              onClick={handleGoogleDriveBackup}
+              disabled={isBackingUpDrive}
+              style={{
+                width: '100%',
+                backgroundColor: '#e05a47',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '10px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: isBackingUpDrive ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)',
+              }}
+            >
+              {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
+              {isBackingUpDrive ? 'Backing Up...' : 'Backup to Google Drive'}
+            </button>
+
+            <label
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: '#f5f5f4',
+                color: '#1c1917',
+                border: '1px solid #d6d3d1',
+                borderRadius: '12px',
+                padding: '10px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: isRestoringDrive ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                textAlign: 'center',
+              }}
+            >
+              {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
+              <span>{isRestoringDrive ? 'Restoring...' : 'Restore from Backup File'}</span>
+              <input type="file" accept="application/json" onChange={handleGoogleDriveRestore} disabled={isRestoringDrive} style={{ display: 'none' }} />
+            </label>
+          </div>
+        </div>
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
