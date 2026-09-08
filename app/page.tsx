@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import * as maplibre from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase'; 
 
@@ -2113,11 +2113,10 @@ const handleGooglePlayCheckout = async () => {
     triggerHaptic(12);
     
     if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-      const { Purchases, PURCHASE_TYPE } = await import('@capgo/native-purchases');
+      const { NativePurchases: Purchases } = await import('@capgo/native-purchases') as any;
       const productId = 'bywayr_plus_lifetime'; 
       const purchaseResult = await Purchases.purchaseProduct({
         productId: productId,
-        productType: PURCHASE_TYPE.INAPP,
       });
 
       if (purchaseResult && purchaseResult.transaction) {
@@ -2142,7 +2141,7 @@ const handleRestorePurchases = async () => {
     triggerHaptic(8);
     
     if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-      const { Purchases } = await import('@capgo/native-purchases');
+      const { NativePurchases: Purchases } = await import('@capgo/native-purchases') as any;
       const restored = await Purchases.restorePurchases();
       const hasPlus = restored?.transactions?.some(
         (tx: any) => tx.productId === 'bywayr_plus_lifetime'
