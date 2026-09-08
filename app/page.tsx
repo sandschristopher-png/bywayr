@@ -722,7 +722,47 @@ export default function Home() {
       distanceKm: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, spot.latitude, spot.longitude),
     }))
     .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
+useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = setTimeout(async () => {
+      const q = searchQuery.trim();
+      if (!q || q.length < 2) {
+        setSearchResults([]);
+        setShowDropdown(false);
+        return;
+      }
 
+      setIsSearching(true);
+      try {
+        const localMatches = spots.filter(spot => 
+          spot.name.toLowerCase().includes(q.toLowerCase()) ||
+          spot.city.toLowerCase().includes(q.toLowerCase()) ||
+          spot.category.toLowerCase().includes(q.toLowerCase())
+        ).map(spot => ({
+          display_name: `${spot.name} (${spot.city} — ${spot.category})`,
+          name: spot.name,
+          lat: spot.latitude,
+          lon: spot.longitude,
+          address: { city: spot.city, country: spot.country },
+          isLocal: true,
+          spotObj: spot
+        })).slice(0, 4);
+
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5`);
+        const osmData = await res.json();
+        
+        const combined = [...localMatches, ...(osmData || [])];
+        setSearchResults(combined);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error('Autocomplete search error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery, spots]);
   const isAnyOverlayActive = !!(
     isPlusModalOpen ||
     isModalOpen ||
@@ -5234,7 +5274,7 @@ export default function Home() {
             </div>
 
             <h3 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
-              Welcome to Bywayr
+              Welcome to Bywayr   
             </h3>
             
             <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
