@@ -5269,14 +5269,7 @@ const handleGooglePlayCheckout = async () => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
               <button
-                onClick={() => {
-                  triggerHaptic(15);
-                  setIsPlusSubscriber(true);
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('bywayr_is_plus', 'true');
-                  }
-                  dismissModalWithHistory(() => setIsPlusModalOpen(false));
-                }}
+                onClick={handleGooglePlayCheckout}
                 style={{
                   width: '100%',
                   backgroundColor: '#44403c',
@@ -5295,50 +5288,20 @@ const handleGooglePlayCheckout = async () => {
               </button>
 
               <button
-                onClick={() => {
-                  triggerHaptic(6);
-                  setIsPlusSubscriber(true);
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('bywayr_is_plus', 'true');
-                  }
-                  alert('Purchases restored successfully!');
-                  dismissModalWithHistory(() => setIsPlusModalOpen(false));
-                }}{/* Bottom Primary Purchase CTA */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={handleGooglePlayCheckout}
-              style={{
-                width: '100%',
-                backgroundColor: '#44403c',
-                color: '#fafaf9',
-                border: 'none',
-                borderRadius: '16px',
-                padding: '14px',
-                fontSize: '14px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
-                letterSpacing: '0.01em',
-              }}
-            >
-              One-time Payment — $19.99
-            </button>
-
-            <button
-              onClick={handleRestorePurchases}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#78716c',
-                fontSize: '11.5px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                padding: '6px',
-              }}
-            >
-              Restore Purchase
-            </button>
-          </div>
+                onClick={handleRestorePurchases}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#78716c',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '6px',
+                }}
+              >
+                Restore Purchase
+              </button>
+            </div>
 
           </div>
         </div>
