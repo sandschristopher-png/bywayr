@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
+import { Purchases, PURCHASE_TYPE } from '@capgo/native-purchases';
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
@@ -2100,7 +2101,61 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
     setIsProfileModalOpen(false);
     setIsClaimUsernameModalOpen(false);
   };
+const handleGooglePlayCheckout = async () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      pushModalHistoryState('auth');
+      return;
+    }
 
+    try {
+      triggerHaptic(12);
+      const productId = 'bywayr_plus_lifetime'; 
+      
+      const purchaseResult = await Purchases.purchaseProduct({
+        productId: productId,
+        productType: PURCHASE_TYPE.INAPP,
+      });
+
+      if (purchaseResult && purchaseResult.transaction) {
+        setIsPlusSubscriber(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('bywayr_is_plus', 'true');
+        }
+        setIsPlusModalOpen(false);
+        alert('Thank you for upgrading to Bywayr Plus!');
+      }
+    } catch (err: any) {
+      console.error('Google Play purchase failed:', err);
+      if (err.message && !err.message.includes('Canceled')) {
+        alert(`Purchase error: ${err.message}`);
+      }
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      triggerHaptic(8);
+      const restored = await Purchases.restorePurchases();
+      
+      const hasPlus = restored?.transactions?.some(
+        (tx: any) => tx.productId === 'bywayr_plus_lifetime'
+      );
+
+      if (hasPlus) {
+        setIsPlusSubscriber(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('bywayr_is_plus', 'true');
+        }
+        alert('Purchases restored successfully!');
+        setIsPlusModalOpen(false);
+      } else {
+        alert('No previous Bywayr Plus purchases found.');
+      }
+    } catch (err: any) {
+      alert(`Restore failed: ${err.message}`);
+    }
+  };
   const getDriveToken = (): string | null => {
     const t = localStorage.getItem('bywayr_gdrive_token');
     const ts = localStorage.getItem('bywayr_gdrive_token_time');
@@ -5211,7 +5266,7 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
 
             </div>
 
-            {/* Bottom Primary Purchase CTA */}
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
               <button
                 onClick={() => {
@@ -5248,20 +5303,42 @@ const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&
                   }
                   alert('Purchases restored successfully!');
                   dismissModalWithHistory(() => setIsPlusModalOpen(false));
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#78716c',
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '6px',
-                }}
-              >
-                Restore Purchase
-              </button>
-            </div>
+                }}{/* Bottom Primary Purchase CTA */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={handleGooglePlayCheckout}
+              style={{
+                width: '100%',
+                backgroundColor: '#44403c',
+                color: '#fafaf9',
+                border: 'none',
+                borderRadius: '16px',
+                padding: '14px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
+                letterSpacing: '0.01em',
+              }}
+            >
+              One-time Payment — $19.99
+            </button>
+
+            <button
+              onClick={handleRestorePurchases}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#78716c',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '6px',
+              }}
+            >
+              Restore Purchase
+            </button>
+          </div>
 
           </div>
         </div>
