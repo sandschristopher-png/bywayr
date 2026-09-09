@@ -5,7 +5,6 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
 
-import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
   MapPin,
   Loader2,
@@ -15,9 +14,7 @@ import {
   Search,
   List,
   Camera,
-  Coffee,
   Utensils,
-  Mountain,
   Sun,
   Sparkles,
   Navigation2,
@@ -27,7 +24,6 @@ import {
   LogIn,
   LogOut,
   Mail,
-  CheckCircle2,
   Share2,
   Check,
   Bookmark,
@@ -46,7 +42,6 @@ import {
   Send,
   Copy,
   Compass,
-  Waves,
   Disc,
   Laptop,
   MoonStar,
@@ -57,20 +52,11 @@ import {
   Plane,
   AlertTriangle,
   Gamepad2,
-  Flower2,
-  Palette,
   Landmark,
-  Cake,
-  Glasses,
-  Zap,
-  BookOpen,
-  Cpu,
   MessageSquare,
   WifiOff,
   Mic2,
-  Award,
   Globe,
-  Clock,
   SlidersHorizontal,
   CloudUpload,
   CloudDownload,
@@ -320,82 +306,6 @@ const extractPassportStamps = (userSpots: Spot[]): PassportStampData[] => {
   }));
 };
 
-function PwaInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showBanner, setShowBanner] = useState(false);
-
-  useEffect(() => {
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowBanner(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowBanner(false);
-    }
-    setDeferredPrompt(null);
-  };
-
-  if (!showBanner) return null;
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '80px',
-        left: '16px',
-        right: '16px',
-        maxWidth: '380px',
-        margin: '0 auto',
-        backgroundColor: '#1c1917',
-        color: '#fafaf9',
-        padding: '12px 16px',
-        borderRadius: '16px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.35)',
-        zIndex: 100010,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        border: '1px solid #44403c',
-      }}
-    >
-      <div style={{ fontSize: '12px', fontWeight: 600 }}>Install Bywayr for offline map access</div>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <button
-          onClick={handleInstallClick}
-          style={{
-            backgroundColor: '#e05a47',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '6px 10px',
-            fontSize: '11.5px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Install
-        </button>
-        <button
-          onClick={() => setShowBanner(false)}
-          style={{ background: 'none', border: 'none', color: '#a8a29e', cursor: 'pointer', padding: '4px' }}
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -2625,7 +2535,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
     };
   }, [spots]);
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#ecebe7' }}>
       <style jsx global>{`
         html, body {
           position: fixed;
@@ -2774,8 +2684,8 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
           right: 0, 
           bottom: 0, 
           zIndex: 0, 
-          backgroundColor: isDarkMode ? '#262421' : '#f5f5f4', 
-          filter: isDarkMode ? 'invert(90%) hue-rotate(200deg) saturate(28%) brightness(108%) contrast(98%)' : 'none', 
+          backgroundColor: isDarkMode ? '#262421' : '#ecebe7', 
+          filter: isDarkMode ? 'grayscale(82%) sepia(12%) brightness(0.82) contrast(1.08)' : 'saturate(0.88) contrast(1.04)', 
           transition: 'filter 0.6s ease, background-color 0.3s ease', 
           touchAction: 'pan-x pan-y', 
         }} 
@@ -2974,7 +2884,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   pushModalHistoryState('drawer');
                 }}
                 style={{
-                  backgroundColor: '#f5f5f4',
+                  backgroundColor: '#ecebe7',
                   border: '1px solid #e7e5e4',
                   borderRadius: '50%',
                   width: '34px',
@@ -3099,7 +3009,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
-                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #f5f5f4', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #ecebe7', display: 'flex', alignItems: 'center', gap: '9px' }}>
                     <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                   </div>
@@ -3339,7 +3249,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   setMaxRadiusKm(null);
                   setOnlyMySpots(false);
                 }} 
-                style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                 title="Reset all filters"
               >
                 <X style={{ width: '14px', height: '14px' }} />
@@ -3364,7 +3274,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 style={{
                   flex: 1,
                   padding: '10px',
-                  backgroundColor: '#f5f5f4',
+                  backgroundColor: '#ecebe7',
                   color: '#1c1917',
                   border: '1px solid #e7e5e4',
                   borderRadius: '12px',
@@ -3579,7 +3489,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 }
                 dropPreviewAndOpenModal(activeSearchedSpot.latitude, activeSearchedSpot.longitude, activeSearchedSpot.name);
               }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#f5f5f4', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
             >
               <Plus style={{ width: '14px', height: '14px' }} /> Save as Curated Pin
             </button>
@@ -3616,7 +3526,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',
-                  backgroundColor: '#f5f5f4',
+                  backgroundColor: '#ecebe7',
                   border: '1px solid #e7e5e4',
                   borderRadius: '12px',
                   padding: '8px 30px 8px 32px',
@@ -3773,7 +3683,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 style={{
                   marginTop: '10px',
                   width: '100%',
-                  backgroundColor: '#f5f5f4',
+                  backgroundColor: '#ecebe7',
                   color: '#e05a47',
                   border: '1px solid #fed7aa',
                   padding: '9px',
@@ -3805,7 +3715,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   disabled={savingVouch}
                   style={{
                     border: 'none',
-                    background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#f5f5f4',
+                    background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#ecebe7',
                     borderRadius: '10px',
                     cursor: 'pointer',
                     color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
@@ -3823,17 +3733,17 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
                 </button>
 
-                <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Save to Must-Try">
+                <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#ecebe7', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Save to Must-Try">
                   {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '15px', height: '15px' }} /> : <Bookmark style={{ width: '15px', height: '15px' }} />}
                 </button>
 
-                <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} title="Share spot">
+                <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#ecebe7', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} title="Share spot">
                   <Share2 style={{ width: '15px', height: '15px' }} />
                 </button>
 
                 {currentUser && viewingSpot.user_id === currentUser.id && (
                   <>
-                    <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Edit Spot">
+                    <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#ecebe7', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Edit Spot">
                       <Pencil style={{ width: '14px', height: '14px' }} />
                     </button>
                     <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '6px', display: 'flex', flexShrink: 0 }} title="Delete Spot">
@@ -3871,7 +3781,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
             </div>
 
             {viewingSpot.image_url && (
-              <div style={{ width: '100%', height: '130px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f5f5f4' }}>
+              <div style={{ width: '100%', height: '130px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#ecebe7' }}>
                 <img src={viewingSpot.image_url} alt={viewingSpot.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </div>
             )}
@@ -3890,7 +3800,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
               <button
                 onClick={() => handleCopyCoordinates(viewingSpot.latitude, viewingSpot.longitude)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '9px', backgroundColor: coordsCopied ? '#ecfdf5' : '#f5f5f4', color: coordsCopied ? '#059669' : '#1c1917', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '9px', backgroundColor: coordsCopied ? '#ecfdf5' : '#ecebe7', color: coordsCopied ? '#059669' : '#1c1917', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
               >
                 {coordsCopied ? <Check style={{ width: '13px', height: '13px' }} /> : <Copy style={{ width: '13px', height: '13px' }} />}
                 {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
@@ -3934,7 +3844,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
       {isDiscussionModalOpen && viewingSpot && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '420px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-            <button onClick={() => dismissModalWithHistory(() => setIsDiscussionModalOpen(false))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => dismissModalWithHistory(() => setIsDiscussionModalOpen(false))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <X style={{ width: '18px', height: '18px' }} />
             </button>
 
@@ -3974,7 +3884,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                         <button
                           onClick={() => handleUpvoteComment(c.id)}
                           style={{
-                            background: isUpvoted ? '#ecfdf5' : '#f5f5f4',
+                            background: isUpvoted ? '#ecfdf5' : '#ecebe7',
                             border: 'none',
                             borderRadius: '8px',
                             padding: '4px 8px',
@@ -4004,7 +3914,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   type="button"
                   onClick={() => { triggerHaptic(4); setCommentTag(t); }}
                   style={{
-                    backgroundColor: commentTag === t ? '#1c1917' : '#f5f5f4',
+                    backgroundColor: commentTag === t ? '#1c1917' : '#ecebe7',
                     color: commentTag === t ? '#fafaf9' : '#78716c',
                     border: 'none',
                     borderRadius: '8px',
@@ -4026,7 +3936,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 placeholder="Leave a quick tip or update..."
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
-                style={{ flex: 1, boxSizing: 'border-box', backgroundColor: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 14px', fontSize: '12.5px', outline: 'none', color: '#1c1917' }}
+                style={{ flex: 1, boxSizing: 'border-box', backgroundColor: '#ecebe7', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 14px', fontSize: '12.5px', outline: 'none', color: '#1c1917' }}
               />
               <button
                 type="submit"
@@ -4049,7 +3959,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
               <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 {isEditing ? 'Edit Curated Spot' : 'Add Curated Spot'}
               </h3>
-              <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: '0' }}>
+              <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: '0' }}>
                 <X style={{ width: '16px', height: '16px' }} />
               </button>
             </div>
@@ -4124,7 +4034,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   </button>
                 </div>
                 
-                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', backgroundColor: '#f5f5f4', border: '1px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', fontSize: '11.5px', color: '#57534e', fontWeight: 600 }}>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', backgroundColor: '#ecebe7', border: '1px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', fontSize: '11.5px', color: '#57534e', fontWeight: 600 }}>
                   <Camera style={{ width: '15px', height: '15px', color: '#e05a47' }} />
                   <span>{imageFile ? imageFile.name : imagePreview ? 'Change Photo' : 'Upload Photo'}</span>
                   <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
@@ -4177,7 +4087,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
             <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
 
@@ -4196,7 +4106,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                       fontSize: '10.5px', 
                       fontWeight: 600, 
                       color: '#78716c', 
-                      backgroundColor: '#f5f5f4', 
+                      backgroundColor: '#ecebe7', 
                       padding: '3px 8px', 
                       borderRadius: '6px', 
                       letterSpacing: '0.04em', 
@@ -4338,7 +4248,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                       setProfileCityFilter('All');
                     }}
                     style={{
-                      backgroundColor: profileCityFilter === 'All' ? '#1c1917' : '#f5f5f4',
+                      backgroundColor: profileCityFilter === 'All' ? '#1c1917' : '#ecebe7',
                       color: profileCityFilter === 'All' ? '#fafaf9' : '#57534e',
                       border: 'none',
                       borderRadius: '12px',
@@ -4359,7 +4269,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                         setProfileCityFilter(city);
                       }}
                       style={{
-                        backgroundColor: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#1c1917' : '#f5f5f4',
+                        backgroundColor: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#1c1917' : '#ecebe7',
                         color: profileCityFilter.toLowerCase() === city.toLowerCase() ? '#fafaf9' : '#57534e',
                         border: 'none',
                         borderRadius: '12px',
@@ -4393,7 +4303,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                       {s.image_url ? (
                         <img src={s.image_url} alt={s.name} style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
-                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: '#ecebe7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', flexShrink: 0 }}>
                           <MapPin style={{ width: '22px', height: '22px' }} />
                         </div>
                       )}
@@ -4420,7 +4330,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                           flyToSpot(s);
                         }}
                         style={{
-                          backgroundColor: '#f5f5f4',
+                          backgroundColor: '#ecebe7',
                           color: '#1c1917',
                           border: '1px solid #d6d3d1',
                           borderRadius: '10px',
@@ -4518,7 +4428,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
               }}
               style={{
                 width: '100%',
-                backgroundColor: shareDialogCopied ? '#ecfdf5' : '#f5f5f4',
+                backgroundColor: shareDialogCopied ? '#ecfdf5' : '#ecebe7',
                 color: shareDialogCopied ? '#059669' : '#1c1917',
                 border: shareDialogCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4',
                 padding: '11px',
@@ -4580,7 +4490,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
             </div>
 
             <div className="animate-slide-up" style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '14px', padding: '3px', width: '100%' }}>
                 <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
                 <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
                 <button onClick={() => setDrawerTab('essentials')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
@@ -4606,7 +4516,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                       }
                     }}
                     style={{
-                      backgroundColor: drawerSortMode === 'nearest' ? '#1c1917' : '#f5f5f4',
+                      backgroundColor: drawerSortMode === 'nearest' ? '#1c1917' : '#ecebe7',
                       color: drawerSortMode === 'nearest' ? '#fafaf9' : '#78716c',
                       border: 'none',
                       borderRadius: '8px',
@@ -4621,7 +4531,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   <button
                     onClick={() => setDrawerSortMode('recent')}
                     style={{
-                      backgroundColor: drawerSortMode === 'recent' ? '#1c1917' : '#f5f5f4',
+                      backgroundColor: drawerSortMode === 'recent' ? '#1c1917' : '#ecebe7',
                       color: drawerSortMode === 'recent' ? '#fafaf9' : '#78716c',
                       border: 'none',
                       borderRadius: '8px',
@@ -4807,7 +4717,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
-              <label style={{ width: '88px', height: '88px', borderRadius: '50%', backgroundColor: '#f5f5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '2.5px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 24px rgba(28, 25, 23, 0.1)' }} title="Click to upload profile photo">
+              <label style={{ width: '88px', height: '88px', borderRadius: '50%', backgroundColor: '#ecebe7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '2.5px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 24px rgba(28, 25, 23, 0.1)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
                   <Loader2 style={{ width: '26px', height: '26px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
                 ) : userProfile?.avatar_url ? (
@@ -4831,7 +4741,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
               <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {!isEditingCountry ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ fontSize: '12px', color: '#78716c', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#f5f5f4', padding: '2px 8px', borderRadius: '8px', border: '1px solid #e7e5e4', fontWeight: 600 }}>
+                    <span style={{ fontSize: '12px', color: '#78716c', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#ecebe7', padding: '2px 8px', borderRadius: '8px', border: '1px solid #e7e5e4', fontWeight: 600 }}>
                       <Globe style={{ width: '11px', height: '11px', color: '#e05a47' }} />
                       {userProfile?.country || 'United States'}
                     </span>
@@ -5106,7 +5016,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
               onClick={handleShareFieldJournal}
               style={{
                 width: '100%',
-                backgroundColor: '#f5f5f4',
+                backgroundColor: '#ecebe7',
                 color: '#1c1917',
                 border: '1px solid #e7e5e4',
                 padding: '11px',
@@ -5190,7 +5100,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE' || isDeletingAccount}
                 style={{
                   width: '100%',
-                  backgroundColor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#e05a47' : '#f5f5f4',
+                  backgroundColor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#e05a47' : '#ecebe7',
                   color: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#ffffff' : '#a8a29e',
                   fontWeight: 700,
                   fontSize: '12.5px',
