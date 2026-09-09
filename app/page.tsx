@@ -486,6 +486,8 @@ export default function Home() {
   });
 
   const [showWelcome, setShowWelcome] = useState(false);
+const [onboardingStep, setOnboardingStep] = useState(0);
+const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProfileClosing, setIsProfileClosing] = useState(false);
@@ -673,10 +675,10 @@ export default function Home() {
     if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
       import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
         StatusBar.setOverlaysWebView({ overlay: true });
-        StatusBar.setStyle({ style: Style.Dark });
+        StatusBar.setStyle({ style: isDarkMode ? Style.Dark : Style.Light });
       });
     }
-  }, []);
+  }, [isDarkMode]);
 
   // AdMob initialization & lifecycle
   useEffect(() => {
@@ -935,7 +937,15 @@ export default function Home() {
       return;
     }
     if (isDrawerOpen) { handleCloseDrawer(); return; }
-    if (showWelcome) { handleDismissWelcome(); return; }
+    if (showWelcome) {
+      if (onboardingStep > 0) {
+        setSlideDirection('back');
+        setOnboardingStep((prev) => prev - 1);
+      } else {
+        handleDismissWelcome();
+      }
+      return;
+    }
   }, [
     isPlusModalOpen,
     isDeleteAccountModalOpen,
@@ -952,6 +962,8 @@ export default function Home() {
     activeSearchedSpot,
     isDrawerOpen,
     showWelcome,
+    onboardingStep,
+    slideDirection,
   ]);
 
   useEffect(() => {
@@ -2620,7 +2632,19 @@ export default function Home() {
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .animate-slide-up {
+          @keyframes onboardingSlideInForward {
+  from { transform: translateX(48px) translateZ(0); opacity: 0; }
+  to { transform: translateX(0) translateZ(0); opacity: 1; }
+}
+@keyframes onboardingSlideInBack {
+  from { transform: translateX(-48px) translateZ(0); opacity: 0; }
+  to { transform: translateX(0) translateZ(0); opacity: 1; }
+}
+@keyframes onboardingHintPulse {
+  0%, 100% { transform: translateX(0); opacity: 0.85; }
+  50% { transform: translateX(5px); opacity: 1; }
+}
+.animate-slide-up {
           animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
           will-change: transform, opacity;
           backface-visibility: hidden;
@@ -5362,46 +5386,116 @@ export default function Home() {
         </div>
       )}
 
-      {/* Welcome / Intro Modal */}
-      {showWelcome && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100030, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 12px auto', boxShadow: '0 6px 16px rgba(224, 90, 71, 0.18)', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
-              <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
+      {/* Welcome / Onboarding Carousel */}
+{showWelcome && (() => {
+  const ONBOARDING_STEPS = [
+    {
+      image: '/onboarding-1.png',
+      title: 'Welcome to Bywayr',
+      body: 'Your Pocket Field Guide — a quiet map for travelers, expats, and wanderers to discover, pin, and share the unmapped local spots guidebooks overlook.',
+    },
+    {
+      image: '/onboarding-2.png',
+      title: 'Curate Unmapped Corners',
+      body: 'Plot backstreet food stalls, hidden viewpoints, and quiet neighborhood treasures that standard maps miss.',
+    },
+    {
+      image: '/onboarding-3.png',
+      title: 'Collect Passport Stamps',
+      body: 'Build your personal passport, track your cities, and map your footprint across every country you explore.',
+    },
+  ];
 
-            <h3 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
-              Welcome to Bywayr
-            </h3>
+  const isLastStep = onboardingStep === ONBOARDING_STEPS.length - 1;
+  const step = ONBOARDING_STEPS[onboardingStep];
 
-            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
-              Your pocket field guide for discovering, pinning, and archiving unindexed local gems and backstreet favorites.
-            </p>
+  const goToNext = () => {
+    if (isLastStep) {
+      triggerHaptic(10);
+      dismissModalWithHistory(handleDismissWelcome);
+    } else {
+      triggerHaptic(6);
+      setSlideDirection('forward');
+      setOnboardingStep((prev) => prev + 1);
+    }
+  };
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px 14px', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
-                  <Gem style={{ width: '14px', height: '14px' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917' }}>Curate Hidden Spots</div>
-                  <div style={{ fontSize: '11px', color: '#78716c' }}>Pin hole-in-the-wall eats, quiet cafes, and night spots.</div>
-                </div>
-              </div>
+  const goToPrev = () => {
+    if (onboardingStep > 0) {
+      triggerHaptic(6);
+      setSlideDirection('back');
+      setOnboardingStep((prev) => prev - 1);
+    }
+  };
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7', flexShrink: 0 }}>
-                  <Compass style={{ width: '14px', height: '14px' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917' }}>Earn Passport Stamps</div>
-                  <div style={{ fontSize: '11px', color: '#78716c' }}>Collect entry stamps automatically as you pin across cities.</div>
-                </div>
-              </div>
-            </div>
+  return (
+    <div
+      className="animate-fade-in"
+      onClick={(e) => {
+        if (isLastStep) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const tapX = e.clientX - rect.left;
+        if (tapX > rect.width * 0.35) goToNext();
+        else goToPrev();
+      }}
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100030, padding: '16px' }}
+    >
+      <div
+        className="animate-scale-up"
+        style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', position: 'relative', textAlign: 'center', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+      >
+        <div
+          key={onboardingStep}
+          style={{
+            animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) both`,
+            padding: '22px 22px 0 22px',
+          }}
+        >
+          <div style={{ width: '100%', aspectRatio: '3 / 4', maxHeight: '46vh', borderRadius: '18px', overflow: 'hidden', backgroundColor: '#ffffff' }}>
+            <img src={step.image} alt={step.title} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          </div>
+        </div>
 
+        <div
+          key={`text-${onboardingStep}`}
+          style={{ padding: '14px 24px 6px 24px', animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both` }}
+        >
+          <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+            {step.title}
+          </h3>
+          <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.5 }}>
+            {step.body}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '16px 0 8px 0' }}>
+          {ONBOARDING_STEPS.map((_, idx) => (
+            <div
+              key={idx}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (idx === onboardingStep) return;
+                triggerHaptic(6);
+                setSlideDirection(idx > onboardingStep ? 'forward' : 'back');
+                setOnboardingStep(idx);
+              }}
+              style={{
+                width: idx === onboardingStep ? '18px' : '7px',
+                height: '7px',
+                borderRadius: '4px',
+                backgroundColor: idx === onboardingStep ? '#e05a47' : '#e7e5e4',
+                cursor: 'pointer',
+                transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease',
+              }}
+            />
+          ))}
+        </div>
+
+        <div style={{ padding: '6px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {isLastStep ? (
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 triggerHaptic(10);
                 dismissModalWithHistory(handleDismissWelcome);
               }}
@@ -5411,7 +5505,7 @@ export default function Home() {
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '14px',
-                padding: '12px',
+                padding: '13px',
                 fontSize: '13px',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -5422,12 +5516,39 @@ export default function Home() {
                 boxShadow: '0 4px 12px rgba(28, 25, 23, 0.2)',
               }}
             >
-              Start Exploring <ArrowRight style={{ width: '15px', height: '15px' }} />
+              Open the Field Guide <ArrowRight style={{ width: '15px', height: '15px' }} />
             </button>
-          </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
+              style={{
+                width: '100%',
+                backgroundColor: 'transparent',
+                color: '#a8a29e',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '10px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                animation: 'onboardingHintPulse 1.6s ease-in-out infinite',
+              }}
+            >
+              Tap to continue <ArrowRight style={{ width: '14px', height: '14px' }} />
+            </button>
+          )}
         </div>
-      )}
-
       </div>
+    </div>
+    );
+})()}
+    </div>
   );
 }
