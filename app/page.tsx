@@ -130,7 +130,7 @@ const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]
 
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
-  return match ? match.color : '#e05a47';
+  return match ? match.color : '#57534e';
 };
 
 const triggerHaptic = (duration = 10) => {
@@ -2398,7 +2398,8 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
     initializedMap.on('load', () => {
       initializedMap.resize();
       const hasSavedPosition = localStorage.getItem('bywayr_map_center');
-      if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition) {
+      const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
+      if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition && hasSeenWelcome) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
@@ -4594,15 +4595,41 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                   </a>
                 </div>
               ) : (
-                displayedDrawerSpots.map((spot: Spot) => {
+                displayedDrawerSpots.flatMap((spot: Spot, idx: number) => {
                   const color = getCategoryColor(spot.category);
                   const refPoint = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
                   const refLat = 'lat' in refPoint ? refPoint.lat : 36.1699;
                   const refLng = 'lng' in refPoint ? refPoint.lng : -115.1398;
                   const distanceVal = getDistanceFromLatLonInKm(refLat, refLng, spot.latitude, spot.longitude);
-                  const distanceText = distanceVal < 1 ? `${Math.round(distanceVal * 1000)}m away` : `${distanceVal.toFixed(1)}km away`;
+                  const distanceText =
+                    distanceVal < 1
+                      ? `${Math.round(distanceVal * 1000)}m away`
+                      : distanceVal < 100
+                      ? `${distanceVal.toFixed(1)}km away`
+                      : distanceVal < 1000
+                      ? `${Math.round(distanceVal)}km away`
+                      : `${Math.round(distanceVal / 1000)}k km`;
 
-                  return (
+                  const showHeaders = drawerTab === 'fieldNotes' && drawerSortMode === 'nearest';
+                  const isNearby = distanceVal <= 50;
+                  let header = null;
+                  if (showHeaders && isNearby && (idx === 0 || getDistanceFromLatLonInKm(refLat, refLng, displayedDrawerSpots[idx - 1].latitude, displayedDrawerSpots[idx - 1].longitude) > 50)) {
+                    header = (
+                      <div key={`header-nearby`} style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
+                        Field Notes Nearby
+                      </div>
+                    );
+                  } else if (showHeaders && !isNearby && (idx === 0 || getDistanceFromLatLonInKm(refLat, refLng, displayedDrawerSpots[idx - 1].latitude, displayedDrawerSpots[idx - 1].longitude) <= 50)) {
+                    header = (
+                      <div key={`header-far`} style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
+                        Further Afield
+                      </div>
+                    );
+                  }
+
+                  return [
+                    ...(header ? [header] : []),
+                    (
                     <div
                       key={spot.id || spot.name}
                       onClick={() => {
@@ -4671,7 +4698,8 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                         </p>
                       </div>
                     </div>
-                  );
+                    ),
+                  ];
                 })
               )}
             </div>
