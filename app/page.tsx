@@ -627,7 +627,20 @@ export default function Home() {
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
-
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('Service worker registration failed:', err);
+      });
+    }
+  }, []);  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        StatusBar.setOverlaysWebView({ overlay: true });
+        StatusBar.setStyle({ style: Style.Dark });
+      });
+    }
+  }, []);
   const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
 
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
@@ -2707,7 +2720,7 @@ const handleRestorePurchases = async () => {
       {/* 2. Unified Search & Actions Bar */}
       <div style={{ 
         position: 'absolute', 
-        top: isOffline ? '52px' : '12px', 
+        top: isOffline ? 'calc(52px + env(safe-area-inset-top, 0px))' : 'calc(12px + env(safe-area-inset-top, 0px))', 
         left: '16px', 
         right: '16px', 
         maxWidth: '460px', 
