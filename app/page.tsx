@@ -604,7 +604,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
     (async () => {
       try {
         const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob');
-        await AdMob.initialize({ initializeForTesting: true });
+        await AdMob.initialize();
 
         await (AdMob as any).addListener('banner:sizechanged', (info: any) => {
           setBannerHeight(info.height || 0);
@@ -616,7 +616,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
           adSize: BannerAdSize.ADAPTIVE_BANNER,
           position: BannerAdPosition.BOTTOM_CENTER,
           margin: 0,
-          isTesting: true,
+          isTesting: false,
         });
 
         if (!disposed) setAdReady(true);
