@@ -490,6 +490,7 @@ const [onboardingStep, setOnboardingStep] = useState(0);
   const notifiedSpotIdsRef = useRef<Set<string>>(new Set());
   const lastNearbyCheckRef = useRef<number>(0);
 const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
+  const [isOnboardingExiting, setIsOnboardingExiting] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProfileClosing, setIsProfileClosing] = useState(false);
@@ -2724,6 +2725,14 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 @keyframes onboardingHintPulse {
   0%, 100% { transform: translateX(0); opacity: 0.85; }
   50% { transform: translateX(5px); opacity: 1; }
+}
+@keyframes onboardingFadeScaleOut {
+  from { opacity: 1; transform: scale(1) translateZ(0); }
+  to { opacity: 0; transform: scale(1.06) translateZ(0); }
+}
+@keyframes onboardingImgFloat {
+  0%, 100% { transform: translateY(0) translateZ(0); }
+  50% { transform: translateY(-8px) translateZ(0); }
 }
 .animate-slide-up {
           animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -5471,169 +5480,184 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
         </div>
       )}
 
-      {/* Welcome / Onboarding Carousel */}
-{showWelcome && (() => {
-  const ONBOARDING_STEPS = [
-    {
-      image: '/onboarding-1.png',
-      title: 'Welcome to Bywayr',
-      body: 'Your Pocket Field Guide — a quiet map for travelers, expats, and wanderers to discover, pin, and share the unmapped local spots guidebooks overlook.',
-    },
-    {
-      image: '/onboarding-2.png',
-      title: 'Curate Unmapped Corners',
-      body: 'Plot backstreet food stalls, hidden viewpoints, and quiet neighborhood treasures that standard maps miss.',
-    },
-    {
-      image: '/onboarding-3.png',
-      title: 'Collect Passport Stamps',
-      body: 'Build your personal passport, track your cities, and map your footprint across every country you explore.',
-    },
-  ];
+            {/* Welcome / Onboarding Carousel — full screen */}
+      {showWelcome && (() => {
+        const ONBOARDING_STEPS = [
+          {
+            image: '/onboarding-1.png',
+            title: 'The map guidebooks forgot',
+            body: 'Bywayr is a pocket field guide for the places nobody bothers to map — pin your finds, discover other locals\' secrets, and keep the good spots alive.',
+          },
+          {
+            image: '/onboarding-2.png',
+            title: 'Pin what maps miss',
+            body: 'Backstreet food stalls, hidden viewpoints, quiet neighborhood corners — plot the spots you know and browse what others have curated near you.',
+          },
+          {
+            image: '/onboarding-3.png',
+            title: 'Build your footprint',
+            body: 'Every spot you visit earns a passport stamp. Track your cities and countries as your collection of unmapped places grows.',
+          },
+        ];
 
-  const isLastStep = onboardingStep === ONBOARDING_STEPS.length - 1;
-  const step = ONBOARDING_STEPS[onboardingStep];
+        const isLastStep = onboardingStep === ONBOARDING_STEPS.length - 1;
+        const step = ONBOARDING_STEPS[onboardingStep];
 
-  const goToNext = () => {
-    if (isLastStep) {
-      triggerHaptic(10);
-      dismissModalWithHistory(handleDismissWelcome);
-    } else {
-      triggerHaptic(6);
-      setSlideDirection('forward');
-      setOnboardingStep((prev) => prev + 1);
-    }
-  };
+        const finishOnboarding = () => {
+          triggerHaptic(12);
+          setIsOnboardingExiting(true);
+          setTimeout(() => {
+            dismissModalWithHistory(handleDismissWelcome);
+            setTimeout(() => setIsOnboardingExiting(false), 400);
+          }, 450);
+        };
 
-  const goToPrev = () => {
-    if (onboardingStep > 0) {
-      triggerHaptic(6);
-      setSlideDirection('back');
-      setOnboardingStep((prev) => prev - 1);
-    }
-  };
+        const goToNext = () => {
+          if (isLastStep) { finishOnboarding(); return; }
+          triggerHaptic(6);
+          setSlideDirection('forward');
+          setOnboardingStep((prev) => prev + 1);
+        };
 
-  return (
-    <div
-      className="animate-fade-in"
-      onClick={(e) => {
-        if (isLastStep) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const tapX = e.clientX - rect.left;
-        if (tapX > rect.width * 0.35) goToNext();
-        else goToPrev();
-      }}
-      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100030, padding: '16px' }}
-    >
-      <div
-        className="animate-scale-up"
-        style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', position: 'relative', textAlign: 'center', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-      >
-        <div
-          key={onboardingStep}
-          style={{
-            animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) both`,
-            padding: '22px 22px 0 22px',
-          }}
-        >
-          <div style={{ width: '100%', aspectRatio: '3 / 4', maxHeight: '46vh', borderRadius: '18px', overflow: 'hidden', backgroundColor: '#ffffff' }}>
-            <img src={step.image} alt={step.title} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-          </div>
-        </div>
+        const goToPrev = () => {
+          if (onboardingStep > 0) {
+            triggerHaptic(6);
+            setSlideDirection('back');
+            setOnboardingStep((prev) => prev - 1);
+          }
+        };
 
-        <div
-          key={`text-${onboardingStep}`}
-          style={{ padding: '14px 24px 6px 24px', animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both` }}
-        >
-          <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
-            {step.title}
-          </h3>
-          <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.5 }}>
-            {step.body}
-          </p>
-        </div>
+        const touchStartXRef = { current: 0 } as { current: number };
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '16px 0 8px 0' }}>
-          {ONBOARDING_STEPS.map((_, idx) => (
+        return (
+          <div
+            className="animate-fade-in"
+            onTouchStart={(e) => { touchStartXRef.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => {
+              const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+              if (Math.abs(dx) > 50) { if (dx < 0) goToNext(); else goToPrev(); }
+            }}
+            style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          >
             <div
-              key={idx}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (idx === onboardingStep) return;
-                triggerHaptic(6);
-                setSlideDirection(idx > onboardingStep ? 'forward' : 'back');
-                setOnboardingStep(idx);
-              }}
+              key={onboardingStep}
               style={{
-                width: idx === onboardingStep ? '18px' : '7px',
-                height: '7px',
-                borderRadius: '4px',
-                backgroundColor: idx === onboardingStep ? '#e05a47' : '#e7e5e4',
-                cursor: 'pointer',
-                transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease',
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)',
+                animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.35s cubic-bezier(0.16, 1, 0.3, 1) both`,
               }}
-            />
-          ))}
-        </div>
+            >
+              <div style={{ width: '86%', maxWidth: '420px', animation: 'onboardingImgFloat 4s ease-in-out infinite' }}>
+                <img src={step.image} alt={step.title} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} />
+              </div>
+            </div>
 
-        <div style={{ padding: '6px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {isLastStep ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerHaptic(10);
-                dismissModalWithHistory(handleDismissWelcome);
-              }}
-              style={{
-                width: '100%',
-                backgroundColor: '#1c1917',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '14px',
-                padding: '13px',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(28, 25, 23, 0.2)',
-              }}
+            <div
+              key={`text-${onboardingStep}`}
+              style={{ padding: '10px 32px 0 32px', textAlign: 'center', animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both` }}
             >
-              Open the Field Guide <ArrowRight style={{ width: '15px', height: '15px' }} />
-            </button>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                goToNext();
-              }}
-              style={{
-                width: '100%',
-                backgroundColor: 'transparent',
-                color: '#a8a29e',
-                border: 'none',
-                borderRadius: '14px',
-                padding: '10px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '5px',
-                animation: 'onboardingHintPulse 1.6s ease-in-out infinite',
-              }}
-            >
-              Tap to continue <ArrowRight style={{ width: '14px', height: '14px' }} />
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-    );
-})()}
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                {step.title}
+              </h3>
+              <p style={{ margin: 0, fontSize: '14px', color: '#78716c', lineHeight: 1.55 }}>
+                {step.body}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '26px 0 14px 0' }}>
+              {ONBOARDING_STEPS.map((_, idx) => (
+                <div
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (idx === onboardingStep) return;
+                    triggerHaptic(6);
+                    setSlideDirection(idx > onboardingStep ? 'forward' : 'back');
+                    setOnboardingStep(idx);
+                  }}
+                  style={{
+                    width: idx === onboardingStep ? '22px' : '8px',
+                    height: '8px',
+                    borderRadius: '4px',
+                    backgroundColor: idx === onboardingStep ? '#e05a47' : '#e7e5e4',
+                    cursor: 'pointer',
+                    transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease',
+                  }}
+                />
+              ))}
+            </div>
+
+            <div style={{ padding: '6px 24px calc(max(env(safe-area-inset-bottom, 0px), 20px) + 12px) 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {isLastStep ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); finishOnboarding(); }}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#1c1917',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '16px',
+                    padding: '15px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '7px',
+                    boxShadow: '0 6px 16px rgba(28, 25, 23, 0.22)',
+                  }}
+                >
+                  Open the Field Guide <ArrowRight style={{ width: '16px', height: '16px' }} />
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+                    style={{
+                      backgroundColor: 'transparent',
+                      color: '#a8a29e',
+                      border: 'none',
+                      borderRadius: '16px',
+                      padding: '14px 18px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: onboardingStep === 0 ? 'default' : 'pointer',
+                      opacity: onboardingStep === 0 ? 0.35 : 1,
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#1c1917',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '16px',
+                      padding: '14px',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(28, 25, 23, 0.18)',
+                    }}
+                  >
+                    Next <ArrowRight style={{ width: '15px', height: '15px' }} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
