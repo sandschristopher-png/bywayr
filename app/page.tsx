@@ -487,6 +487,8 @@ export default function Home() {
 
   const [showWelcome, setShowWelcome] = useState(false);
 const [onboardingStep, setOnboardingStep] = useState(0);
+  const notifiedSpotIdsRef = useRef<Set<string>>(new Set());
+  const lastNearbyCheckRef = useRef<number>(0);
 const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -812,10 +814,18 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
           .slice(0, 4);
 
         const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+        const bounds = map.current ? map.current.getBounds() : null;
+        let west = -115.64, north = 36.67, east = -114.64, south = 35.67;
+        if (bounds) {
+          west = Math.min(bounds.getWest(), center.lng - 0.05);
+          east = Math.max(bounds.getEast(), center.lng + 0.05);
+          north = Math.max(bounds.getNorth(), center.lat + 0.05);
+          south = Math.min(bounds.getSouth(), center.lat - 0.05);
+        }
+        const viewbox = `${west},${north},${east},${south}`;
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&lat=${center.lat}&lon=${center.lng}&bounded=0`
-        );
-        const osmData = await res.json();
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&viewbox=${viewbox}&bounded=1&accept-language=en`
+        );        const osmData = await res.json();
 
         const combined = [...localMatches, ...(osmData || [])];
         setSearchResults(combined);
@@ -2205,7 +2215,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
       }
     } catch (err: any) {
       console.error('Google Play purchase failed:', err);
-      if (err.message && !err.message.includes('Canceled')) {
+      if (err.message && !err.message.includes('Canceled') && !err.message.includes('cancel')) {
         alert(`Purchase error: ${err.message}`);
       }
     }
@@ -2541,7 +2551,78 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
       map.current = null;
     };
   }, []);
+  // Nearby hidden-gem notifications (foreground, native Android only)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
+    if (!navigator.geolocation) return;
 
+    const NEARBY_RADIUS_M = 500;
+    const THROTTLE_MS = 30000;
+
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const haversineM = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return 2 * 6371000 * Math.asin(Math.sqrt(a));
+    };
+
+    const notifyNearby = async (lat: number, lng: number) => {
+      if (Date.now() - lastNearbyCheckRef.current < THROTTLE_MS) return;
+      lastNearbyCheckRef.current = Date.now();
+
+      const nearby = spots.filter(
+        (s) =>
+          typeof s.id === 'string' &&
+          !notifiedSpotIdsRef.current.has(s.id) &&
+          haversineM(lat, lng, s.latitude, s.longitude) <= NEARBY_RADIUS_M
+      );
+
+      if (nearby.length === 0) return;
+
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+
+        const perm = await LocalNotifications.requestPermissions();
+        if (perm.display !== 'granted') return;
+
+        const closest = nearby.sort(
+          (a, b) => haversineM(lat, lng, a.latitude, a.longitude) - haversineM(lat, lng, b.latitude, b.longitude)
+        )[0];
+
+        const extras = nearby.length > 1 ? ` (+${nearby.length - 1} more nearby)` : '';
+
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Math.abs((closest.id ?? '').split('').reduce((acc: number, ch: string) => (acc * 31 + ch.charCodeAt(0)) % 2147483647, 7)),
+              title: 'Hidden gem nearby',
+              body: `${closest.name}${extras}`,
+              schedule: { at: new Date(Date.now() + 100) },
+              actionTypeId: '',
+              extra: { spotId: closest.id ?? '' },
+            },
+          ],
+        });
+
+        nearby.forEach((s) => { if (typeof s.id === 'string') notifiedSpotIdsRef.current.add(s.id); });
+      } catch (err) {
+        console.error('Nearby notification failed:', err);
+      }
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => notifyNearby(pos.coords.latitude, pos.coords.longitude),
+      () => {},
+      { enableHighAccuracy: false, maximumAge: 15000, timeout: 20000 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [spots]);
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#f5f5f4' }}>
       <style jsx global>{`
@@ -2802,10 +2883,6 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
         display: 'flex', 
         flexDirection: 'column', 
         gap: '8px', 
-        pointerEvents: isInteracting ? 'none' : 'auto',
-        opacity: isInteracting ? 0 : 1,
-        transform: isInteracting ? 'translateY(-20px)' : 'translateY(0)',
-        transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
@@ -5348,39 +5425,47 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={handleGooglePlayCheckout}
-                style={{
-                  width: '100%',
-                  backgroundColor: '#44403c',
-                  color: '#fafaf9',
-                  border: 'none',
-                  borderRadius: '16px',
-                  padding: '14px',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
-                  letterSpacing: '0.01em',
-                }}
-              >
-                One-time Payment — $19.99
-              </button>
+              {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() ? (
+                <>
+                  <button
+                    onClick={handleGooglePlayCheckout}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#44403c',
+                      color: '#fafaf9',
+                      border: 'none',
+                      borderRadius: '16px',
+                      padding: '14px',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
+                      letterSpacing: '0.01em',
+                    }}
+                  >
+                    One-time Payment — $19.99
+                  </button>
 
-              <button
-                onClick={handleRestorePurchases}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#78716c',
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '6px',
-                }}
-              >
-                Restore Purchase
-              </button>
+                  <button
+                    onClick={handleRestorePurchases}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#78716c',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: '6px',
+                    }}
+                  >
+                    Restore Purchase
+                  </button>
+                </>
+              ) : (
+                <div style={{ fontSize: '11.5px', color: '#a8a29e', fontWeight: 600, padding: '10px 6px' }}>
+                  Purchases are available in the Bywayr Android app on Google Play.
+                </div>
+              )}
             </div>
           </div>
         </div>
