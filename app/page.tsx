@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { supabase } from '../lib/supabase'; 
-
+import { supabase } from '../lib/supabase';
 
 import { decode, isValid, isFull, isShort, recoverNearest } from '@erikmichelson/open-location-code-ts';
 import {
@@ -80,8 +79,6 @@ import {
   Download,
   Sparkle,
 } from 'lucide-react';
-
-// Core application layout
 
 interface Spot {
   id?: string;
@@ -305,7 +302,7 @@ const extractPassportStamps = (userSpots: Spot[]): PassportStampData[] => {
     const rawCountry = (spot.country || '').trim();
     const sanitized = sanitizeCountryAndCity(spot.city, rawCountry);
     const country = sanitized.country || (sanitized.city ? sanitized.city : 'Curated Territory');
-    
+
     if (!groups[country]) {
       groups[country] = { cities: new Set<string>(), spotCount: 0, dates: [] };
     }
@@ -501,6 +498,14 @@ export default function Home() {
 
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
+  const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
+  const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('bywayr_is_plus') === 'true';
+    }
+    return false;
+  });
+
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -573,7 +578,7 @@ export default function Home() {
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
@@ -627,111 +632,10 @@ export default function Home() {
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
 
-  const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('bywayr_is_plus') === 'true';
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.error('Service worker registration failed:', err);
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-        StatusBar.setOverlaysWebView({ overlay: true });
-        StatusBar.setStyle({ style: Style.Dark });
-      });
-    }
-  }, []);
-
-  // AdMob: init + show bottom banner (native, free tier only)
   const [bannerHeight, setBannerHeight] = useState(0);
   const [adReady, setAdReady] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!(window as any).Capacitor?.isNativePlatform()) return;
-    if (isPlusSubscriber) return;
-
-    let disposed = false;
-
-    (async () => {
-      try {
-        const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob');
-        await AdMob.initialize({ initializeForTesting: true });
-
-        await (AdMob as any).addListener('banner:sizechanged', (info: any) => {
-          setBannerHeight(info.height || 0);
-          if (map.current) map.current.resize();
-        });
-
-        await AdMob.showBanner({
-          adId: 'ca-app-pub-9375478521280538/4566973495',
-          adSize: BannerAdSize.ADAPTIVE_BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 0,
-          isTesting: true,
-        });
-
-        if (!disposed) setAdReady(true);
-      } catch (err) {
-        console.error('AdMob init failed:', err);
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      import('@capacitor-community/admob').then(({ AdMob }) => AdMob.removeBanner()).catch(() => {});
-    };
-  }, [isPlusSubscriber]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!(window as any).Capacitor?.isNativePlatform()) return;
-    if (isPlusSubscriber) return;
-
-    let disposed = false;
-
-    (async () => {
-      try {
-        const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob');
-        await AdMob.initialize({ initializeForTesting: true });
-
-        await (AdMob as any).addListener('banner:sizechanged', (info: any) => {
-          setBannerHeight(info.height || 0);
-          if (map.current) map.current.resize();
-        });
-
-        await AdMob.showBanner({
-          adId: 'ca-app-pub-9375478521280538/4566973495',
-          adSize: BannerAdSize.ADAPTIVE_BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 0,
-          isTesting: true,
-        });
-
-        if (!disposed) setAdReady(true);
-      } catch (err) {
-        console.error('AdMob init failed:', err);
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      import('@capacitor-community/admob').then(({ AdMob }) => AdMob.removeBanner()).catch(() => {});
-    };
-  }, [isPlusSubscriber]);
-
-  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
-  const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
 
   const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -756,6 +660,61 @@ export default function Home() {
     longitude: -115.1398,
     image_url: '',
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('Service worker registration failed:', err);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        StatusBar.setOverlaysWebView({ overlay: true });
+        StatusBar.setStyle({ style: Style.Dark });
+      });
+    }
+  }, []);
+
+  // AdMob initialization & lifecycle
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!(window as any).Capacitor?.isNativePlatform()) return;
+    if (isPlusSubscriber) return;
+
+    let disposed = false;
+
+    (async () => {
+      try {
+        const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob');
+        await AdMob.initialize({ initializeForTesting: true });
+
+        await (AdMob as any).addListener('banner:sizechanged', (info: any) => {
+          setBannerHeight(info.height || 0);
+          if (map.current) map.current.resize();
+        });
+
+        await AdMob.showBanner({
+          adId: 'ca-app-pub-9375478521280538/4566973495',
+          adSize: BannerAdSize.ADAPTIVE_BANNER,
+          position: BannerAdPosition.BOTTOM_CENTER,
+          margin: 0,
+          isTesting: true,
+        });
+
+        if (!disposed) setAdReady(true);
+      } catch (err) {
+        console.error('AdMob init failed:', err);
+      }
+    })();
+
+    return () => {
+      disposed = true;
+      import('@capacitor-community/admob').then(({ AdMob }) => AdMob.removeBanner()).catch(() => {});
+    };
+  }, [isPlusSubscriber]);
 
   const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
   const myPassportStamps = extractPassportStamps(myUserSpots);
@@ -808,7 +767,7 @@ export default function Home() {
   const mySpotsCount = myUserSpots.length;
   const myCitiesCount = currentUser ? new Set(myUserSpots.map((s) => s.city.trim())).size : 0;
   const myCountriesCount = myPassportStamps.length;
-  
+
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
   const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
@@ -832,24 +791,30 @@ export default function Home() {
 
       setIsSearching(true);
       try {
-        const localMatches = spots.filter(spot => 
-          spot.name.toLowerCase().includes(q.toLowerCase()) ||
-          spot.city.toLowerCase().includes(q.toLowerCase()) ||
-          spot.category.toLowerCase().includes(q.toLowerCase())
-        ).map(spot => ({
-          display_name: `${spot.name} (${spot.city} — ${spot.category})`,
-          name: spot.name,
-          lat: spot.latitude,
-          lon: spot.longitude,
-          address: { city: spot.city, country: spot.country },
-          isLocal: true,
-          spotObj: spot
-        })).slice(0, 4);
+        const localMatches = spots
+          .filter(
+            (spot) =>
+              spot.name.toLowerCase().includes(q.toLowerCase()) ||
+              spot.city.toLowerCase().includes(q.toLowerCase()) ||
+              spot.category.toLowerCase().includes(q.toLowerCase())
+          )
+          .map((spot) => ({
+            display_name: `${spot.name} (${spot.city} — ${spot.category})`,
+            name: spot.name,
+            lat: spot.latitude,
+            lon: spot.longitude,
+            address: { city: spot.city, country: spot.country },
+            isLocal: true,
+            spotObj: spot,
+          }))
+          .slice(0, 4);
 
         const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&lat=${center.lat}&lon=${center.lng}&bounded=0`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&lat=${center.lat}&lon=${center.lng}&bounded=0`
+        );
         const osmData = await res.json();
-        
+
         const combined = [...localMatches, ...(osmData || [])];
         setSearchResults(combined);
         setShowDropdown(true);
@@ -888,7 +853,7 @@ export default function Home() {
     activeOverlayRef.current = isAnyOverlayActive;
   }, [isAnyOverlayActive]);
 
-  // Pause/resume banner based on Plus status or any open sheet
+  // Pause/resume banner based on Plus status or open sheets
   useEffect(() => {
     if (!adReady) return;
     (async () => {
@@ -903,24 +868,7 @@ export default function Home() {
         }
       } catch {}
     })();
-  }, [adReady, isAnyOverlayActive, isPlusSubscriber]);
-
-  // Pause/resume banner based on Plus status or any open sheet
-  useEffect(() => {
-    if (!adReady) return;
-    (async () => {
-      try {
-        const { AdMob } = await import('@capacitor-community/admob');
-        if (isPlusSubscriber || isAnyOverlayActive) {
-          await AdMob.hideBanner();
-          setBannerHeight(0);
-        } else {
-          await AdMob.resumeBanner();
-          setBannerHeight(bannerHeight || 50);
-        }
-      } catch {}
-    })();
-  }, [adReady, isAnyOverlayActive, isPlusSubscriber]);
+  }, [adReady, isAnyOverlayActive, isPlusSubscriber, bannerHeight]);
 
   const pushModalHistoryState = useCallback((sheetKey: string) => {
     if (typeof window !== 'undefined') {
@@ -1064,14 +1012,6 @@ export default function Home() {
       pushModalHistoryState('welcome');
     }
   }, [pushModalHistoryState]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.error('Service worker registration failed:', err);
-      });
-    }
-  }, []);
 
   const handleDismissWelcome = () => {
     localStorage.setItem('bywayr_seen_welcome', 'true');
@@ -1771,7 +1711,6 @@ export default function Home() {
       if (user) {
         setIsAuthModalOpen(false);
         fetchUserUpvotes(user.id);
-        // Persist the Google provider token (only present right after OAuth sign-in)
         if (session?.provider_token) {
           localStorage.setItem('bywayr_gdrive_token', session.provider_token);
           localStorage.setItem('bywayr_gdrive_token_time', Date.now().toString());
@@ -1884,7 +1823,7 @@ export default function Home() {
     const mapInstance = map.current;
 
     const updateClustering = () => {
-      const geojson: GeoJSON.FeatureCollection = {
+      const geojson: any = {
         type: 'FeatureCollection',
         features: filteredSpots.map((spot) => ({
           type: 'Feature',
@@ -1913,7 +1852,6 @@ export default function Home() {
         return;
       }
 
-      // Add Source with Clustering Enabled
       mapInstance.addSource(sourceId, {
         type: 'geojson',
         data: geojson,
@@ -1922,7 +1860,6 @@ export default function Home() {
         clusterRadius: 50,
       });
 
-      // Layer: Cluster Circles
       mapInstance.addLayer({
         id: clusterLayerId,
         type: 'circle',
@@ -1932,11 +1869,11 @@ export default function Home() {
           'circle-color': [
             'step',
             ['get', 'point_count'],
-            '#e05a47', // < 10 spots
+            '#e05a47',
             10,
-            '#d97706', // 10-25 spots
+            '#d97706',
             25,
-            '#0284c7', // 25+ spots
+            '#0284c7',
           ],
           'circle-radius': [
             'step',
@@ -1952,7 +1889,6 @@ export default function Home() {
         },
       });
 
-      // Layer: Cluster Count Numbers
       mapInstance.addLayer({
         id: clusterCountLayerId,
         type: 'symbol',
@@ -1968,7 +1904,6 @@ export default function Home() {
         },
       });
 
-      // Layer: Individual Unclustered Pins
       mapInstance.addLayer({
         id: unclusteredLayerId,
         type: 'circle',
@@ -1982,7 +1917,6 @@ export default function Home() {
         },
       });
 
-      // Click handler: Zoom into clusters on click
       mapInstance.on('click', clusterLayerId, (e) => {
         const features = mapInstance.queryRenderedFeatures(e.point, { layers: [clusterLayerId] });
         const clusterId = features[0].properties.cluster_id;
@@ -1991,7 +1925,7 @@ export default function Home() {
           .getClusterExpansionZoom(clusterId)
           .then((zoom: number) => {
             if (!features[0].geometry) return;
-            const coords = (features[0].geometry as GeoJSON.Point).coordinates;
+            const coords = (features[0].geometry as any).coordinates;
             mapInstance.flyTo({
               center: [coords[0], coords[1]],
               zoom: zoom || 16,
@@ -2001,7 +1935,6 @@ export default function Home() {
           .catch(() => {});
       });
 
-      // Click handler: Open spot details sheet on individual pin click
       mapInstance.on('click', unclusteredLayerId, (e) => {
         if (!e.features || e.features.length === 0) return;
         const props = e.features[0].properties;
@@ -2012,7 +1945,6 @@ export default function Home() {
         }
       });
 
-      // Pointer cursor styles on hover
       mapInstance.on('mouseenter', clusterLayerId, () => {
         mapInstance.getCanvas().style.cursor = 'pointer';
       });
@@ -2041,15 +1973,14 @@ export default function Home() {
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        
-        // Find Must-Try spots within 100 meters (0.1 km) that haven't been dismissed
+
         const nearbyMustTrySpot = spots.find((spot) => {
           if (!spot.id || !mustTrySpotIds.includes(spot.id)) return false;
           if (dismissedAlertIds.includes(spot.id)) return false;
           if (activeProximityAlert?.id === spot.id) return false;
 
           const dist = getDistanceFromLatLonInKm(latitude, longitude, spot.latitude, spot.longitude);
-          return dist <= 0.1; // 100 meters threshold
+          return dist <= 0.1;
         });
 
         if (nearbyMustTrySpot) {
@@ -2243,10 +2174,10 @@ export default function Home() {
 
     try {
       triggerHaptic(12);
-      
+
       if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-        const { NativePurchases: Purchases } = await import('@capgo/native-purchases') as any;
-        const productId = 'bywayr_plus_lifetime'; 
+        const { NativePurchases: Purchases } = (await import('@capgo/native-purchases')) as any;
+        const productId = 'bywayr_plus_lifetime';
         const purchaseResult = await Purchases.purchaseProduct({
           productId: productId,
         });
@@ -2271,9 +2202,9 @@ export default function Home() {
   const handleRestorePurchases = async () => {
     try {
       triggerHaptic(8);
-      
+
       if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-        const { NativePurchases: Purchases } = await import('@capgo/native-purchases') as any;
+        const { NativePurchases: Purchases } = (await import('@capgo/native-purchases')) as any;
         const restored = await Purchases.restorePurchases();
         const hasPlus = restored?.transactions?.some(
           (tx: any) => tx.productId === 'bywayr_plus_lifetime'
@@ -2489,9 +2420,7 @@ export default function Home() {
         sources: {
           'osm-tiles': {
             type: 'raster',
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
             tileSize: 256,
             attribution: '© OpenStreetMap contributors',
           },
@@ -2519,7 +2448,6 @@ export default function Home() {
           return;
         }
         if (target?.closest('.maplibregl-canvas, .maplibregl-map')) {
-          // Let native MapLibre touch handlers manage pan & pinch gestures
           return;
         }
       };
@@ -2674,7 +2602,8 @@ export default function Home() {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0);
           }
         }
-        @keyframes bounceRight {  0% { transform: translateZ(0); }  35% { transform: translateX(-12px) translateZ(0); }  100% { transform: translateZ(0); }}@keyframes bounceLeft {  0% { transform: translateZ(0); }  35% { transform: translateX(12px) translateZ(0); }  100% { transform: translateZ(0); }}
+        @keyframes bounceRight {  0% { transform: translateZ(0); }  35% { transform: translateX(-12px) translateZ(0); }  100% { transform: translateZ(0); }}
+        @keyframes bounceLeft {  0% { transform: translateZ(0); }  35% { transform: translateX(12px) translateZ(0); }  100% { transform: translateZ(0); }}
         .passport-stamp-card {
           flex-shrink: 0;
           cursor: grab;
@@ -3096,7 +3025,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Active Country Filter Badge if Stamp Clicked */}
+        {/* Active Country Filter Badge */}
         {selectedCountryFilter && (
           <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', backgroundColor: '#1c1917', color: '#ffffff', borderRadius: '16px', fontSize: '12px', fontWeight: 600, boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -4192,7 +4121,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Scrollable Tokyo-Style Circular Passport Stamps Section (Public Profile) */}
+              {/* Scrollable Passport Stamps */}
               <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -4500,7 +4429,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Drawer (Field Notes, Must-Try & Travel Essentials Tabs - Left) */}
+      {/* Slide-Out Drawer (Notes, Must-Try & Essentials) */}
       {(isDrawerOpen || isDrawerClosing) && (
         <div 
           style={{ 
@@ -4531,7 +4460,6 @@ export default function Home() {
               animation: isDrawerClosing ? 'drawerOutLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
-            {/* Header */}
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
               <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 {drawerTab === 'fieldNotes' ? 'Field Notes' : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
@@ -4541,7 +4469,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Navigation Tabs (3-Way: Notes, Must-Try, Essentials) */}
             <div className="animate-slide-up" style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', width: '100%' }}>
                 <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
@@ -4550,7 +4477,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Sort Toggle (Only for Field Notes tab) */}
             {drawerTab === 'fieldNotes' && (
               <div className="animate-slide-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0, animationDelay: '0.12s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>
@@ -4601,7 +4527,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* Middle Scrollable Container */}
             <div className="animate-slide-up" style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px', animationDelay: '0.16s' }}>
               {drawerTab === 'essentials' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
@@ -4649,7 +4574,6 @@ export default function Home() {
                   </a>
                 </div>
               ) : (
-                /* Main Spot List */
                 displayedDrawerSpots.map((spot: Spot) => {
                   const color = getCategoryColor(spot.category);
                   const refPoint = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
@@ -4735,7 +4659,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Slide-Out Profile Drawer (Right) */}
+      {/* Slide-Out Profile Drawer */}
       {(isProfileModalOpen || isProfileClosing) && currentUser && (
         <div 
           style={{ 
@@ -4856,7 +4780,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scrollable Tokyo-Style Circular Passport Stamps Section (Field Journal) */}
+            {/* Scrollable Passport Stamps */}
             <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -4957,7 +4881,7 @@ export default function Home() {
               )}
             </div>
 
-            {/* Bywayr Plus — Membership Card */}
+            {/* Bywayr Plus Membership Card */}
             <div style={{ backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', border: isPlusSubscriber ? '1.5px solid #bbf7d0' : '1.5px solid #fed7aa', borderRadius: '20px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isPlusSubscriber ? '0 4px 16px rgba(5, 150, 105, 0.08)' : '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -5068,7 +4992,6 @@ export default function Home() {
               {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
 
-            {/* Share Field Journal Action */}
             <button
               onClick={handleShareFieldJournal}
               style={{
@@ -5196,7 +5119,315 @@ export default function Home() {
         </div>
       )}
 
-      {/* 9. Claim Handle & Country Modal */}
+      {/* Claim Handle & Country Modal */}
       {isClaimUsernameModalOpen && currentUser && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
-          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '36I seem to be encountering an error. Can I try something else for you?
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
+              <AtSign style={{ width: '24px', height: '24px' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', textAlign: 'center' }}>Set Up Profile</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a handle and confirm your country of origin for your field journal.</p>
+
+            <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
+                  <input
+                    type="text"
+                    required
+                    maxLength={20}
+                    placeholder="traveler"
+                    value={claimUsername}
+                    onChange={(e) => {
+                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setClaimUsername(clean);
+                      if (clean.length > 0 && clean.length < 3) {
+                        setClaimUsernameError('Must be at least 3 characters');
+                      } else {
+                        setClaimUsernameError('');
+                      }
+                    }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                  />
+                </div>
+                {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Country of Origin</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. United States"
+                  value={claimCountry}
+                  onChange={(e) => setClaimCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
+              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Complete Profile'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 10. Auth Modal */}
+      {isAuthModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px' }}>
+              <X style={{ width: '20px', height: '20px' }} />
+            </button>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+              <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+
+            <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              Continue with Google
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+              <span style={{ fontSize: '11px', color: '#a8a29e', fontWeight: 600 }}>OR EMAIL</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
+            </div>
+
+            <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
+                <input
+                  type="text"
+                  maxLength={20}
+                  placeholder="e.g. explorer_ph"
+                  value={authUsername}
+                  onChange={(e) => {
+                    const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    setAuthUsername(clean);
+                    if (clean.length > 0 && clean.length < 3) {
+                      setAuthUsernameError('Must be at least 3 characters');
+                    } else {
+                      setAuthUsernameError('');
+                    }
+                  }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                />
+                {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
+              </div>
+
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country of Origin</label>
+                <input
+                  type="text"
+                  placeholder="e.g. United States"
+                  value={authCountry}
+                  onChange={(e) => setAuthCountry(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                />
+                <span style={{ fontSize: '10.5px', color: '#78716c', display: 'block', marginTop: '4px' }}>
+                  🔒 Your email is never shared publicly or displayed on your profile.
+                </span>
+              </div>
+
+              <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bywayr Plus Upgrade Modal */}
+      {isPlusModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                Bywayr Plus
+              </h3>
+              <button
+                onClick={() => dismissModalWithHistory(() => setIsPlusModalOpen(false))}
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '18px 0 14px 0' }}>
+              <div style={{ width: '84px', height: '84px', borderRadius: '28px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', boxShadow: '0 12px 28px -6px rgba(224, 90, 71, 0.28)', marginBottom: '8px', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
+                <Crown style={{ width: '42px', height: '42px' }} />
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Lifetime Curator Pass
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '10px 0 20px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <HardDrive style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Google Drive Cloud Sync</strong> — Automatically backup & sync your pinned notes and passport stamps across all your devices.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <Download style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Offline Map Caching</strong> — Download offline city regions so your field journal is always ready in remote areas.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <ShieldCheck style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Verified Curator Badge</strong> — Stand out with an authentic gold checkmark on your public passport stamps.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <Sparkle style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={handleGooglePlayCheckout}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#44403c',
+                  color: '#fafaf9',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '14px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
+                  letterSpacing: '0.01em',
+                }}
+              >
+                One-time Payment — $19.99
+              </button>
+
+              <button
+                onClick={handleRestorePurchases}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#78716c',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '6px',
+                }}
+              >
+                Restore Purchase
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome / Intro Modal */}
+      {showWelcome && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100030, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 12px auto', boxShadow: '0 6px 16px rgba(224, 90, 71, 0.18)', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
+              <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '19px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              Welcome to Bywayr
+            </h3>
+
+            <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
+              Your pocket field guide for discovering, pinning, and archiving unindexed local gems and backstreet favorites.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px 14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                  <Gem style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917' }}>Curate Hidden Spots</div>
+                  <div style={{ fontSize: '11px', color: '#78716c' }}>Pin hole-in-the-wall eats, quiet cafes, and night spots.</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7', flexShrink: 0 }}>
+                  <Compass style={{ width: '14px', height: '14px' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1c1917' }}>Earn Passport Stamps</div>
+                  <div style={{ fontSize: '11px', color: '#78716c' }}>Collect entry stamps automatically as you pin across cities.</div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                triggerHaptic(10);
+                dismissModalWithHistory(handleDismissWelcome);
+              }}
+              style={{
+                width: '100%',
+                backgroundColor: '#1c1917',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '12px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(28, 25, 23, 0.2)',
+              }}
+            >
+              Start Exploring <ArrowRight style={{ width: '15px', height: '15px' }} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      </div>
+  );
+}
