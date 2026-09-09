@@ -2769,7 +2769,7 @@ export default function Home() {
       {/* 2. Unified Search & Actions Bar */}
       <div style={{ 
         position: 'absolute', 
-        top: isOffline ? 'calc(52px + env(safe-area-inset-top, 0px))' : 'calc(12px + env(safe-area-inset-top, 0px))', 
+        top: isOffline ? 'calc(max(env(safe-area-inset-top, 0px), 28px) + 30px)' : 'max(env(safe-area-inset-top, 0px), 28px)', 
         left: '16px', 
         right: '16px', 
         maxWidth: '460px', 
