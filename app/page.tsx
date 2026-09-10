@@ -2580,7 +2580,7 @@ const showToast = (msg: string) => {
           letter-spacing: -0.02em;
         }
         .fraunces-title {
-          font-family: var(--font-fraunces), Georgia, serif;
+          font-family: var(--font-fraunces), 'Inter', Georgia, serif;
           font-variation-settings: 'SOFT' 25, 'WONK' 0;
           font-weight: 600;
         }
@@ -4976,11 +4976,10 @@ const showToast = (msg: string) => {
                         }}
                         style={{
                           backgroundColor: '#fffdfa',
-                          border: `2px solid ${st.color}`,
-                          borderRadius: '16px',
-                          minWidth: '92px',
-                          maxWidth: '105px',
-                          height: '74px',
+                          border: `3px solid ${st.color}`,
+                          borderRadius: '50%',
+                          width: '96px',
+                          height: '96px',
                           boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
                           position: 'relative',
                           display: 'flex',
@@ -5543,22 +5542,21 @@ const showToast = (msg: string) => {
                       }}
                       style={{
                         backgroundColor: '#fffdfa',
-                        border: `2px solid ${st.color}`,
-                        borderRadius: '12px',
-                        height: '100%',
-                        minHeight: '96px',
-                        boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
+                        border: `3px solid ${st.color}`,
+                        borderRadius: '50%',
+                        width: '108px',
+                        height: '108px',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '3px',
-                        padding: '8px 6px',
+                        justifyContent: 'center',
+                        gap: '1px',
+                        padding: '10px 8px',
                         boxSizing: 'border-box',
                         textAlign: 'center',
                         outline: `1.5px dashed ${st.color}55`,
-                        outlineOffset: '-4px',
-                        transform: `rotate(${((idx % 4) - 1.5) * 1.2}deg)`,
+                        outlineOffset: '-5px',
+                        transform: `rotate(${((idx % 4) - 1.5) * 1.5}deg)`,
                         overflow: 'hidden',
                       }}
                     >
@@ -5566,7 +5564,7 @@ const showToast = (msg: string) => {
                         ENTRY · IMMIGRATION
                       </div>
                       <div style={{
-                        fontSize: st.country.length > 13 ? '10px' : '12px',
+                        fontSize: st.country.length > 13 ? '9px' : '10.5px',
                         fontWeight: 900,
                         color: st.color,
                         lineHeight: 1.15,
