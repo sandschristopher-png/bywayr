@@ -2581,13 +2581,11 @@ const showToast = (msg: string) => {
         h3 {
           letter-spacing: -0.02em;
         }
-        .title-display {
-          font-family: var(--font-inter), 'Inter', sans-serif;
+        .fraunces-title {
+          font-family: var(--font-fraunces), Georgia, serif !important;
+          font-variation-settings: 'SOFT' 25, 'WONK' 0;
           font-weight: 700;
           letter-spacing: -0.02em;
-        }
-        .stamp-country {
-          font-family: var(--font-inter), 'Inter', sans-serif;
         }
         @keyframes slideUp {
           from { transform: translateY(18px) translateZ(0); opacity: 0; }
@@ -2634,40 +2632,40 @@ const showToast = (msg: string) => {
         }
         @keyframes bounceRight {  0% { transform: translateZ(0); }  35% { transform: translateX(-12px) translateZ(0); }  100% { transform: translateZ(0); }}
         @keyframes bounceLeft {  0% { transform: translateZ(0); }  35% { transform: translateX(12px) translateZ(0); }  100% { transform: translateZ(0); }}
-        .passport-stamp-card {
-          flex-shrink: 0;
-          cursor: grab;
+        .passport-stamp-cachet {
+          cursor: pointer;
           user-select: none;
-          transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease;
+          transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+          position: relative;
         }
-        .passport-stamp-card:active {
-          cursor: grabbing;
+        .passport-stamp-cachet:hover {
+          transform: translateY(-2px) scale(1.03) !important;
+          box-shadow: 0 8px 18px rgba(28, 25, 23, 0.12);
         }
-        .passport-stamp-card:hover {
-          transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 6px 16px rgba(28, 25, 23, 0.1);
+        .passport-stamp-cachet:active {
+          transform: scale(0.97) !important;
         }
-        .stamp-gold {
-          background: radial-gradient(circle at 30% 20%, #fffbe8, #fff8e1) !important;
-          box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25) !important;
+        .stamp-tier-gold {
+          background: radial-gradient(circle at 40% 30%, #fffdf0, #fff8db) !important;
+          box-shadow: 0 6px 18px rgba(217, 119, 6, 0.22) !important;
         }
-        .stamp-silver {
-          background: radial-gradient(circle at 30% 20%, #fcfcfd, #f8fafc) !important;
-          box-shadow: 0 4px 14px rgba(100, 116, 139, 0.18) !important;
+        .stamp-tier-silver {
+          background: radial-gradient(circle at 40% 30%, #ffffff, #f1f5f9) !important;
+          box-shadow: 0 6px 18px rgba(100, 116, 139, 0.18) !important;
         }
         @keyframes bookPageTurn {
-          from { opacity: 0; transform: rotateY(-14deg) translateZ(0); }
-          to { opacity: 1; transform: rotateY(0deg) translateZ(0); }
+          from { opacity: 0; transform: rotateY(-10deg) translateY(6px) translateZ(0); }
+          to { opacity: 1; transform: rotateY(0deg) translateY(0) translateZ(0); }
         }
         .book-page-turn {
-          animation: bookPageTurn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: bookPageTurn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-                  @keyframes fadeScaleDown {
+        @keyframes fadeScaleDown {
           from { opacity: 1; transform: scale(1) translateZ(0); }
-          to { opacity: 0; transform: scale(0.94) translateZ(0); }
+          to { opacity: 0; transform: scale(0.95) translateY(8px) translateZ(0); }
         }
         .paper-exit {
-          animation: fadeScaleDown 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: fadeScaleDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -4557,7 +4555,7 @@ const showToast = (msg: string) => {
             }}
           >
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
-              <h2 className="title-display" style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              <h2 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 {drawerTab === 'fieldNotes' ? 'Field Notes' : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
               </h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
@@ -5500,7 +5498,7 @@ const showToast = (msg: string) => {
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
-              <h3 className="title-display" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport Book</h3>
+              <h3 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport Book</h3>
               <button
                 onClick={handleClosePassportBook}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
@@ -5535,7 +5533,7 @@ const showToast = (msg: string) => {
                   return (
                     <div
                       key={`${passportBookPage}-${idx}`}
-                      className={`passport-stamp-card ${tier === 'gold' ? 'stamp-gold' : tier === 'silver' ? 'stamp-silver' : ''}`}
+                      className={`passport-stamp-card ${tier === 'gold' ? 'stamp-tier-gold' : tier === 'silver' ? 'stamp-tier-silver' : ''}`}
                       onClick={() => {
                         if (isStampDragging) return;
                         triggerHaptic(8);
