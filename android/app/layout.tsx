@@ -1,12 +1,5 @@
 import type { ReactNode } from 'react';
-import { Fraunces, Inter } from 'next/font/google';
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  weight: ['400', '600'],
-  axes: ['SOFT', 'WONK'],
-  variable: '--font-fraunces',
-});
+import { Inter } from 'next/font/google';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -21,7 +14,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

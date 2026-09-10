@@ -479,6 +479,7 @@ const [isPlusClosing, setIsPlusClosing] = useState(false);
   const [viewingSpot, setViewingSpot] = useState<Spot | null>(null);
   const [isDiscussionModalOpen, setIsDiscussionModalOpen] = useState(false);
 
+  const [mapReady, setMapReady] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_dark_mode') === 'true';
@@ -1782,7 +1783,7 @@ const showToast = (msg: string) => {
 
   // Marker Clustering Effect
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapReady) return;
     const mapInstance = map.current;
 
     const updateClustering = () => {
@@ -1927,7 +1928,7 @@ const showToast = (msg: string) => {
     } else {
       mapInstance.on('load', updateClustering);
     }
-  }, [filteredSpots, spots]);
+  }, [filteredSpots, spots, mapReady]);
 
   // Proximity Alert Watcher
   useEffect(() => {
@@ -2404,6 +2405,7 @@ const showToast = (msg: string) => {
 
     initializedMap.on('load', () => {
       initializedMap.resize();
+      setMapReady(true);
       const hasSavedPosition = localStorage.getItem('bywayr_map_center');
       const hasSeenWelcome = localStorage.getItem('bywayr_seen_welcome');
       if (navigator.geolocation && !window.location.search.includes('spot=') && !hasSavedPosition && hasSeenWelcome) {
@@ -2579,10 +2581,10 @@ const showToast = (msg: string) => {
         h3 {
           letter-spacing: -0.02em;
         }
-        .fraunces-title {
-          font-family: var(--font-fraunces), 'Inter', Georgia, serif;
-          font-variation-settings: 'SOFT' 25, 'WONK' 0;
-          font-weight: 600;
+        .title-display {
+          font-family: var(--font-inter), 'Inter', sans-serif;
+          font-weight: 700;
+          letter-spacing: -0.02em;
         }
         .stamp-country {
           font-family: var(--font-inter), 'Inter', sans-serif;
@@ -4555,7 +4557,7 @@ const showToast = (msg: string) => {
             }}
           >
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
-              <h2 className="fraunces-title" style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              <h2 className="title-display" style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 {drawerTab === 'fieldNotes' ? 'Field Notes' : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
               </h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
@@ -4811,7 +4813,7 @@ const showToast = (msg: string) => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
-              <h2 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
+              <h2 className="title-display" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
               <button onClick={handleCloseProfileDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
@@ -5498,7 +5500,7 @@ const showToast = (msg: string) => {
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
-              <h3 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport Book</h3>
+              <h3 className="title-display" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport Book</h3>
               <button
                 onClick={handleClosePassportBook}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
