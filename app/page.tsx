@@ -419,6 +419,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
   const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
   const [isPassportBookOpen, setIsPassportBookOpen] = useState(false);
+  const [isBookClosing, setIsBookClosing] = useState(false);
 const [passportBookPage, setPassportBookPage] = useState(0);
 const STAMPS_PER_SPREAD = 4;
 const [isPlusClosing, setIsPlusClosing] = useState(false);
@@ -767,6 +768,7 @@ const showToast = (msg: string) => {
 
   const isAnyOverlayActive = !!(
     isPlusModalOpen ||
+    isPassportBookOpen ||
     isModalOpen ||
     isDrawerOpen ||
     isDrawerClosing ||
@@ -829,7 +831,19 @@ const showToast = (msg: string) => {
     setTimeout(() => {
       setIsDrawerOpen(false);
       setIsDrawerClosing(false);
-    }, 280);
+    }, 240);
+    if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
+      window.history.back();
+    }
+  };
+
+  const handleClosePassportBook = () => {
+    triggerHaptic(8);
+    setIsBookClosing(true);
+    setTimeout(() => {
+      setIsPassportBookOpen(false);
+      setIsBookClosing(false);
+    }, 240);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
       window.history.back();
     }
@@ -841,7 +855,7 @@ const showToast = (msg: string) => {
     setTimeout(() => {
       setIsProfileModalOpen(false);
       setIsProfileClosing(false);
-    }, 280);
+    }, 240);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
       window.history.back();
     }
@@ -849,6 +863,7 @@ const showToast = (msg: string) => {
 
 
   const closeTopmostSheet = useCallback(() => {
+    if (isPassportBookOpen) { handleClosePassportBook(); return; }
     if (isPlusModalOpen) { setIsPlusModalOpen(false); return; }
     if (isDeleteAccountModalOpen) { setIsDeleteAccountModalOpen(false); return; }
     if (isClaimUsernameModalOpen) { setIsClaimUsernameModalOpen(false); return; }
@@ -2340,8 +2355,26 @@ const showToast = (msg: string) => {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://tiles.openfreemap.org/styles/liberty',
-      attributionControl: false,
+      style: {
+        version: 8,
+        sources: {
+          'osm-tiles': {
+            type: 'raster',
+            tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', 'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', 'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors © CARTO',
+          },
+        },
+        layers: [
+          {
+            id: 'osm-layer',
+            type: 'raster',
+            source: 'osm-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      },
       center: initialCenter,
       zoom: initialZoom,
     });
@@ -2539,13 +2572,17 @@ const showToast = (msg: string) => {
           touch-action: manipulation;
         }
         h2, h3, h4 {
-          font-family: var(--font-fraunces), Georgia, serif;
-          font-variation-settings: 'SOFT' 25, 'WONK' 0;
-          font-weight: 600;
+          font-family: var(--font-inter), 'Inter', sans-serif;
+          font-weight: 700;
           letter-spacing: -0.01em;
         }
         h3 {
           letter-spacing: -0.02em;
+        }
+        .fraunces-title {
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'SOFT' 25, 'WONK' 0;
+          font-weight: 600;
         }
         .stamp-country {
           font-family: var(--font-fraunces), Georgia, serif;
@@ -2622,7 +2659,14 @@ const showToast = (msg: string) => {
           to { opacity: 1; transform: rotateY(0deg) translateZ(0); }
         }
         .book-page-turn {
-          animation: bookPageTurn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: bookPageTurn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+                  @keyframes fadeScaleDown {
+          from { opacity: 1; transform: scale(1) translateZ(0); }
+          to { opacity: 0; transform: scale(0.94) translateZ(0); }
+        }
+        .paper-exit {
+          animation: fadeScaleDown 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -2653,11 +2697,15 @@ const showToast = (msg: string) => {
           backface-visibility: hidden;
         }
         .animate-fade-in {
-          animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: opacity;
+        }
+        .animate-fade-out {
+          animation: fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           will-change: opacity;
         }
         .animate-scale-up {
-          animation: scaleUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: scaleUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
           will-change: transform, opacity;
           backface-visibility: hidden;
         }
@@ -2688,7 +2736,7 @@ const showToast = (msg: string) => {
           bottom: 0, 
           zIndex: 0, 
           backgroundColor: isDarkMode ? '#262421' : '#ecebe7', 
-          filter: isDarkMode ? 'grayscale(82%) sepia(12%) brightness(0.82) contrast(1.08)' : 'saturate(0.88) contrast(1.04)', 
+          filter: (isDarkMode ? 'grayscale(82%) sepia(12%) brightness(0.82) contrast(1.08)' : 'saturate(0.88) contrast(1.04)') + (isAnyOverlayActive ? ' blur(6px)' : ''),
           transition: 'filter 0.6s ease, background-color 0.3s ease', 
           touchAction: 'pan-x pan-y', 
         }} 
@@ -4488,7 +4536,7 @@ const showToast = (msg: string) => {
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-start', 
-            animation: isDrawerClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
+            animation: isDrawerClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
@@ -4504,11 +4552,11 @@ const showToast = (msg: string) => {
               padding: 'clamp(14px, 4vw, 20px)', 
               boxSizing: 'border-box', 
               overflow: 'hidden', 
-              animation: isDrawerClosing ? 'drawerOutLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
+              animation: isDrawerClosing ? 'drawerOutLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
-              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+              <h2 className="fraunces-title" style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 {drawerTab === 'fieldNotes' ? 'Field Notes' : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
               </h2>
               <button onClick={handleCloseDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
@@ -4664,7 +4712,7 @@ const showToast = (msg: string) => {
                         setTimeout(() => {
                           setIsDrawerOpen(false);
                           setIsDrawerClosing(false);
-                        }, 280);
+                        }, 240);
                         flyToSpot(spot);
                       }}
                       className="spot-card-hover"
@@ -4745,7 +4793,7 @@ const showToast = (msg: string) => {
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-end', 
-            animation: isProfileClosing ? 'fadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
+            animation: isProfileClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
@@ -4760,11 +4808,11 @@ const showToast = (msg: string) => {
               padding: '24px', 
               boxSizing: 'border-box', 
               overflowY: 'auto', 
-              animation: isProfileClosing ? 'drawerOutRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
+              animation: isProfileClosing ? 'drawerOutRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
+              <h2 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
               <button onClick={handleCloseProfileDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
@@ -4865,6 +4913,7 @@ const showToast = (msg: string) => {
                     triggerHaptic(8);
                     setPassportBookPage(0);
                     setIsPassportBookOpen(true);
+                    pushModalHistoryState('passportBook');
                     handleCloseProfileDrawer();
                   }}
                   style={{
@@ -5329,7 +5378,7 @@ const showToast = (msg: string) => {
 
       {/* Bywayr Plus Upgrade Modal */}
       {isPlusModalOpen && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
@@ -5340,7 +5389,7 @@ const showToast = (msg: string) => {
                   setIsPlusClosing(true);
                   setTimeout(() => {
                     dismissModalWithHistory(() => { setIsPlusModalOpen(false); setIsPlusClosing(false); });
-                  }, 200);
+                  }, 240);
                 }}
                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
@@ -5443,23 +5492,33 @@ const showToast = (msg: string) => {
       )}
 
       {/* Passport Book — full screen paged view */}
-      {isPassportBookOpen && (() => {
+      {(isPassportBookOpen || isBookClosing) && (() => {
+        const bookTouchRef = { current: 0 };
         const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
         const pageStamps = myPassportStamps.slice(passportBookPage * STAMPS_PER_SPREAD, (passportBookPage + 1) * STAMPS_PER_SPREAD);
 
         return (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: '#f5f0e6', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'max(env(safe-area-inset-top, 0px), 24px) 16px calc(max(env(safe-area-inset-bottom, 0px), 24px)) 16px', boxSizing: 'border-box' }}>
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', fontFamily: 'var(--font-fraunces), Georgia, serif' }}>Passport Book</h3>
               <button
-                onClick={() => { triggerHaptic(8); setIsPassportBookOpen(false); }}
+                onClick={handleClosePassportBook}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
               >
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
 
-            <div key={passportBookPage} className="book-page-turn" style={{ width: '100%', maxWidth: '440px', flex: 1, backgroundColor: '#faf6ec', border: '6px solid #78716c', borderRadius: '10px', boxShadow: '0 18px 44px -12px rgba(28, 25, 23, 0.4)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '10px', padding: '18px 14px', boxSizing: 'border-box', overflow: 'hidden' }}>
+            <div
+              key={passportBookPage}
+                            className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
+              onTouchStart={(e) => { (bookTouchRef as any).current = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                const dx = e.changedTouches[0].clientX - (bookTouchRef as any).current;
+                if (dx > 50 && passportBookPage > 0) { triggerHaptic(6); setPassportBookPage((p) => p - 1); }
+                if (dx < -50 && passportBookPage < totalPages - 1) { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalPages - 1, p + 1)); }
+              }}
+              style={{ width: '100%', maxWidth: '340px', height: 'min(62vh, 460px)', backgroundColor: '#faf6ec', border: '5px solid #78716c', borderRadius: '10px', boxShadow: '0 18px 44px -12px rgba(28, 25, 23, 0.5)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '8px', padding: '14px 10px', boxSizing: 'border-box', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', left: '50%', top: '10px', bottom: '10px', width: '1px', backgroundColor: '#a8a29e', opacity: 0.4 }} />
               {pageStamps.length === 0 ? (
                 <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', fontSize: '12px', fontStyle: 'italic' }}>
@@ -5481,32 +5540,34 @@ const showToast = (msg: string) => {
                         if (isStampDragging) return;
                         triggerHaptic(8);
                         setSelectedCountryFilter(st.country);
-                        setIsPassportBookOpen(false);
+                        dismissModalWithHistory(handleClosePassportBook);
                       }}
                       style={{
                         backgroundColor: '#fffdfa',
                         border: `2px solid ${st.color}`,
-                        borderRadius: '14px',
+                        borderRadius: '12px',
                         height: '100%',
-                        minHeight: '110px',
+                        minHeight: '96px',
                         boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '10px 8px',
+                        gap: '3px',
+                        padding: '8px 6px',
                         boxSizing: 'border-box',
                         textAlign: 'center',
                         outline: `1.5px dashed ${st.color}55`,
                         outlineOffset: '-4px',
                         transform: `rotate(${((idx % 4) - 1.5) * 1.2}deg)`,
+                        overflow: 'hidden',
                       }}
                     >
                       <div style={{ fontSize: '8px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
                         ENTRY · IMMIGRATION
                       </div>
                       <div style={{
-                        fontSize: st.country.length > 13 ? '11px' : '13px',
+                        fontSize: st.country.length > 13 ? '10px' : '12px',
                         fontWeight: 900,
                         color: st.color,
                         lineHeight: 1.15,
