@@ -127,7 +127,11 @@ const CATEGORIES = [
 
 const STAMP_PALETTE = ['#0d9488', '#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#4f46e5'];
 const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
-
+const getStampTier = (spotCount: number): 'entry' | 'silver' | 'gold' => {
+  if (spotCount >= 30) return 'gold';
+  if (spotCount >= 15) return 'silver';
+  return 'entry';
+};
 const getCategoryColor = (cat: string) => {
   const match = CATEGORIES.find((c) => c.label.toLowerCase() === cat.toLowerCase());
   return match ? match.color : '#57534e';
@@ -414,6 +418,9 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
   const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
+  const [isPassportBookOpen, setIsPassportBookOpen] = useState(false);
+const [passportBookPage, setPassportBookPage] = useState(0);
+const STAMPS_PER_SPREAD = 4;
 const [isPlusClosing, setIsPlusClosing] = useState(false);
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -2333,26 +2340,8 @@ const showToast = (msg: string) => {
 
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'osm-tiles': {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-layer',
-            type: 'raster',
-            source: 'osm-tiles',
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
-      },
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      attributionControl: false,
       center: initialCenter,
       zoom: initialZoom,
     });
@@ -2521,7 +2510,7 @@ const showToast = (msg: string) => {
     };
   }, [spots]);
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#ecebe7' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#ecebe7' }}>
       <style jsx global>{`
         html, body {
           position: fixed;
@@ -2548,6 +2537,19 @@ const showToast = (msg: string) => {
         input, textarea {
           user-select: text;
           touch-action: manipulation;
+        }
+        h2, h3, h4 {
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'SOFT' 25, 'WONK' 0;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+        }
+        h3 {
+          letter-spacing: -0.02em;
+        }
+        .stamp-country {
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'SOFT' 40, 'WONK' 0;
         }
         @keyframes slideUp {
           from { transform: translateY(18px) translateZ(0); opacity: 0; }
@@ -2606,6 +2608,21 @@ const showToast = (msg: string) => {
         .passport-stamp-card:hover {
           transform: translateY(-2px) scale(1.02);
           box-shadow: 0 6px 16px rgba(28, 25, 23, 0.1);
+        }
+        .stamp-gold {
+          background: radial-gradient(circle at 30% 20%, #fffbe8, #fff8e1) !important;
+          box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25) !important;
+        }
+        .stamp-silver {
+          background: radial-gradient(circle at 30% 20%, #fcfcfd, #f8fafc) !important;
+          box-shadow: 0 4px 14px rgba(100, 116, 139, 0.18) !important;
+        }
+        @keyframes bookPageTurn {
+          from { opacity: 0; transform: rotateY(-14deg) translateZ(0); }
+          to { opacity: 1; transform: rotateY(0deg) translateZ(0); }
+        }
+        .book-page-turn {
+          animation: bookPageTurn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         .user-location-pulse {
           animation: gpsRadarPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -4149,7 +4166,14 @@ const showToast = (msg: string) => {
                   <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
                   </span>
-                  <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{publicPassportStamps.length} Countries</span>
+                  <span style={{
+                    backgroundColor: publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? '#fef3c7' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? '#f1f5f9' : '#e0f2fe',
+                    color: publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? '#d97706' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? '#64748b' : '#0284c7',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '6px'
+                  }}>{publicPassportStamps.length} Countries{publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? ' · Gold' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? ' · Silver' : ''}</span>
                 </div>
 
                 {publicPassportStamps.length === 0 ? (
@@ -4183,7 +4207,7 @@ const showToast = (msg: string) => {
                       return (
                         <div
                           key={idx}
-                          className="passport-stamp-card"
+                          className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-gold' : ''}`}
                           onClick={() => {
                             if (isStampDragging) return;
                             triggerHaptic(8);
@@ -4192,7 +4216,8 @@ const showToast = (msg: string) => {
                           }}
                           style={{
                             backgroundColor: '#fffdfa',
-                            border: `2px solid ${st.color}`,
+                            border: `2px ${st.spotCount >= 15 ? 'double' : 'solid'} ${st.color}`,
+                          borderWidth: st.spotCount >= 30 ? '4px' : `2px`,
                             borderRadius: '16px',
                             minWidth: '92px',
                             maxWidth: '105px',
@@ -4835,7 +4860,29 @@ const showToast = (msg: string) => {
                 <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
                 </span>
-                <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>{myCountriesCount} Countries</span>
+                <button
+                  onClick={() => {
+                    triggerHaptic(8);
+                    setPassportBookPage(0);
+                    setIsPassportBookOpen(true);
+                    handleCloseProfileDrawer();
+                  }}
+                  style={{
+                    backgroundColor: '#1c1917',
+                    color: '#fafaf9',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '4px 10px',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  View Book <ArrowRight style={{ width: '11px', height: '11px' }} />
+                </button>
               </div>
 
               {myPassportStamps.length === 0 ? (
@@ -4867,6 +4914,7 @@ const showToast = (msg: string) => {
                     const day = d.toLocaleDateString('en-US', { day: '2-digit' });
                     const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
                     const year = d.getFullYear();
+                    const tier = getStampTier(st.spotCount);
 
                     return (
                       <div
@@ -5394,7 +5442,121 @@ const showToast = (msg: string) => {
         </div>
       )}
 
-            {/* Welcome / Onboarding Carousel — full screen */}
+      {/* Passport Book — full screen paged view */}
+      {isPassportBookOpen && (() => {
+        const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
+        const pageStamps = myPassportStamps.slice(passportBookPage * STAMPS_PER_SPREAD, (passportBookPage + 1) * STAMPS_PER_SPREAD);
+
+        return (
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: '#f5f0e6', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'max(env(safe-area-inset-top, 0px), 24px) 16px calc(max(env(safe-area-inset-bottom, 0px), 24px)) 16px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', fontFamily: 'var(--font-fraunces), Georgia, serif' }}>Passport Book</h3>
+              <button
+                onClick={() => { triggerHaptic(8); setIsPassportBookOpen(false); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
+              >
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            <div key={passportBookPage} className="book-page-turn" style={{ width: '100%', maxWidth: '440px', flex: 1, backgroundColor: '#faf6ec', border: '6px solid #78716c', borderRadius: '10px', boxShadow: '0 18px 44px -12px rgba(28, 25, 23, 0.4)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '10px', padding: '18px 14px', boxSizing: 'border-box', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: '50%', top: '10px', bottom: '10px', width: '1px', backgroundColor: '#a8a29e', opacity: 0.4 }} />
+              {pageStamps.length === 0 ? (
+                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', fontSize: '12px', fontStyle: 'italic' }}>
+                  Pin spots to fill your passport book!
+                </div>
+              ) : (
+                pageStamps.map((st, idx) => {
+                  const d = new Date(st.firstVisit || Date.now());
+                  const day = d.toLocaleDateString('en-US', { day: '2-digit' });
+                  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                  const year = d.getFullYear();
+                  const tier = getStampTier(st.spotCount);
+
+                  return (
+                    <div
+                      key={`${passportBookPage}-${idx}`}
+                      className={`passport-stamp-card ${tier === 'gold' ? 'stamp-gold' : tier === 'silver' ? 'stamp-silver' : ''}`}
+                      onClick={() => {
+                        if (isStampDragging) return;
+                        triggerHaptic(8);
+                        setSelectedCountryFilter(st.country);
+                        setIsPassportBookOpen(false);
+                      }}
+                      style={{
+                        backgroundColor: '#fffdfa',
+                        border: `2px solid ${st.color}`,
+                        borderRadius: '14px',
+                        height: '100%',
+                        minHeight: '110px',
+                        boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 8px',
+                        boxSizing: 'border-box',
+                        textAlign: 'center',
+                        outline: `1.5px dashed ${st.color}55`,
+                        outlineOffset: '-4px',
+                        transform: `rotate(${((idx % 4) - 1.5) * 1.2}deg)`,
+                      }}
+                    >
+                      <div style={{ fontSize: '8px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+                        ENTRY · IMMIGRATION
+                      </div>
+                      <div style={{
+                        fontSize: st.country.length > 13 ? '11px' : '13px',
+                        fontWeight: 900,
+                        color: st.color,
+                        lineHeight: 1.15,
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                        width: '100%',
+                        wordBreak: 'normal',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}>
+                        {st.country}
+                      </div>
+                      <div style={{ fontSize: '9px', color: st.color, fontWeight: 800, letterSpacing: '0.06em', fontFamily: 'monospace' }}>
+                        {day} {month} {year}
+                      </div>
+                      <div style={{ fontSize: '8px', fontWeight: 700, color: tier === 'gold' ? '#d97706' : tier === 'silver' ? '#64748b' : st.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {st.spotCount} PINS{tier === 'gold' ? ' ★ GOLD' : tier === 'silver' ? ' ★ SILVER' : ''}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '440px', padding: '16px 0 4px 0' }}>
+              <button
+                onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.max(0, p - 1)); }}
+                disabled={passportBookPage === 0}
+                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '9px 16px', fontSize: '12px', fontWeight: 700, cursor: passportBookPage === 0 ? 'default' : 'pointer', opacity: passportBookPage === 0 ? 0.35 : 1 }}
+              >
+                ← Prev
+              </button>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', letterSpacing: '0.06em', fontFamily: 'monospace' }}>
+                PAGE {passportBookPage + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalPages - 1, p + 1)); }}
+                disabled={passportBookPage >= totalPages - 1}
+                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '9px 16px', fontSize: '12px', fontWeight: 700, cursor: passportBookPage >= totalPages - 1 ? 'default' : 'pointer', opacity: passportBookPage >= totalPages - 1 ? 0.35 : 1 }}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Welcome / Onboarding Carousel — full screen */}
       {showWelcome && (() => {
         const ONBOARDING_STEPS = [
           {
@@ -5481,7 +5643,7 @@ const showToast = (msg: string) => {
               </p>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '26px 0 14px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '22px 0 10px 0' }}>
               {ONBOARDING_STEPS.map((_, idx) => (
                 <div
                   key={idx}
@@ -5504,37 +5666,37 @@ const showToast = (msg: string) => {
               ))}
             </div>
 
-            <div style={{ padding: '6px 24px calc(max(env(safe-area-inset-bottom, 0px), 20px) + 12px) 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '4px 24px calc(max(env(safe-area-inset-bottom, 0px), 20px) + 12px) 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#1c1917',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '14px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '7px',
+                  boxShadow: '0 6px 16px rgba(28, 25, 23, 0.22)',
+                }}
+              >
+                {isLastStep ? 'Open the Field Guide' : 'Next'}
+                {!isLastStep && <ArrowRight style={{ width: '15px', height: '15px' }} />}
+              </button>
+
               {isLastStep ? (
-                <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); finishOnboarding(); }}
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#1c1917',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '16px',
-                    padding: '15px',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '7px',
-                    boxShadow: '0 6px 16px rgba(28, 25, 23, 0.22)',
-                  }}
-                                >
-                  Open the Field Guide <ArrowRight style={{ width: '16px', height: '16px' }} />
-                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     triggerHaptic(6);
                     localStorage.setItem('bywayr_seen_welcome', 'true');
                     setShowWelcome(false);
-                    setIsOnboardingExiting(false);
                     setTimeout(() => {
                       setMagicLinkSent(false);
                       setIsAuthModalOpen(true);
@@ -5549,51 +5711,28 @@ const showToast = (msg: string) => {
                     fontWeight: 600,
                     cursor: 'pointer',
                     padding: '6px',
+                    minHeight: '32px',
                   }}
                 >
                   Already exploring with us? Sign in
                 </button>
-                </>
               ) : (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); goToPrev(); }}
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: '#a8a29e',
-                      border: 'none',
-                      borderRadius: '16px',
-                      padding: '14px 18px',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      cursor: onboardingStep === 0 ? 'default' : 'pointer',
-                      opacity: onboardingStep === 0 ? 0.35 : 1,
-                    }}
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#1c1917',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '16px',
-                      padding: '14px',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(28, 25, 23, 0.18)',
-                    }}
-                  >
-                    Next <ArrowRight style={{ width: '15px', height: '15px' }} />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#a8a29e',
+                    fontSize: '12.5px',
+                    fontWeight: 600,
+                    cursor: onboardingStep === 0 ? 'default' : 'pointer',
+                    opacity: onboardingStep === 0 ? 0.35 : 1,
+                    padding: '6px',
+                    minHeight: '32px',
+                  }}
+                >
+                  Back
+                </button>
               )}
             </div>
           </div>
