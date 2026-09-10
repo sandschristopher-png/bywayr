@@ -414,6 +414,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
   const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
+const [isPlusClosing, setIsPlusClosing] = useState(false);
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_is_plus') === 'true';
@@ -533,6 +534,11 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [showExitToast, setShowExitToast] = useState(false);
+  const [uiToast, setUiToast] = useState<string | null>(null);
+const showToast = (msg: string) => {
+  setUiToast(msg);
+  setTimeout(() => setUiToast(null), 3200);
+};
   const lastBackPressTime = useRef<number>(0);
   const isPopstateHandling = useRef(false);
 
@@ -544,6 +550,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [claimCountry, setClaimCountry] = useState('');
   const [claimUsernameError, setClaimUsernameError] = useState('');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [profileSavedAt, setProfileSavedAt] = useState<number | null>(null);
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [activeProximityAlert, setActiveProximityAlert] = useState<Spot | null>(null);
@@ -832,6 +839,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
       window.history.back();
     }
   };
+
 
   const closeTopmostSheet = useCallback(() => {
     if (isPlusModalOpen) { setIsPlusModalOpen(false); return; }
@@ -1139,7 +1147,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const handleLocateMe = () => {
     triggerHaptic(8);
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      showToast('Location not supported on this device');
       return;
     }
 
@@ -1171,7 +1179,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
         setIsLocating(false);
       },
       () => {
-        alert('Could not retrieve your location.');
+        showToast("Couldn't get your location — check permissions");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -1181,7 +1189,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const handleModalLocate = () => {
     triggerHaptic(8);
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      showToast('Location not supported on this device');
       return;
     }
 
@@ -1214,7 +1222,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
         setIsModalLocating(false);
       },
       () => {
-        alert('Could not retrieve current location.');
+        showToast("Couldn't get your location — check permissions");
         setIsModalLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -1902,6 +1910,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   // Proximity Alert Watcher
   useEffect(() => {
     if (!navigator.geolocation || mustTrySpotIds.length === 0) return;
+    if (showWelcome || isOnboardingExiting) return;
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -1940,11 +1949,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
       provider: 'google',
       options: {
         redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-        queryParams: {
-          scope: 'https://www.googleapis.com/auth/drive.file',
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+
       },
     });
   };
@@ -1953,40 +1958,16 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
     e.preventDefault();
     if (!authEmail.trim()) return;
 
-    const cleanUsername = authUsername.trim().toLowerCase();
-    if (cleanUsername) {
-      if (cleanUsername.length < 3 || cleanUsername.length > 20 || !/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
-        setAuthUsernameError('Username must be 3-20 characters (letters, numbers, underscores).');
-        return;
-      }
-
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', cleanUsername)
-        .maybeSingle();
-
-      if (existingUser) {
-        setAuthUsernameError('This username is already taken. Please choose another.');
-        return;
-      }
-    }
-
     setIsSendingMagicLink(true);
-    setAuthUsernameError('');
 
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
         emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-        data: {
-          username: cleanUsername || undefined,
-          country: authCountry || undefined,
-        },
       },
     });
 
-    if (error) alert(`Error sending link: ${error.message}`);
+    if (error) showToast(`Error sending link: ${error.message}`);
     else {
       triggerHaptic(15);
       setMagicLinkSent(true);
@@ -2029,15 +2010,19 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
     if (error) {
       setClaimUsernameError(error.message);
+      setIsSavingUsername(false);
     } else {
       triggerHaptic(15);
       const updated = { ...userProfile, id: activeUser.id, username: clean, country: claimCountry.trim() || userProfile?.country || 'United States' };
       setUserProfile(updated);
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
-      setIsClaimUsernameModalOpen(false);
       fetchProfiles();
+      setProfileSavedAt(Date.now());
+      setTimeout(() => {
+        setProfileSavedAt(null);
+        setIsClaimUsernameModalOpen(false);
+      }, 1400);
     }
-    setIsSavingUsername(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2076,7 +2061,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
       localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
       fetchProfiles();
     } catch (err: any) {
-      alert(`Avatar upload failed: ${err.message || 'Error uploading file'}`);
+      showToast(`Avatar upload failed: ${err.message || 'Error uploading file'}`);
     } finally {
       setUploadingAvatar(false);
     }
@@ -2119,15 +2104,15 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
           setIsPlusSubscriber(true);
           localStorage.setItem('bywayr_is_plus', 'true');
           setIsPlusModalOpen(false);
-          alert('Thank you for upgrading to Bywayr Plus!');
+          showToast('Thank you for upgrading to Bywayr Plus! 👑');
         }
       } else {
-        alert('Google Play billing is only available in the native Android app.');
+        showToast('Purchases are available in the Android app');
       }
     } catch (err: any) {
       console.error('Google Play purchase failed:', err);
       if (err.message && !err.message.includes('Canceled') && !err.message.includes('cancel')) {
-        alert(`Purchase error: ${err.message}`);
+        showToast(`Purchase error: ${err.message}`);
       }
     }
   };
@@ -2146,16 +2131,16 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
         if (hasPlus) {
           setIsPlusSubscriber(true);
           localStorage.setItem('bywayr_is_plus', 'true');
-          alert('Purchases restored successfully!');
+          showToast('Purchases restored successfully!');
           setIsPlusModalOpen(false);
         } else {
-          alert('No previous Bywayr Plus purchases found.');
+          showToast('No previous Bywayr Plus purchases found');
         }
       } else {
-        alert('Purchase restoration is only available in the native Android app.');
+        showToast('Available in the Android app');
       }
     } catch (err: any) {
-      alert(`Restore failed: ${err.message}`);
+      showToast(`Restore failed: ${err.message}`);
     }
   };
 
@@ -2764,6 +2749,21 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
           </div>
         </div>
       )}
+{uiToast && (
+  <div className="animate-slide-up" style={{
+    position: 'fixed',
+    top: 'calc(70px + env(safe-area-inset-top, 0px))',
+    left: '16px', right: '16px', maxWidth: '420px', margin: '0 auto',
+    backgroundColor: '#1c1917', color: '#fafaf9', padding: '12px 16px',
+    borderRadius: '16px', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)',
+    zIndex: 100025, display: 'flex', alignItems: 'center', gap: '10px',
+    border: '1px solid #44403c', boxSizing: 'border-box',
+    fontSize: '13px', fontWeight: 600,
+  }}>
+    <AlertTriangle style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
+    {uiToast}
+  </div>
+)}
 
       {/* Offline Notification Banner */}
       {isOffline && (
@@ -3072,7 +3072,8 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
             display: 'flex', 
             gap: '6px', 
             overflowX: 'auto', 
-            paddingBottom: '2px', 
+            paddingBottom: '4px',
+            paddingTop: '4px', 
             scrollbarWidth: 'none', 
             cursor: isCategoryDragging ? 'grabbing' : 'grab',
             userSelect: 'none',
@@ -5215,9 +5216,9 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                 />
               </div>
 
-              <button type="submit" disabled={isSavingUsername || claimUsername.length < 3} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Complete Profile'}
-              </button>
+              <button type="submit" disabled={isSavingUsername || profileSavedAt !== null || claimUsername.length < 3} style={{ width: '100%', backgroundColor: profileSavedAt !== null ? '#059669' : '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px', transition: 'background-color 0.25s ease' }}>
+  {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : profileSavedAt !== null ? <><Check style={{ width: '15px', height: '15px' }} /> Profile Saved!</> : 'Complete Profile'}
+</button>
             </form>
           </div>
         </div>
@@ -5253,37 +5254,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
             </div>
 
             <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ textAlign: 'left' }}>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Username (for new users)</label>
-                <input
-                  type="text"
-                  maxLength={20}
-                  placeholder="e.g. explorer_ph"
-                  value={authUsername}
-                  onChange={(e) => {
-                    const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                    setAuthUsername(clean);
-                    if (clean.length > 0 && clean.length < 3) {
-                      setAuthUsernameError('Must be at least 3 characters');
-                    } else {
-                      setAuthUsernameError('');
-                    }
-                  }}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: authUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
-                />
-                {authUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '3px', display: 'block' }}>{authUsernameError}</span>}
-              </div>
 
-              <div style={{ textAlign: 'left' }}>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Country of Origin</label>
-                <input
-                  type="text"
-                  placeholder="e.g. United States"
-                  value={authCountry}
-                  onChange={(e) => setAuthCountry(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
-                />
-              </div>
 
               <div style={{ textAlign: 'left' }}>
                 <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
@@ -5310,14 +5281,19 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
       {/* Bywayr Plus Upgrade Modal */}
       {isPlusModalOpen && (
-        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 Bywayr Plus
               </h3>
               <button
-                onClick={() => dismissModalWithHistory(() => setIsPlusModalOpen(false))}
+                onClick={() => {
+                  setIsPlusClosing(true);
+                  setTimeout(() => {
+                    dismissModalWithHistory(() => { setIsPlusModalOpen(false); setIsPlusClosing(false); });
+                  }, 200);
+                }}
                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <X style={{ width: '20px', height: '20px' }} />
@@ -5530,6 +5506,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
             <div style={{ padding: '6px 24px calc(max(env(safe-area-inset-bottom, 0px), 20px) + 12px) 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {isLastStep ? (
+                <>
                 <button
                   onClick={(e) => { e.stopPropagation(); finishOnboarding(); }}
                   style={{
@@ -5548,9 +5525,35 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
                     gap: '7px',
                     boxShadow: '0 6px 16px rgba(28, 25, 23, 0.22)',
                   }}
-                >
+                                >
                   Open the Field Guide <ArrowRight style={{ width: '16px', height: '16px' }} />
                 </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerHaptic(6);
+                    localStorage.setItem('bywayr_seen_welcome', 'true');
+                    setShowWelcome(false);
+                    setIsOnboardingExiting(false);
+                    setTimeout(() => {
+                      setMagicLinkSent(false);
+                      setIsAuthModalOpen(true);
+                      pushModalHistoryState('auth');
+                    }, 500);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#a8a29e',
+                    fontSize: '12.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '6px',
+                  }}
+                >
+                  Already exploring with us? Sign in
+                </button>
+                </>
               ) : (
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
