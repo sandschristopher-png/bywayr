@@ -2585,8 +2585,7 @@ const showToast = (msg: string) => {
           font-weight: 600;
         }
         .stamp-country {
-          font-family: var(--font-fraunces), Georgia, serif;
-          font-variation-settings: 'SOFT' 40, 'WONK' 0;
+          font-family: var(--font-inter), 'Inter', sans-serif;
         }
         @keyframes slideUp {
           from { transform: translateY(18px) translateZ(0); opacity: 0; }
@@ -2736,7 +2735,7 @@ const showToast = (msg: string) => {
           bottom: 0, 
           zIndex: 0, 
           backgroundColor: isDarkMode ? '#262421' : '#ecebe7', 
-          filter: (isDarkMode ? 'grayscale(82%) sepia(12%) brightness(0.82) contrast(1.08)' : 'saturate(0.88) contrast(1.04)') + (isAnyOverlayActive ? ' blur(6px)' : ''),
+          filter: (isDarkMode ? 'grayscale(82%) sepia(12%) brightness(0.82) contrast(1.08)' : 'saturate(0.7) brightness(0.97) contrast(1.02)') + (isAnyOverlayActive ? ' blur(6px)' : ''),
           transition: 'filter 0.6s ease, background-color 0.3s ease', 
           touchAction: 'pan-x pan-y', 
         }} 
@@ -5500,7 +5499,7 @@ const showToast = (msg: string) => {
         return (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', fontFamily: 'var(--font-fraunces), Georgia, serif' }}>Passport Book</h3>
+              <h3 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport Book</h3>
               <button
                 onClick={handleClosePassportBook}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
