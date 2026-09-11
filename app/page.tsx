@@ -2423,6 +2423,14 @@ const showToast = (msg: string) => {
       if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
     } catch {}
 
+    const defaultTileUrl =
+      process.env.NEXT_PUBLIC_MAP_TILE_URL ||
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+
+    const tileSources = defaultTileUrl.includes('{s}')
+      ? ['a', 'b', 'c'].map((s) => defaultTileUrl.replace('{s}', s))
+      : [defaultTileUrl];
+
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
       style: {
@@ -2430,7 +2438,7 @@ const showToast = (msg: string) => {
         sources: {
           'osm-tiles': {
             type: 'raster',
-            tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3fj4_1_7feada29f18e32dec67e129a', 'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3fj4_1_7feada29f18e32dec67e129a', 'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3fj4_1_7feada29f18e32dec67e129a'],
+            tiles: tileSources,
             tileSize: 256,
             attribution: '© OpenStreetMap contributors © CARTO',
           },
@@ -2454,7 +2462,7 @@ const showToast = (msg: string) => {
       const preventDefaultTouch = (e: TouchEvent) => {
         if (e.touches.length > 1) return;
         const target = e.target as HTMLElement;
-        if (target?.closest('button, input, textarea, a, select, [role="button"], .passport-stamp-card')) {
+        if (target?.closest('button, input, textarea, a, select, [role="button"], .passport-stamp-card, .passport-stamp-cachet')) {
           return;
         }
         if (target?.closest('.maplibregl-canvas, .maplibregl-map')) {
@@ -2465,11 +2473,17 @@ const showToast = (msg: string) => {
       containerEl.addEventListener('touchmove', preventDefaultTouch, { passive: false });
     }
 
+    let moveEndTimeout: NodeJS.Timeout | null = null;
     initializedMap.on('moveend', () => {
-      const center = initializedMap.getCenter();
-      const zoom = initializedMap.getZoom();
-      localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
-      localStorage.setItem('bywayr_map_zoom', zoom.toString());
+      if (moveEndTimeout) clearTimeout(moveEndTimeout);
+      moveEndTimeout = setTimeout(() => {
+        const center = initializedMap.getCenter();
+        const zoom = initializedMap.getZoom();
+        try {
+          localStorage.setItem('bywayr_map_center', JSON.stringify([center.lng, center.lat]));
+          localStorage.setItem('bywayr_map_zoom', zoom.toString());
+        } catch {}
+      }, 350);
     });
 
     initializedMap.on('load', () => {
@@ -2536,6 +2550,14 @@ const showToast = (msg: string) => {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      if (previewMarkerRef.current) {
+        previewMarkerRef.current.remove();
+        previewMarkerRef.current = null;
+      }
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.remove();
+        userLocationMarkerRef.current = null;
+      }
       window.removeEventListener('resize', handleResize);
       initializedMap.remove();
       map.current = null;
@@ -4338,9 +4360,13 @@ const showToast = (msg: string) => {
                           key={idx}
                           className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-tier-gold' : getStampTier(st.spotCount) === 'silver' ? 'stamp-tier-silver' : ''}`}
                           onClick={() => {
-                            triggerHaptic(8);
+                            triggerHaptic(12);
                             setSelectedCountryFilter(st.country);
+                            const matchingSpots = viewingProfileSpots.filter(
+                              (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
+                            );
                             dismissModalWithHistory(() => setViewingProfile(null));
+                            setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
                           }}
                           style={{
                             backgroundColor: '#fffdfa',
@@ -5689,7 +5715,7 @@ const showToast = (msg: string) => {
                   const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
                   const year = d.getFullYear();
                   const tier = getStampTier(st.spotCount);
-                  const tiltAngle = idx % 2 === 0 ? -2.0 + (idx * 0.8) : 1.8 - (idx * 0.7);
+                  const tiltAngle = idx % 2 === 0 ? -2.4 + idx * 0.9 : 2.2 - idx * 0.8;
 
                   return (
                     <div
@@ -5712,118 +5738,145 @@ const showToast = (msg: string) => {
                         setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
                       }}
                       style={{
-                        backgroundColor: '#fffdfa',
-                        border: `2px solid ${st.color}`,
-                        borderRadius: '50%',
-                        width: '124px',
-                        height: '124px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '8px 6px',
-                        boxSizing: 'border-box',
-                        textAlign: 'center',
-                        outline: `1.5px dashed ${st.color}55`,
-                        outlineOffset: '-4px',
+                        width: '136px',
+                        height: '136px',
+                        cursor: 'pointer',
                         transform: `rotate(${tiltAngle}deg)`,
-                        boxShadow: '0 4px 12px rgba(28, 25, 23, 0.08)',
+                        filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.06))',
                         mixBlendMode: 'multiply',
-                        fontFamily: "var(--font-inter), 'Inter', sans-serif",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        userSelect: 'none',
                       }}
                     >
-                      {/* Top Immigration Arc Text */}
-                      <div
-                        style={{
-                          fontSize: '7.5px',
-                          fontWeight: 800,
-                          color: st.color,
-                          letterSpacing: '0.12em',
-                          textTransform: 'uppercase',
-                          opacity: 0.9,
-                          whiteSpace: 'nowrap',
-                          lineHeight: 1,
-                        }}
+                      <svg
+                        viewBox="0 0 140 140"
+                        width="100%"
+                        height="100%"
+                        style={{ overflow: 'visible' }}
                       >
-                        ★ ARRIVAL · ENTRY ★
-                      </div>
+                        <defs>
+                          <path
+                            id={`arc-top-${passportBookPage}-${idx}`}
+                            d="M 22 70 A 48 48 0 0 1 118 70"
+                            fill="none"
+                          />
+                          <path
+                            id={`arc-bot-${passportBookPage}-${idx}`}
+                            d="M 118 70 A 48 48 0 0 1 22 70"
+                            fill="none"
+                          />
+                        </defs>
 
-                      {/* Center Hero: Plane Icon + Country */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '2px',
-                          width: '100%',
-                          padding: '1px 0',
-                        }}
-                      >
-                        <Plane
-                          style={{
-                            width: '13px',
-                            height: '13px',
-                            color: st.color,
-                            transform: 'rotate(-45deg)',
-                            strokeWidth: 2.2,
-                          }}
+                        {/* Solid Outer Border Ring */}
+                        <circle
+                          cx="70"
+                          cy="70"
+                          r="64"
+                          fill="#fffdfa"
+                          stroke={st.color}
+                          strokeWidth="3"
                         />
-                        <div
-                          style={{
-                            fontSize: st.country.length > 13 ? '10px' : '11.5px',
-                            fontWeight: 900,
-                            color: st.color,
-                            lineHeight: 1.15,
-                            letterSpacing: '0.03em',
-                            textTransform: 'uppercase',
-                            width: '100%',
-                            wordBreak: 'normal',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {st.country}
-                        </div>
-                      </div>
 
-                      {/* Bottom Inked Date & Pin Pill */}
-                      <div
-                        style={{
-                          borderTop: `1px dashed ${st.color}55`,
-                          paddingTop: '2px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '92%',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '8px',
-                            color: st.color,
-                            fontWeight: 800,
-                            letterSpacing: '0.04em',
-                            fontFamily: 'monospace',
-                          }}
+                        {/* Inner Dashed Border Ring */}
+                        <circle
+                          cx="70"
+                          cy="70"
+                          r="57"
+                          fill="none"
+                          stroke={st.color}
+                          strokeWidth="1.2"
+                          strokeDasharray="3 2"
+                        />
+
+                        {/* Curved Country Header Text */}
+                        <text
+                          fill={st.color}
+                          fontSize={st.country.length > 12 ? '9.5' : '11'}
+                          fontWeight="900"
+                          letterSpacing="0.12em"
+                        >
+                          <textPath
+                            href={`#arc-top-${passportBookPage}-${idx}`}
+                            startOffset="50%"
+                            textAnchor="middle"
+                          >
+                            ★ {st.country.toUpperCase()} ★
+                          </textPath>
+                        </text>
+
+                        {/* Curved Bottom Visa Text */}
+                        <text
+                          fill={st.color}
+                          fontSize="8"
+                          fontWeight="800"
+                          letterSpacing="0.16em"
+                          opacity="0.85"
+                        >
+                          <textPath
+                            href={`#arc-bot-${passportBookPage}-${idx}`}
+                            startOffset="50%"
+                            textAnchor="middle"
+                          >
+                            • ENTRY · IMMIGRATION •
+                          </textPath>
+                        </text>
+
+                        {/* Center Inked Date & Spot Tally Box */}
+                        <rect
+                          x="24"
+                          y="52"
+                          width="92"
+                          height="36"
+                          rx="4"
+                          fill="#fffdfa"
+                          stroke={st.color}
+                          strokeWidth="1.6"
+                        />
+
+                        {/* Center Hero: Plane Silhouette */}
+                        <g transform="translate(32, 60)">
+                          <path
+                            d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                            fill={st.color}
+                            transform="scale(0.8) translate(0, -2)"
+                          />
+                        </g>
+
+                        {/* Inked Monospace Arrival Date */}
+                        <text
+                          x="76"
+                          y="68"
+                          textAnchor="middle"
+                          fill={st.color}
+                          fontSize="9.5"
+                          fontWeight="800"
+                          fontFamily="monospace"
+                          letterSpacing="0.06em"
                         >
                           {day} {month} {year}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: '7.5px',
-                            fontWeight: 800,
-                            color: tier === 'gold' ? '#d97706' : tier === 'silver' ? '#64748b' : st.color,
-                            backgroundColor: `${st.color}15`,
-                            padding: '1px 4px',
-                            borderRadius: '4px',
-                            letterSpacing: '0.02em',
-                          }}
+                        </text>
+
+                        {/* Pin Count & Medal Tier */}
+                        <text
+                          x="76"
+                          y="80"
+                          textAnchor="middle"
+                          fill={
+                            tier === 'gold'
+                              ? '#d97706'
+                              : tier === 'silver'
+                              ? '#64748b'
+                              : st.color
+                          }
+                          fontSize="7.5"
+                          fontWeight="900"
+                          letterSpacing="0.08em"
                         >
-                          {st.spotCount} PINS{tier === 'gold' ? ' ★' : ''}
-                        </span>
-                      </div>
+                          {st.spotCount} PINS {tier === 'gold' ? '★ GOLD' : tier === 'silver' ? '★ SILVER' : ''}
+                        </text>
+                      </svg>
                     </div>
                   );
                 })}
@@ -5833,24 +5886,45 @@ const showToast = (msg: string) => {
                   <div
                     key={`unclaimed-${passportBookPage}-${idx}`}
                     style={{
-                      width: '124px',
-                      height: '124px',
-                      borderRadius: '50%',
-                      border: '1.5px dashed #cfc5b0',
+                      width: '136px',
+                      height: '136px',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '4px',
-                      color: '#a8a29e',
-                      opacity: 0.55,
-                      boxSizing: 'border-box',
+                      opacity: 0.45,
                     }}
                   >
-                    <span style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.14em' }}>
-                      UNCLAIMED
-                    </span>
-                    <span style={{ fontSize: '14px' }}>✈︎</span>
+                    <svg viewBox="0 0 140 140" width="100%" height="100%">
+                      <circle
+                        cx="70"
+                        cy="70"
+                        r="62"
+                        fill="none"
+                        stroke="#a8a29e"
+                        strokeWidth="1.8"
+                        strokeDasharray="4 3"
+                      />
+                      <text
+                        x="70"
+                        y="65"
+                        textAnchor="middle"
+                        fill="#78716c"
+                        fontSize="8.5"
+                        fontWeight="800"
+                        letterSpacing="0.2em"
+                      >
+                        UNCLAIMED
+                      </text>
+                      <text
+                        x="70"
+                        y="86"
+                        textAnchor="middle"
+                        fill="#a8a29e"
+                        fontSize="18"
+                      >
+                        ✈︎
+                      </text>
+                    </svg>
                   </div>
                 ))}
               </div>
