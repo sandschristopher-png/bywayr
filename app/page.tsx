@@ -2423,12 +2423,11 @@ const showToast = (msg: string) => {
       if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
     } catch {}
 
-    const cartoKey = 'cb1_3fj4_1_7feada29f18e32dec67e129a';
     const primaryCartoTiles = [
-      `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
-      `https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
-      `https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
-      `https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
     ];
     const fallbackOsmTiles = [
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -2461,7 +2460,7 @@ const showToast = (msg: string) => {
     });
 
     // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
-    fetch(`https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?api_key=${cartoKey}`, { method: 'HEAD' })
+    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png', { method: 'HEAD' })
       .then((res) => {
         if (!res.ok) {
           const src = initializedMap.getSource('osm-tiles') as any;
