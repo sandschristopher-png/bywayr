@@ -2433,7 +2433,7 @@ const showToast = (msg: string) => {
     } catch {}
 
     const primaryCartoTiles = [
-      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=cb1_3fj4_1_7feada29f18e32dec67e129a',
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=cb1_3fj4_2_ed95527311486a2cc01fd417',
     ];
     const fallbackOsmTiles = [
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -2466,7 +2466,7 @@ const showToast = (msg: string) => {
     });
 
     // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
-    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?api_key=cb1_3fj4_1_7feada29f18e32dec67e129a', { method: 'HEAD' })
+    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?api_key=cb1_3fj4_2_ed95527311486a2cc01fd417', { method: 'HEAD' })
       .then((res) => {
         if (!res.ok) {
           const src = initializedMap.getSource('osm-tiles') as any;
