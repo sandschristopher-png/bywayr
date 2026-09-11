@@ -6141,11 +6141,16 @@ const showToast = (msg: string) => {
           <div
             className="animate-fade-in"
             onPointerDown={(e) => {
-  if ((e.target as HTMLElement).closest('button, a')) return;
+  if ((e.target as HTMLElement).closest('button, a')) {
+    touchStartXRef.current = 0;
+    return;
+  }
   touchStartXRef.current = e.clientX;
 }}
 onPointerUp={(e) => {
+  if (touchStartXRef.current === 0) return;
   const dx = e.clientX - touchStartXRef.current;
+  touchStartXRef.current = 0;
   if (Math.abs(dx) > 60) { if (dx < 0) goToNext(); else goToPrev(); }
 }}
 onKeyDown={(e) => {
