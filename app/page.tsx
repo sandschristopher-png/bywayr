@@ -2003,8 +2003,8 @@ const showToast = (msg: string) => {
     if (!map.current || !mapReady) return;
     const canvas = map.current.getCanvas();
     const base = isDarkMode
-      ? 'grayscale(0.88) sepia(0.14) saturate(1) brightness(0.78) contrast(1.05) hue-rotate(0deg)'
-      : 'grayscale(0) sepia(0.12) saturate(0.42) brightness(1.01) contrast(0.94) hue-rotate(-8deg)';
+      ? 'grayscale(0.72) sepia(0.18) saturate(1.15) brightness(0.8) contrast(1.02) hue-rotate(-12deg)'
+      : 'grayscale(0) sepia(0.08) saturate(0.68) brightness(1.02) contrast(0.95) hue-rotate(-6deg)';
     canvas.style.filter = base + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : '');
     canvas.style.transition = 'filter 0.6s ease';
   }, [isDarkMode, isAnyOverlayActive, viewingSpot, mapReady]);
@@ -2433,7 +2433,7 @@ const showToast = (msg: string) => {
     } catch {}
 
     const primaryCartoTiles = [
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=cb1_3fj4_1_7feada29f18e32dec67e129a',
     ];
     const fallbackOsmTiles = [
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -2466,7 +2466,7 @@ const showToast = (msg: string) => {
     });
 
     // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
-    fetch('https://tile.openstreetmap.org/0/0/0.png', { method: 'HEAD' })
+    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?api_key=cb1_3fj4_1_7feada29f18e32dec67e129a', { method: 'HEAD' })
       .then((res) => {
         if (!res.ok) {
           const src = initializedMap.getSource('osm-tiles') as any;
@@ -5013,7 +5013,11 @@ const showToast = (msg: string) => {
                 )}
               </div>
 
-              <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>{currentUser.email}</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>
+                Exploring since {formatRelativeTime(userProfile?.bio ? undefined : undefined)}              <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>
+                {mySpotsCount} {mySpotsCount === 1 ? 'spot' : 'spots'} pinned so far
+              </p>
+              </p>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
