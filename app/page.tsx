@@ -1998,7 +1998,16 @@ const showToast = (msg: string) => {
       mapInstance.on('load', updateClustering);
     }
   }, [filteredSpots, spots, mapReady]);
-
+  // Apply map tile filter to canvas only, so markers keep true brand colors
+  useEffect(() => {
+    if (!map.current || !mapReady) return;
+    const canvas = map.current.getCanvas();
+    const base = isDarkMode
+      ? 'grayscale(0.88) sepia(0.14) saturate(1) brightness(0.78) contrast(1.05) hue-rotate(0deg)'
+      : 'grayscale(0) sepia(0.12) saturate(0.42) brightness(1.01) contrast(0.94) hue-rotate(-8deg)';
+    canvas.style.filter = base + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : '');
+    canvas.style.transition = 'filter 0.6s ease';
+  }, [isDarkMode, isAnyOverlayActive, viewingSpot, mapReady]);
   // Proximity Alert Watcher
   useEffect(() => {
     if (!navigator.geolocation || mustTrySpotIds.length === 0) return;
@@ -2855,8 +2864,7 @@ const showToast = (msg: string) => {
           bottom: 0, 
           zIndex: 0, 
           backgroundColor: isDarkMode ? '#262421' : '#ecebe7', 
-          filter: (isDarkMode ? 'grayscale(0.88) sepia(0.14) saturate(1) brightness(0.78) contrast(1.05) hue-rotate(0deg)' : 'grayscale(0) sepia(0.12) saturate(0.42) brightness(1.01) contrast(0.94) hue-rotate(-8deg)') + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : ''),
-          transition: 'filter 0.6s ease, background-color 0.3s ease', 
+          transition: 'background-color 0.3s ease', 
           touchAction: 'pan-x pan-y', 
         }} 
       />
