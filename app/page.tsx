@@ -4263,19 +4263,18 @@ const showToast = (msg: string) => {
                           }}
                           style={{
                             backgroundColor: '#fffdfa',
-                            border: `2px ${st.spotCount >= 15 ? 'double' : 'solid'} ${st.color}`,
-                          borderWidth: st.spotCount >= 30 ? '4px' : `2px`,
-                            borderRadius: '16px',
-                            minWidth: '92px',
-                            maxWidth: '105px',
-                            height: '74px',
+                            border: `3px solid ${st.color}`,
+                            borderRadius: '50%',
+                            width: '96px',
+                            height: '96px',
+                            flexShrink: 0,
                             boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
                             position: 'relative',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '6px 7px',
+                            justifyContent: 'center',
+                            padding: '8px 8px',
                             boxSizing: 'border-box',
                             textAlign: 'center',
                             outline: `1.5px dashed ${st.color}55`,
@@ -4967,7 +4966,7 @@ const showToast = (msg: string) => {
                     return (
                       <div
                         key={idx}
-                        className="passport-stamp-card"
+                        className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-tier-gold' : getStampTier(st.spotCount) === 'silver' ? 'stamp-tier-silver' : ''}`}
                         onClick={() => {
                           if (isStampDragging) return;
                           triggerHaptic(8);
