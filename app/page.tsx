@@ -419,6 +419,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
   const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
   const [isPassportBookOpen, setIsPassportBookOpen] = useState(false);
+const passportBookTouchStartRef = useRef<number | null>(null);
   const [isBookClosing, setIsBookClosing] = useState(false);
 const [passportBookPage, setPassportBookPage] = useState(0);
 const STAMPS_PER_SPREAD = 4;
@@ -4912,131 +4913,62 @@ const showToast = (msg: string) => {
               </div>
             </div>
 
-            {/* Scrollable Passport Stamps */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
-                </span>
-                <button
-                  onClick={() => {
+            {/* Passport Entry Card */}
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px' }}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  triggerHaptic(8);
+                  setPassportBookPage(0);
+                  setIsPassportBookOpen(true);
+                  pushModalHistoryState('passportBook');
+                  handleCloseProfileDrawer();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
                     triggerHaptic(8);
                     setPassportBookPage(0);
                     setIsPassportBookOpen(true);
                     pushModalHistoryState('passportBook');
                     handleCloseProfileDrawer();
-                  }}
-                  style={{
-                    backgroundColor: '#1c1917',
-                    color: '#fafaf9',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '4px 10px',
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  View Book <ArrowRight style={{ width: '11px', height: '11px' }} />
-                </button>
-              </div>
-
-              {myPassportStamps.length === 0 ? (
-                <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>
-                  Pin your first spot to earn your first country passport stamp!
-                </p>
-              ) : (
-                <div 
-                  ref={profileStampScrollRef}
-                  onMouseDown={(e) => handleStampMouseDown(e, profileStampScrollRef)}
-                  onMouseLeave={handleStampMouseUpOrLeave}
-                  onMouseUp={handleStampMouseUpOrLeave}
-                  onMouseMove={(e) => handleStampMouseMove(e, profileStampScrollRef)}
-                  onWheel={(e) => handleStampWheel(e, profileStampScrollRef)}
-                  style={{
-                    display: 'flex',
-                    gap: '8px',
-                    overflowX: 'auto',
-                    paddingBottom: '12px',
-                    paddingTop: '6px',
-                    scrollbarWidth: 'none',
-                    cursor: isStampDragging ? 'grabbing' : 'grab',
-                    WebkitOverflowScrolling: 'touch',
-                    transform: 'translateZ(0)',
-                  }}
-                >
-                  {myPassportStamps.map((st, idx) => {
-                    const d = new Date(st.firstVisit || Date.now());
-                    const day = d.toLocaleDateString('en-US', { day: '2-digit' });
-                    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-                    const year = d.getFullYear();
-                    const tier = getStampTier(st.spotCount);
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-tier-gold' : getStampTier(st.spotCount) === 'silver' ? 'stamp-tier-silver' : ''}`}
-                        onClick={() => {
-                          if (isStampDragging) return;
-                          triggerHaptic(8);
-                          setSelectedCountryFilter(st.country);
-                          handleCloseProfileDrawer();
-                        }}
-                        style={{
-                          backgroundColor: '#fffdfa',
-                          border: `3px solid ${st.color}`,
-                          borderRadius: '50%',
-                          width: '96px',
-                          height: '96px',
-                          boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
-                          position: 'relative',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '6px 7px',
-                          boxSizing: 'border-box',
-                          textAlign: 'center',
-                          outline: `1.5px dashed ${st.color}55`,
-                          outlineOffset: '-4px',
-                          transform: `rotate(${((idx % 5) - 2) * 1.5}deg)`,
-                        }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', width: '82%', flex: 1 }}>
-                          <div style={{ fontSize: '6.5px', fontWeight: 800, color: st.color, letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.7, whiteSpace: 'nowrap' }}>
-                            ENTRY
-                          </div>
-
-                          <div style={{
-                            fontSize: st.country.length > 11 ? '9px' : '10px',
-                            fontWeight: 900,
-                            color: st.color,
-                            lineHeight: 1.2,
-                            letterSpacing: '0.02em',
-                            textTransform: 'uppercase',
-                            textAlign: 'center',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}>
-                            {st.country}
-                          </div>
-
-                          <div style={{ borderTop: `1px solid ${st.color}66`, paddingTop: '2px', fontSize: '7.5px', color: st.color, fontWeight: 700, letterSpacing: '0.08em', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                            {day} {month} {year}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  borderRadius: '14px',
+                  padding: '8px',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f4')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: '24px' }}>🛂</span>
                 </div>
-              )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Passport</div>
+                  <div style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
+                    {myCountriesCount} {myCountriesCount === 1 ? 'country' : 'countries'} collected
+                  </div>
+                  {myPassportStamps.length > 0 && (
+                    <div style={{ marginTop: '6px', display: 'flex', gap: '5px', alignItems: 'center' }}>
+                      {myPassportStamps.slice(0, 8).map((st, idx) => (
+                        <div key={idx} style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: st.color, border: '1.5px solid #ffffff', boxShadow: '0 0 0 1px #e7e5e4', flexShrink: 0 }} />
+                      ))}
+                      {myPassportStamps.length > 8 && (
+                        <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#a8a29e' }}>+{myPassportStamps.length - 8}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <ArrowRight style={{ width: '15px', height: '15px', color: '#a8a29e', flexShrink: 0 }} />
+              </div>
             </div>
-
             {/* Bywayr Plus Membership Card */}
             <div style={{ backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', border: isPlusSubscriber ? '1.5px solid #bbf7d0' : '1.5px solid #fed7aa', borderRadius: '20px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isPlusSubscriber ? '0 4px 16px rgba(5, 150, 105, 0.08)' : '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -5501,38 +5433,53 @@ const showToast = (msg: string) => {
         </div>
       )}
 
-      {/* Passport Book — full screen paged view */}
+            {/* Passport — full screen paged view */}
       {(isPassportBookOpen || isBookClosing) && (() => {
-        const bookTouchRef = { current: 0 };
         const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
         const pageStamps = myPassportStamps.slice(passportBookPage * STAMPS_PER_SPREAD, (passportBookPage + 1) * STAMPS_PER_SPREAD);
+        const unclaimedSlots = pageStamps.length > 0 ? Math.max(0, STAMPS_PER_SPREAD - pageStamps.length) : 0;
 
         return (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport Book</h3>
-              <button
-                onClick={handleClosePassportBook}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
-              >
-                <X style={{ width: '20px', height: '20px' }} />
-              </button>
+          <div
+            className="animate-fade-in"
+            style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}
+            onTouchStart={(e) => { passportBookTouchStartRef.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => {
+              if (passportBookTouchStartRef.current === null) return;
+              const dx = e.changedTouches[0].clientX - passportBookTouchStartRef.current;
+              passportBookTouchStartRef.current = null;
+              if (dx > 60 && passportBookPage > 0) { triggerHaptic(6); setPassportBookPage((p) => p - 1); }
+              if (dx < -60 && passportBookPage < totalPages - 1) { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalPages - 1, p + 1)); }
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) handleClosePassportBook(); }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport</h3>
+                <button
+                  onClick={handleClosePassportBook}
+                  type="button"
+                  aria-label="Close Passport"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
+                >
+                  <X style={{ width: '20px', height: '20px' }} />
+                </button>
+              </div>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                ENTRY STAMPS · {myPassportStamps.length} COLLECTED
+              </span>
             </div>
 
             <div
               key={passportBookPage}
-                            className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
-              onTouchStart={(e) => { (bookTouchRef as any).current = e.touches[0].clientX; }}
-              onTouchEnd={(e) => {
-                const dx = e.changedTouches[0].clientX - (bookTouchRef as any).current;
-                if (dx > 50 && passportBookPage > 0) { triggerHaptic(6); setPassportBookPage((p) => p - 1); }
-                if (dx < -50 && passportBookPage < totalPages - 1) { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalPages - 1, p + 1)); }
-              }}
-              style={{ width: '100%', maxWidth: '340px', height: 'min(62vh, 460px)', backgroundColor: '#faf6ec', border: '5px solid #78716c', borderRadius: '10px', boxShadow: '0 18px 44px -12px rgba(28, 25, 23, 0.5)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '8px', padding: '14px 10px', boxSizing: 'border-box', overflow: 'hidden' }}>
+              className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
+              style={{ width: '100%', maxWidth: '340px', height: 'min(62vh, 460px)', backgroundColor: '#faf6ec', border: '5px solid #78716c', borderRadius: '10px', boxShadow: '0 18px 44px -12px rgba(28, 25, 23, 0.5)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '8px', padding: '14px 10px', boxSizing: 'border-box', overflow: 'hidden', backgroundImage: 'radial-gradient(#d6d3d1 0.8px, transparent 0.8px)', backgroundSize: '10px 10px' }}
+            >
               <div style={{ position: 'absolute', left: '50%', top: '10px', bottom: '10px', width: '1px', backgroundColor: '#a8a29e', opacity: 0.4 }} />
+
               {pageStamps.length === 0 ? (
                 <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', fontSize: '12px', fontStyle: 'italic' }}>
-                  Pin spots to fill your passport book!
+                  Pin spots to fill your Passport!
                 </div>
               ) : (
                 pageStamps.map((st, idx) => {
@@ -5545,7 +5492,7 @@ const showToast = (msg: string) => {
                   return (
                     <div
                       key={`${passportBookPage}-${idx}`}
-                      className={`passport-stamp-card ${tier === 'gold' ? 'stamp-tier-gold' : tier === 'silver' ? 'stamp-tier-silver' : ''}`}
+                      className={`passport-stamp-cachet ${tier === 'gold' ? 'stamp-tier-gold' : tier === 'silver' ? 'stamp-tier-silver' : ''}`}
                       onClick={() => {
                         if (isStampDragging) return;
                         triggerHaptic(8);
@@ -5568,8 +5515,10 @@ const showToast = (msg: string) => {
                         textAlign: 'center',
                         outline: `1.5px dashed ${st.color}55`,
                         outlineOffset: '-5px',
-                        transform: `rotate(${((idx % 4) - 1.5) * 1.5}deg)`,
+                        transform: `rotate(${((idx % 4) - 1.5) * 2.5}deg)`,
                         overflow: 'hidden',
+                        justifySelf: 'center',
+                        alignSelf: 'center',
                       }}
                     >
                       <div style={{ fontSize: '8px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
@@ -5601,6 +5550,30 @@ const showToast = (msg: string) => {
                   );
                 })
               )}
+
+              {Array.from({ length: unclaimedSlots }).map((_, idx) => (
+                <div
+                  key={`unclaimed-${passportBookPage}-${idx}`}
+                  style={{
+                    width: '108px',
+                    height: '108px',
+                    borderRadius: '50%',
+                    border: '2px dashed #d6d3d1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '3px',
+                    color: '#d6d3d1',
+                    opacity: 0.7,
+                    justifySelf: 'center',
+                    alignSelf: 'center',
+                  }}
+                >
+                  <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.18em' }}>UNCLAIMED</span>
+                  <span style={{ fontSize: '16px' }}>✈︎</span>
+                </div>
+              ))}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '440px', padding: '16px 0 4px 0' }}>
@@ -5625,7 +5598,6 @@ const showToast = (msg: string) => {
           </div>
         );
       })()}
-
       {/* Welcome / Onboarding Carousel — full screen */}
       {showWelcome && (() => {
         const ONBOARDING_STEPS = [
