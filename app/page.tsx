@@ -2433,7 +2433,7 @@ const showToast = (msg: string) => {
     } catch {}
 
     const primaryCartoTiles = [
-      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=cb1_3fj4_2_ed95527311486a2cc01fd417',
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3fj4_2_ed95527311486a2cc01fd417',
     ];
     const fallbackOsmTiles = [
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -2466,7 +2466,7 @@ const showToast = (msg: string) => {
     });
 
     // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
-    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?api_key=cb1_3fj4_2_ed95527311486a2cc01fd417', { method: 'HEAD' })
+    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?key=cb1_3fj4_2_ed95527311486a2cc01fd417', { method: 'HEAD' })
       .then((res) => {
         if (!res.ok) {
           const src = initializedMap.getSource('osm-tiles') as any;
@@ -5014,9 +5014,7 @@ const showToast = (msg: string) => {
               </div>
 
               <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>
-                Exploring since {formatRelativeTime(userProfile?.bio ? undefined : undefined)}              <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>
                 {mySpotsCount} {mySpotsCount === 1 ? 'spot' : 'spots'} pinned so far
-              </p>
               </p>
             </div>
             
