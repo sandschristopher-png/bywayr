@@ -5325,6 +5325,8 @@ const showToast = (msg: string) => {
                 {isDeletingAccount ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Permanently Delete Account'}
               </button>
 
+              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10.5px', color: '#a8a29e', textDecoration: 'underline', marginBottom: '4px' }}>Terms of Service</a>
+
               <button
                 onClick={() => dismissModalWithHistory(() => setIsDeleteAccountModalOpen(false))}
                 disabled={isDeletingAccount}
@@ -5412,8 +5414,8 @@ const showToast = (msg: string) => {
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join Bywayr</h3>
-            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>Sign in to curate, pin, and protect your favorite local spots.</p>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join or sign in</h3>
+            <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>New here? Create an account. Returning? Sign in with the same Google or email you used before.</p>
 
             <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
               <svg width="18" height="18" viewBox="0 0 24 24">
@@ -5430,6 +5432,12 @@ const showToast = (msg: string) => {
               <span style={{ fontSize: '11px', color: '#a8a29e', fontWeight: 600 }}>OR EMAIL</span>
               <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
             </div>
+
+            <p style={{ margin: '0', fontSize: '10.5px', color: '#a8a29e', lineHeight: 1.5 }}>
+              By continuing you agree to our{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#e05a47', fontWeight: 600, textDecoration: 'underline' }}>Terms of Service</a>
+              {' '}and acknowledge our Privacy Policy.
+            </p>
 
             <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
