@@ -2582,10 +2582,28 @@ const showToast = (msg: string) => {
           letter-spacing: -0.02em;
         }
         .fraunces-title {
-          font-family: var(--font-fraunces), Georgia, serif !important;
-          font-variation-settings: 'SOFT' 25, 'WONK' 0;
+          font-family: var(--font-inter), 'Inter', sans-serif !important;
           font-weight: 700;
           letter-spacing: -0.02em;
+        }
+        .onboarding-shell {
+          width: 100%;
+          max-width: 460px;
+          background-color: #ffffff;
+          display: flex;
+          flex-direction: column;
+          height: 100dvh;
+          box-sizing: border-box;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        @media (min-width: 520px) {
+          .onboarding-shell {
+            height: min(84vh, 760px);
+            border-radius: 28px;
+            box-shadow: 0 30px 70px -20px rgba(28, 25, 23, 0.45);
+            overflow: hidden;
+          }
         }
         @keyframes slideUp {
           from { transform: translateY(18px) translateZ(0); opacity: 0; }
@@ -4254,9 +4272,8 @@ const showToast = (msg: string) => {
                       return (
                         <div
                           key={idx}
-                          className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-gold' : ''}`}
+                          className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-tier-gold' : getStampTier(st.spotCount) === 'silver' ? 'stamp-tier-silver' : ''}`}
                           onClick={() => {
-                            if (isStampDragging) return;
                             triggerHaptic(8);
                             setSelectedCountryFilter(st.country);
                             dismissModalWithHistory(() => setViewingProfile(null));
@@ -4810,7 +4827,7 @@ const showToast = (msg: string) => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
-              <h2 className="title-display" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
+              <h2 className="fraunces-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
               <button onClick={handleCloseProfileDrawer} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
@@ -5670,8 +5687,9 @@ const showToast = (msg: string) => {
               const dx = e.changedTouches[0].clientX - touchStartXRef.current;
               if (Math.abs(dx) > 50) { if (dx < 0) goToNext(); else goToPrev(); }
             }}
-            style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
           >
+            <div className="onboarding-shell">
             <div
               key={onboardingStep}
               style={{
@@ -5791,6 +5809,7 @@ const showToast = (msg: string) => {
                   Back
                 </button>
               )}
+            </div>
             </div>
           </div>
         );
