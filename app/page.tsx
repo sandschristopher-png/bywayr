@@ -728,6 +728,12 @@ const showToast = (msg: string) => {
 
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
+  const uiGlass = isDarkMode ? 'rgba(38, 36, 33, 0.94)' : 'rgba(255, 255, 255, 0.92)';
+  const uiSolid = isDarkMode ? '#332f2c' : '#ecebe7';
+  const uiBorder = isDarkMode ? '#44403c' : '#e7e5e4';
+  const uiText = isDarkMode ? '#f5f5f4' : '#1c1917';
+  const uiSubtext = isDarkMode ? '#a8a29e' : '#78716c'; 
+
   const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
   const proximitySortedSpots: Spot[] = [...spots]
     .filter((s: Spot) => s.latitude && s.longitude)
@@ -768,17 +774,12 @@ const showToast = (msg: string) => {
           .slice(0, 4);
 
         const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-        const bounds = map.current ? map.current.getBounds() : null;
-        let west = -115.64, north = 36.67, east = -114.64, south = 35.67;
-        if (bounds) {
-          west = Math.min(bounds.getWest(), center.lng - 0.05);
-          east = Math.max(bounds.getEast(), center.lng + 0.05);
-          north = Math.max(bounds.getNorth(), center.lat + 0.05);
-          south = Math.min(bounds.getSouth(), center.lat - 0.05);
-        }
+        const spanDeg = Math.max(0.5, 20 / Math.pow(2, map.current ? map.current.getZoom() : 13.5));
+        let west = center.lng - spanDeg, east = center.lng + spanDeg;
+        let south = center.lat - spanDeg, north = center.lat + spanDeg;
         const viewbox = `${west},${north},${east},${south}`;
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&viewbox=${viewbox}&bounded=1&accept-language=en`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=8&viewbox=${viewbox}&bounded=0&accept-language=en`
         );        const osmData = await res.json();
 
         const combined = [...localMatches, ...(osmData || [])];
@@ -1212,13 +1213,31 @@ const showToast = (msg: string) => {
           userLocationMarkerRef.current.setLngLat([longitude, latitude]);
         } else {
           const el = document.createElement('div');
-          el.style.width = '18px';
-          el.style.height = '18px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#e05a47';
-          el.style.border = '3.5px solid #ffffff';
-          el.style.boxShadow = '0 0 0 0 rgba(224, 90, 71, 0.75)';
-          el.className = 'user-location-pulse';
+          el.style.position = 'relative';
+          el.style.width = '72px';
+          el.style.height = '72px';
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'center';
+
+          const halo = document.createElement('div');
+          halo.style.position = 'absolute';
+          halo.style.inset = '0';
+          halo.style.borderRadius = '50%';
+          halo.style.backgroundColor = 'rgba(224, 90, 71, 0.18)';
+          halo.style.border = '1px solid rgba(224, 90, 71, 0.25)';
+
+          const dot = document.createElement('div');
+          dot.style.width = '18px';
+          dot.style.height = '18px';
+          dot.style.borderRadius = '50%';
+          dot.style.backgroundColor = '#e05a47';
+          dot.style.border = '3.5px solid #ffffff';
+          dot.style.boxShadow = '0 1px 6px rgba(0, 0, 0, 0.35)';
+          dot.className = 'user-location-pulse';
+
+          el.appendChild(halo);
+          el.appendChild(dot);
 
           userLocationMarkerRef.current = new maplibregl.Marker({ element: el })
             .setLngLat([longitude, latitude])
@@ -2003,8 +2022,8 @@ const showToast = (msg: string) => {
     if (!map.current || !mapReady) return;
     const canvas = map.current.getCanvas();
     const base = isDarkMode
-      ? 'grayscale(0.72) sepia(0.18) saturate(1.15) brightness(0.8) contrast(1.02) hue-rotate(-12deg)'
-      : 'grayscale(0) sepia(0.08) saturate(0.68) brightness(1.02) contrast(0.95) hue-rotate(-6deg)';
+      ? 'grayscale(0.78) sepia(0.18) saturate(1.1) brightness(0.68) contrast(1.06) hue-rotate(-12deg)'
+      : 'grayscale(0) sepia(0.1) saturate(0.72) brightness(1.0) contrast(1.02) hue-rotate(-6deg)';
     canvas.style.filter = base + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : '');
     canvas.style.transition = 'filter 0.6s ease';
   }, [isDarkMode, isAnyOverlayActive, viewingSpot, mapReady]);
@@ -2998,13 +3017,13 @@ const showToast = (msg: string) => {
       }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            backgroundColor: uiGlass,
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             padding: '6px 8px 6px 10px',
             borderRadius: showDropdown ? '24px 24px 0 0' : '28px',
             boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
-            border: '1px solid #e7e5e4',
+            border: `1px solid ${uiBorder}`,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -3041,7 +3060,7 @@ const showToast = (msg: string) => {
                   border: 'none',
                   outline: 'none',
                   fontSize: '13.5px',
-                  color: '#1c1917',
+                  color: uiText,
                   padding: '6px 20px 6px 4px',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -3077,12 +3096,12 @@ const showToast = (msg: string) => {
                   pushModalHistoryState('drawer');
                 }}
                 style={{
-                  backgroundColor: '#ecebe7',
-                  border: '1px solid #e7e5e4',
+                  backgroundColor: uiSolid,
+                  border: `1px solid ${uiBorder}`,
                   borderRadius: '50%',
                   width: '34px',
                   height: '34px',
-                  color: '#44403c',
+                  color: uiText,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -3195,14 +3214,14 @@ const showToast = (msg: string) => {
           </div>
 
           {showDropdown && searchQuery.trim().length >= 3 && (
-            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: '1px solid #e7e5e4', boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
+            <div className="animate-fade-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.97)' : 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '0 0 24px 24px', border: `1px solid ${uiBorder}`, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08)', maxHeight: '280px', overflowY: 'auto', zIndex: 10000 }}>
               {searchResults.length === 0 ? (
-                <div style={{ padding: '14px 16px', textAlign: 'center', color: '#78716c', fontSize: '13px' }}>
+                <div style={{ padding: '14px 16px', textAlign: 'center', color: uiSubtext, fontSize: '13px' }}>
                   No local places found.
                 </div>
               ) : (
                 searchResults.map((item, idx) => (
-                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 16px', fontSize: '13px', color: '#44403c', cursor: 'pointer', borderBottom: '1px solid #ecebe7', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                  <div key={idx} onClick={() => handleSelectSearchResult(item)} style={{ padding: '11px 16px', fontSize: '13px', color: isDarkMode ? '#d6d3d1' : '#44403c', cursor: 'pointer', borderBottom: `1px solid ${uiBorder}`, display: 'flex', alignItems: 'center', gap: '9px' }}>
                     <MapPin style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.display_name}</span>
                   </div>
@@ -3280,11 +3299,11 @@ const showToast = (msg: string) => {
             <button
               onClick={() => setOnlyMySpots(!onlyMySpots)}
               style={{
-                backgroundColor: onlyMySpots ? '#fff1ee' : 'rgba(255, 255, 255, 0.95)',
+                backgroundColor: onlyMySpots ? '#fff1ee' : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                color: onlyMySpots ? '#e05a47' : '#57534e',
-                border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4',
+                                color: onlyMySpots ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+                border: onlyMySpots ? '1px solid #fecdd3' : `1px solid ${uiBorder}`,
                 height: '34px',
                 padding: '0 12px',
                 borderRadius: '18px',
@@ -3312,11 +3331,11 @@ const showToast = (msg: string) => {
               else setMaxRadiusKm(null);
             }}
             style={{
-              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
-              color: maxRadiusKm !== null ? '#0284c7' : '#57534e',
-              border: maxRadiusKm !== null ? '1px solid #bae6fd' : '1px solid #e7e5e4',
+              color: maxRadiusKm !== null ? '#0284c7' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+              border: maxRadiusKm !== null ? '1px solid #bae6fd' : `1px solid ${uiBorder}`,
               height: '34px',
               padding: '0 12px',
               borderRadius: '18px',
@@ -3358,11 +3377,11 @@ const showToast = (msg: string) => {
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
                 style={{ 
-                  backgroundColor: isSelected ? '#e05a47' : 'rgba(224, 90, 71, 0.35)', 
+                  backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
-                  color: isSelected ? '#ffffff' : '#57534e', 
-                  border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
+                  color: isSelected ? '#ffffff' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+                  border: isSelected ? '1px solid #e05a47' : `1px solid ${uiBorder}`,
                   height: '34px', 
                   padding: '0 12px', 
                   borderRadius: '18px', 
@@ -3383,10 +3402,10 @@ const showToast = (msg: string) => {
                 <span style={{ 
                   fontSize: '10.5px', 
                   fontWeight: 700, 
-                  backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.06)', 
+                  backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.22)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'), 
                   padding: '1px 6px', 
                   borderRadius: '10px',
-                  color: isSelected ? '#fafaf9' : '#78716c'
+                  color: isSelected ? '#fafaf9' : (isDarkMode ? '#a8a29e' : '#78716c')
                 }}>
                   {categoryCount}
                 </span>
@@ -3397,7 +3416,7 @@ const showToast = (msg: string) => {
 
         {/* Category Description Banner */}
         {selectedCategory !== 'All' && activeCategoryObject && (
-          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 12px', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: '1px solid #e7e5e4', fontSize: '11.5px', color: '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 12px', backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.92)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: `1px solid ${uiBorder}`, fontSize: '11.5px', color: isDarkMode ? '#d6d3d1' : '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
