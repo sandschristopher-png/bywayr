@@ -5677,18 +5677,29 @@ const showToast = (msg: string) => {
         return (
           <div
             className="animate-fade-in"
-            onTouchStart={(e) => { touchStartXRef.current = e.touches[0].clientX; }}
+            onPointerDown={(e) => {
+  if ((e.target as HTMLElement).closest('button, a')) return;
+  touchStartXRef.current = e.clientX;
+}}
+onPointerUp={(e) => {
+  const dx = e.clientX - touchStartXRef.current;
+  if (Math.abs(dx) > 60) { if (dx < 0) goToNext(); else goToPrev(); }
+}}
+onKeyDown={(e) => {
+  if (e.key === 'ArrowRight') goToNext();
+  if (e.key === 'ArrowLeft') goToPrev();
+}}
             onTouchEnd={(e) => {
               const dx = e.changedTouches[0].clientX - touchStartXRef.current;
               if (Math.abs(dx) > 50) { if (dx < 0) goToNext(); else goToPrev(); }
             }}
-            style={{ position: 'fixed', inset: 0, zIndex: 100030, backgroundColor: 'rgba(28, 25, 23, 0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 100030, padding: '16px', boxSizing: 'border-box', backgroundColor: 'rgba(28, 25, 23, 0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
           >
             <div className="onboarding-shell">
             <div
               key={onboardingStep}
               style={{
-                flex: 1,
+                flex: '1 1 0%', minHeight: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -5696,8 +5707,8 @@ const showToast = (msg: string) => {
                 animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.35s cubic-bezier(0.16, 1, 0.3, 1) both`,
               }}
             >
-              <div style={{ width: '86%', maxWidth: '420px', animation: 'onboardingImgFloat 4s ease-in-out infinite' }}>
-                <img src={step.image} alt={step.title} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} />
+              <div style={{ width: '86%', maxWidth: '420px', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'onboardingImgFloat 4s ease-in-out infinite' }}>
+                <img src={step.image} alt={step.title} style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', display: 'block', objectFit: 'contain' }} />
               </div>
             </div>
 
