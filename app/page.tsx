@@ -2855,7 +2855,7 @@ const showToast = (msg: string) => {
           bottom: 0, 
           zIndex: 0, 
           backgroundColor: isDarkMode ? '#262421' : '#ecebe7', 
-          filter: (isDarkMode ? 'grayscale(88%) sepia(14%) brightness(0.78) contrast(1.05)' : 'saturate(0.42) brightness(1.01) contrast(0.94) sepia(0.12) hue-rotate(-8deg)') + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : ''),
+          filter: (isDarkMode ? 'grayscale(0.88) sepia(0.14) saturate(1) brightness(0.78) contrast(1.05) hue-rotate(0deg)' : 'grayscale(0) sepia(0.12) saturate(0.42) brightness(1.01) contrast(0.94) hue-rotate(-8deg)') + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : ''),
           transition: 'filter 0.6s ease, background-color 0.3s ease', 
           touchAction: 'pan-x pan-y', 
         }} 
