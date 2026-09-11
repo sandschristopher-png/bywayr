@@ -5433,11 +5433,11 @@ const showToast = (msg: string) => {
         </div>
       )}
 
-            {/* Passport — full screen paged view */}
+      {/* Passport — authentic physical open booklet spread with swipe */}
       {(isPassportBookOpen || isBookClosing) && (() => {
-        const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
-        const pageStamps = myPassportStamps.slice(passportBookPage * STAMPS_PER_SPREAD, (passportBookPage + 1) * STAMPS_PER_SPREAD);
-        const unclaimedSlots = pageStamps.length > 0 ? Math.max(0, STAMPS_PER_SPREAD - pageStamps.length) : 0;
+        const totalSpreads = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
+        const spreadStamps = myPassportStamps.slice(passportBookPage * STAMPS_PER_SPREAD, (passportBookPage + 1) * STAMPS_PER_SPREAD);
+        const unclaimedSlots = spreadStamps.length > 0 ? Math.max(0, STAMPS_PER_SPREAD - spreadStamps.length) : STAMPS_PER_SPREAD;
 
         return (
           <div
@@ -5449,45 +5449,40 @@ const showToast = (msg: string) => {
               const dx = e.changedTouches[0].clientX - passportBookTouchStartRef.current;
               passportBookTouchStartRef.current = null;
               if (dx > 60 && passportBookPage > 0) { triggerHaptic(6); setPassportBookPage((p) => p - 1); }
-              if (dx < -60 && passportBookPage < totalPages - 1) { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalPages - 1, p + 1)); }
+              if (dx < -60 && passportBookPage < totalSpreads - 1) { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1)); }
             }}
             onClick={(e) => { if (e.target === e.currentTarget) handleClosePassportBook(); }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%', maxWidth: '440px', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Passport</h3>
+            <div
+              key={passportBookPage}
+              className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
+              style={{ width: '100%', maxWidth: '560px', height: 'min(64vh, 480px)', backgroundColor: '#ece5d6', border: '5px solid #78716c', borderRadius: '12px', boxShadow: '0 22px 50px -14px rgba(28, 25, 23, 0.55)', position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box', backgroundImage: 'linear-gradient(to right, #ece5d6 0%, #e0d6c3 49%, #cdbfa8 50%, #e0d6c3 51%, #ece5d6 100%), radial-gradient(#d6d3d1 0.8px, transparent 0.8px)', backgroundSize: '100% 100%, 10px 10px', backgroundBlendMode: 'normal, multiply' }}
+            >
+              {/* Integrated paper header strip */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(120, 113, 108, 0.35)', flexShrink: 0 }}>
+                <span style={{ fontSize: '11px', fontWeight: 900, color: '#57534e', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Passport</span>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.1em', fontFamily: 'monospace' }}>
+                  {myPassportStamps.length} {myPassportStamps.length === 1 ? 'ENTRY' : 'ENTRIES'} · SPREAD {passportBookPage + 1}/{totalSpreads}
+                </span>
                 <button
                   onClick={handleClosePassportBook}
                   type="button"
                   aria-label="Close Passport"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '6px' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '4px' }}
                 >
-                  <X style={{ width: '20px', height: '20px' }} />
+                  <X style={{ width: '18px', height: '18px' }} />
                 </button>
               </div>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                ENTRY STAMPS · {myPassportStamps.length} COLLECTED
-              </span>
-            </div>
 
-            <div
-              key={passportBookPage}
-              className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
-              style={{ width: '100%', maxWidth: '340px', height: 'min(62vh, 460px)', backgroundColor: '#faf6ec', border: '5px solid #78716c', borderRadius: '10px', boxShadow: '0 18px 44px -12px rgba(28, 25, 23, 0.5)', position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '8px', padding: '14px 10px', boxSizing: 'border-box', overflow: 'hidden', backgroundImage: 'radial-gradient(#d6d3d1 0.8px, transparent 0.8px)', backgroundSize: '10px 10px' }}
-            >
-              <div style={{ position: 'absolute', left: '50%', top: '10px', bottom: '10px', width: '1px', backgroundColor: '#a8a29e', opacity: 0.4 }} />
-
-              {pageStamps.length === 0 ? (
-                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e', fontSize: '12px', fontStyle: 'italic' }}>
-                  Pin spots to fill your Passport!
-                </div>
-              ) : (
-                pageStamps.map((st, idx) => {
+              {/* Visa stamps grid */}
+              <div style={{ flex: '1 1 0%', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridAutoRows: '1fr', gap: '10px', padding: '14px 12px', boxSizing: 'border-box', overflow: 'hidden' }}>
+                {spreadStamps.map((st, idx) => {
                   const d = new Date(st.firstVisit || Date.now());
                   const day = d.toLocaleDateString('en-US', { day: '2-digit' });
                   const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
                   const year = d.getFullYear();
                   const tier = getStampTier(st.spotCount);
+                  const citiesLine = st.cities.slice(0, 2).join(' · ').toUpperCase();
 
                   return (
                     <div
@@ -5501,31 +5496,31 @@ const showToast = (msg: string) => {
                       }}
                       style={{
                         backgroundColor: '#fffdfa',
-                        border: `3px solid ${st.color}`,
-                        borderRadius: '50%',
-                        width: '108px',
-                        height: '108px',
+                        border: `2px solid ${st.color}`,
+                        borderRadius: '10px',
+                        mixBlendMode: 'multiply',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '1px',
-                        padding: '10px 8px',
+                        gap: '2px',
+                        padding: '8px 6px',
                         boxSizing: 'border-box',
                         textAlign: 'center',
                         outline: `1.5px dashed ${st.color}55`,
-                        outlineOffset: '-5px',
+                        outlineOffset: '-4px',
                         transform: `rotate(${((idx % 4) - 1.5) * 2.5}deg)`,
                         overflow: 'hidden',
-                        justifySelf: 'center',
-                        alignSelf: 'center',
+                        justifySelf: 'stretch',
+                        alignSelf: 'stretch',
+                        minWidth: 0,
                       }}
                     >
-                      <div style={{ fontSize: '8px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
-                        ENTRY · IMMIGRATION
+                      <div style={{ fontSize: '7px', fontWeight: 800, color: st.color, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                        IMMIGRATION
                       </div>
                       <div style={{
-                        fontSize: st.country.length > 13 ? '9px' : '10.5px',
+                        fontSize: st.country.length > 13 ? '9.5px' : '11px',
                         fontWeight: 900,
                         color: st.color,
                         lineHeight: 1.15,
@@ -5540,43 +5535,45 @@ const showToast = (msg: string) => {
                       }}>
                         {st.country}
                       </div>
+                      <div style={{ fontSize: '7px', fontWeight: 700, color: st.color, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.75, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {citiesLine}
+                      </div>
                       <div style={{ fontSize: '9px', color: st.color, fontWeight: 800, letterSpacing: '0.06em', fontFamily: 'monospace' }}>
                         {day} {month} {year}
                       </div>
-                      <div style={{ fontSize: '8px', fontWeight: 700, color: tier === 'gold' ? '#d97706' : tier === 'silver' ? '#64748b' : st.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      <div style={{ width: '60%', borderTop: `1px dashed ${st.color}55`, margin: '1px 0' }} />
+                      <div style={{ fontSize: '7.5px', fontWeight: 700, color: tier === 'gold' ? '#d97706' : tier === 'silver' ? '#64748b' : st.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                         {st.spotCount} PINS{tier === 'gold' ? ' ★ GOLD' : tier === 'silver' ? ' ★ SILVER' : ''}
                       </div>
                     </div>
                   );
-                })
-              )}
+                })}
 
-              {Array.from({ length: unclaimedSlots }).map((_, idx) => (
-                <div
-                  key={`unclaimed-${passportBookPage}-${idx}`}
-                  style={{
-                    width: '108px',
-                    height: '108px',
-                    borderRadius: '50%',
-                    border: '2px dashed #d6d3d1',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '3px',
-                    color: '#d6d3d1',
-                    opacity: 0.7,
-                    justifySelf: 'center',
-                    alignSelf: 'center',
-                  }}
-                >
-                  <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.18em' }}>UNCLAIMED</span>
-                  <span style={{ fontSize: '16px' }}>✈︎</span>
-                </div>
-              ))}
+                {Array.from({ length: unclaimedSlots }).map((_, idx) => (
+                  <div
+                    key={`unclaimed-${passportBookPage}-${idx}`}
+                    style={{
+                      borderRadius: '10px',
+                      border: '2px dashed #c9bda9',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '3px',
+                      color: '#b3a68e',
+                      justifySelf: 'stretch',
+                      alignSelf: 'stretch',
+                      minWidth: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.18em' }}>UNCLAIMED</span>
+                    <span style={{ fontSize: '16px' }}>✈︎</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '440px', padding: '16px 0 4px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '560px', padding: '16px 0 4px 0' }}>
               <button
                 onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.max(0, p - 1)); }}
                 disabled={passportBookPage === 0}
@@ -5585,12 +5582,12 @@ const showToast = (msg: string) => {
                 ← Prev
               </button>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#78716c', letterSpacing: '0.06em', fontFamily: 'monospace' }}>
-                PAGE {passportBookPage + 1} / {totalPages}
+                SPREAD {passportBookPage + 1} / {totalSpreads}
               </span>
               <button
-                onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalPages - 1, p + 1)); }}
-                disabled={passportBookPage >= totalPages - 1}
-                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '9px 16px', fontSize: '12px', fontWeight: 700, cursor: passportBookPage >= totalPages - 1 ? 'default' : 'pointer', opacity: passportBookPage >= totalPages - 1 ? 0.35 : 1 }}
+                onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1)); }}
+                disabled={passportBookPage >= totalSpreads - 1}
+                style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', padding: '9px 16px', fontSize: '12px', fontWeight: 700, cursor: passportBookPage >= totalSpreads - 1 ? 'default' : 'pointer', opacity: passportBookPage >= totalSpreads - 1 ? 0.35 : 1 }}
               >
                 Next →
               </button>
