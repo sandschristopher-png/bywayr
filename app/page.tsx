@@ -6019,16 +6019,39 @@ onKeyDown={(e) => {
             <div
               key={onboardingStep}
               style={{
-                flex: '1 1 0%', minHeight: 0,
+                flex: '1 1 0%',
+                minHeight: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)',
+                paddingTop: 'max(env(safe-area-inset-top, 0px), 18px)',
+                paddingBottom: '8px',
                 animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.35s cubic-bezier(0.16, 1, 0.3, 1) both`,
               }}
             >
-              <div style={{ width: '86%', maxWidth: '420px', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'onboardingImgFloat 4s ease-in-out infinite' }}>
-                <img src={step.image} alt={step.title} style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', display: 'block', objectFit: 'contain' }} />
+              <div
+                style={{
+                  width: '68%',
+                  maxWidth: '280px',
+                  maxHeight: '230px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: 'onboardingImgFloat 4s ease-in-out infinite',
+                }}
+              >
+                <img
+                  src={step.image}
+                  alt={step.title}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto',
+                    display: 'block',
+                    objectFit: 'contain',
+                  }}
+                />
               </div>
             </div>
 
