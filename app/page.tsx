@@ -5005,29 +5005,30 @@ const showToast = (msg: string) => {
                           transform: `rotate(${((idx % 5) - 2) * 1.5}deg)`,
                         }}
                       >
-                        <div style={{ fontSize: '7px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
-                          ENTRY · IMMIGRATION
-                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', width: '82%', flex: 1 }}>
+                          <div style={{ fontSize: '6.5px', fontWeight: 800, color: st.color, letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.7, whiteSpace: 'nowrap' }}>
+                            ENTRY
+                          </div>
 
-                        <div style={{
-                          fontSize: st.country.length > 13 ? '8.5px' : '9.5px',
-                          fontWeight: 900,
-                          color: st.color,
-                          lineHeight: 1.15,
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
-                          width: '100%',
-                          wordBreak: 'normal',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}>
-                          {st.country}
-                        </div>
+                          <div style={{
+                            fontSize: st.country.length > 11 ? '9px' : '10px',
+                            fontWeight: 900,
+                            color: st.color,
+                            lineHeight: 1.2,
+                            letterSpacing: '0.02em',
+                            textTransform: 'uppercase',
+                            textAlign: 'center',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}>
+                            {st.country}
+                          </div>
 
-                        <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, letterSpacing: '0.06em', fontFamily: 'monospace' }}>
-                          {day} {month} {year}
+                          <div style={{ borderTop: `1px solid ${st.color}66`, paddingTop: '2px', fontSize: '7.5px', color: st.color, fontWeight: 700, letterSpacing: '0.08em', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                            {day} {month} {year}
+                          </div>
                         </div>
                       </div>
                     );
