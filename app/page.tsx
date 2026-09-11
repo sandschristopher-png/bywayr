@@ -310,7 +310,33 @@ const extractPassportStamps = (userSpots: Spot[]): PassportStampData[] => {
   }));
 };
 
+const focusMapOnCountry = (mapInstance: maplibregl.Map | null, countrySpots: Spot[]) => {
+  if (!mapInstance || countrySpots.length === 0) return;
 
+  if (countrySpots.length === 1) {
+    mapInstance.flyTo({
+      center: [countrySpots[0].longitude, countrySpots[0].latitude],
+      zoom: 14,
+      essential: true,
+    });
+    return;
+  }
+
+  const bounds = countrySpots.reduce(
+    (b, s) => b.extend([s.longitude, s.latitude]),
+    new maplibregl.LngLatBounds(
+      [countrySpots[0].longitude, countrySpots[0].latitude],
+      [countrySpots[0].longitude, countrySpots[0].latitude]
+    )
+  );
+
+  mapInstance.fitBounds(bounds, {
+    padding: { top: 120, bottom: 120, left: 60, right: 60 },
+    maxZoom: 14,
+    duration: 1200,
+    essential: true,
+  });
+};
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -1469,8 +1495,23 @@ const showToast = (msg: string) => {
   };
 
   const flyToSpot = (spot: Spot) => {
-    if (!map.current || !spot.latitude || !spot.longitude) return;
-    map.current.flyTo({ center: [spot.longitude, spot.latitude], zoom: 16, essential: true });
+    if (!map.current || spot.latitude === undefined || spot.longitude === undefined) return;
+    const lat = Number(spot.latitude);
+    const lng = Number(spot.longitude);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    // Reset filters so the selected pin is guaranteed visible in the map layer
+    setSelectedCategory('All');
+    setSelectedCountryFilter(null);
+    setMaxRadiusKm(null);
+
+    // Drop an active highlighted pin marker directly on the selected spot
+    if (previewMarkerRef.current) previewMarkerRef.current.remove();
+    previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
+      .setLngLat([lng, lat])
+      .addTo(map.current);
+
+    map.current.flyTo({ center: [lng, lat], zoom: 16, essential: true });
     setViewingSpot(spot);
     setIsDiscussionModalOpen(false);
     setActiveSearchedSpot(null);
@@ -1790,21 +1831,23 @@ const showToast = (msg: string) => {
     const updateClustering = () => {
       const geojson: any = {
         type: 'FeatureCollection',
-        features: filteredSpots.map((spot) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [spot.longitude, spot.latitude],
-          },
-          properties: {
-            id: spot.id,
-            name: spot.name,
-            category: spot.category,
-            city: spot.city,
-            image_url: spot.image_url || '',
-            color: getCategoryColor(spot.category),
-          },
-        })),
+        features: filteredSpots
+          .filter((s) => !isNaN(Number(s.latitude)) && !isNaN(Number(s.longitude)))
+          .map((spot) => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [Number(spot.longitude), Number(spot.latitude)],
+            },
+            properties: {
+              id: spot.id,
+              name: spot.name,
+              category: spot.category,
+              city: spot.city,
+              image_url: spot.image_url || '',
+              color: getCategoryColor(spot.category),
+            },
+          })),
       };
 
       const sourceId = 'spots-cluster-source';
@@ -5469,11 +5512,13 @@ const showToast = (msg: string) => {
               const dx = e.changedTouches[0].clientX - passportBookTouchStartRef.current;
               passportBookTouchStartRef.current = null;
               if (dx > 45 && passportBookPage > 0) {
-                triggerHaptic(6);
+                triggerHaptic(4);
+                setTimeout(() => triggerHaptic(8), 120);
                 setPassportBookPage((p) => p - 1);
               }
               if (dx < -45 && passportBookPage < totalSpreads - 1) {
-                triggerHaptic(6);
+                triggerHaptic(4);
+                setTimeout(() => triggerHaptic(8), 120);
                 setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1));
               }
             }}
@@ -5583,9 +5628,13 @@ const showToast = (msg: string) => {
                       }`}
                       onClick={() => {
                         if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
-                        triggerHaptic(8);
+                        triggerHaptic(12);
                         setSelectedCountryFilter(st.country);
+                        const matchingSpots = spots.filter(
+                          (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
+                        );
                         dismissModalWithHistory(handleClosePassportBook);
+                        setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
                       }}
                       style={{
                         backgroundColor: '#fffdfa',
