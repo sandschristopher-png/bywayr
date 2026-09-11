@@ -3358,10 +3358,10 @@ const showToast = (msg: string) => {
                 key={cat.label}
                 onClick={() => setSelectedCategory(cat.label)}
                 style={{ 
-                  backgroundColor: isSelected ? '#1c1917' : 'rgba(255, 255, 255, 0.95)', 
+                  backgroundColor: isSelected ? '#e05a47' : 'rgba(224, 90, 71, 0.35)', 
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
-                  color: isSelected ? '#fafaf9' : '#57534e', 
+                  color: isSelected ? '#ffffff' : '#57534e', 
                   border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4', 
                   height: '34px', 
                   padding: '0 12px', 
@@ -3370,7 +3370,7 @@ const showToast = (msg: string) => {
                   fontWeight: 600, 
                   cursor: 'pointer', 
                   whiteSpace: 'nowrap', 
-                  boxShadow: isSelected ? '0 6px 16px rgba(28, 25, 23, 0.28)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
+                  boxShadow: isSelected ? '0 6px 16px rgba(224, 90, 71, 0.35)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '6px',
@@ -6134,8 +6134,10 @@ onKeyDown={(e) => {
   if (e.key === 'ArrowLeft') goToPrev();
 }}
             onTouchEnd={(e) => {
-              const dx = e.changedTouches[0].clientX - touchStartXRef.current;
-              if (Math.abs(dx) > 50) { if (dx < 0) goToNext(); else goToPrev(); }
+              const startX = touchStartXRef.current;
+              const dx = e.changedTouches[0].clientX - startX;
+              touchStartXRef.current = 0;
+              if (Math.abs(dx) > 50 && startX !== 0) { if (dx < 0) goToNext(); else goToPrev(); }
             }}
             style={{ position: 'fixed', inset: 0, zIndex: 100030, padding: '16px', boxSizing: 'border-box', backgroundColor: 'rgba(28, 25, 23, 0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
           >
