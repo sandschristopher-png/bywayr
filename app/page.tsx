@@ -2423,6 +2423,17 @@ const showToast = (msg: string) => {
       if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
     } catch {}
 
+    const cartoKey = 'cb1_3fj4_1_7feada29f18e32dec67e129a';
+    const primaryCartoTiles = [
+      `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
+      `https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
+      `https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
+      `https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=${cartoKey}`,
+    ];
+    const fallbackOsmTiles = [
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    ];
+
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
       style: {
@@ -2430,10 +2441,7 @@ const showToast = (msg: string) => {
         sources: {
           'osm-tiles': {
             type: 'raster',
-            tiles: [
-              'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=cb1_3fj4_1_7feada29f18e32dec67e129a',
-              'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3fj4_1_7feada29f18e32dec67e129a'
-            ],
+            tiles: primaryCartoTiles,
             tileSize: 256,
             attribution: '© OpenStreetMap contributors © CARTO',
           },
@@ -2451,6 +2459,23 @@ const showToast = (msg: string) => {
       center: initialCenter,
       zoom: initialZoom,
     });
+
+    // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
+    fetch(`https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?api_key=${cartoKey}`, { method: 'HEAD' })
+      .then((res) => {
+        if (!res.ok) {
+          const src = initializedMap.getSource('osm-tiles') as any;
+          if (src && typeof src.setTiles === 'function') {
+            src.setTiles(fallbackOsmTiles);
+          }
+        }
+      })
+      .catch(() => {
+        const src = initializedMap.getSource('osm-tiles') as any;
+        if (src && typeof src.setTiles === 'function') {
+          src.setTiles(fallbackOsmTiles);
+        }
+      });
 
     const containerEl = mapContainer.current;
     if (containerEl) {
