@@ -2423,14 +2423,6 @@ const showToast = (msg: string) => {
       if (savedZoomStr) initialZoom = parseFloat(savedZoomStr);
     } catch {}
 
-    const defaultTileUrl =
-      process.env.NEXT_PUBLIC_MAP_TILE_URL ||
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
-
-    const tileSources = defaultTileUrl.includes('{s}')
-      ? ['a', 'b', 'c'].map((s) => defaultTileUrl.replace('{s}', s))
-      : [defaultTileUrl];
-
     const initializedMap = new maplibregl.Map({
       container: mapContainer.current,
       style: {
@@ -2438,9 +2430,11 @@ const showToast = (msg: string) => {
         sources: {
           'osm-tiles': {
             type: 'raster',
-            tiles: tileSources,
+            tiles: [
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors © CARTO',
+            attribution: '© OpenStreetMap contributors',
           },
         },
         layers: [
@@ -5701,8 +5695,8 @@ const showToast = (msg: string) => {
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
                   gridAutoRows: '1fr',
-                  gap: '12px 18px',
-                  padding: '6px 4px',
+                  gap: '8px 16px',
+                  padding: '4px 2px',
                   boxSizing: 'border-box',
                   alignItems: 'center',
                   justifyItems: 'center',
@@ -5715,168 +5709,172 @@ const showToast = (msg: string) => {
                   const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
                   const year = d.getFullYear();
                   const tier = getStampTier(st.spotCount);
-                  const tiltAngle = idx % 2 === 0 ? -2.4 + idx * 0.9 : 2.2 - idx * 0.8;
+                  const tiltAngle = idx % 2 === 0 ? -2.2 + idx * 0.9 : 2.0 - idx * 0.8;
 
                   return (
                     <div
                       key={`${passportBookPage}-${idx}`}
-                      className={`passport-stamp-cachet ${
-                        tier === 'gold'
-                          ? 'stamp-tier-gold'
-                          : tier === 'silver'
-                          ? 'stamp-tier-silver'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
-                        triggerHaptic(12);
-                        setSelectedCountryFilter(st.country);
-                        const matchingSpots = spots.filter(
-                          (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
-                        );
-                        dismissModalWithHistory(handleClosePassportBook);
-                        setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
-                      }}
                       style={{
-                        width: '136px',
-                        height: '136px',
-                        cursor: 'pointer',
-                        transform: `rotate(${tiltAngle}deg)`,
-                        filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.06))',
-                        mixBlendMode: 'multiply',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        userSelect: 'none',
+                        gap: '4px',
                       }}
                     >
-                      <svg
-                        viewBox="0 0 140 140"
-                        width="100%"
-                        height="100%"
-                        style={{ overflow: 'visible' }}
+                      <div
+                        className={`passport-stamp-cachet ${
+                          tier === 'gold'
+                            ? 'stamp-tier-gold'
+                            : tier === 'silver'
+                            ? 'stamp-tier-silver'
+                            : ''
+                        }`}
+                        onClick={() => {
+                          if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
+                          triggerHaptic(12);
+                          setSelectedCountryFilter(st.country);
+                          const matchingSpots = spots.filter(
+                            (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
+                          );
+                          dismissModalWithHistory(handleClosePassportBook);
+                          setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
+                        }}
+                        style={{
+                          width: '128px',
+                          height: '128px',
+                          cursor: 'pointer',
+                          transform: `rotate(${tiltAngle}deg)`,
+                          filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.06))',
+                          mixBlendMode: 'multiply',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          userSelect: 'none',
+                        }}
                       >
-                        <defs>
-                          <path
-                            id={`arc-top-${passportBookPage}-${idx}`}
-                            d="M 22 70 A 48 48 0 0 1 118 70"
-                            fill="none"
-                          />
-                          <path
-                            id={`arc-bot-${passportBookPage}-${idx}`}
-                            d="M 118 70 A 48 48 0 0 1 22 70"
-                            fill="none"
-                          />
-                        </defs>
-
-                        {/* Solid Outer Border Ring */}
-                        <circle
-                          cx="70"
-                          cy="70"
-                          r="64"
-                          fill="#fffdfa"
-                          stroke={st.color}
-                          strokeWidth="3"
-                        />
-
-                        {/* Inner Dashed Border Ring */}
-                        <circle
-                          cx="70"
-                          cy="70"
-                          r="57"
-                          fill="none"
-                          stroke={st.color}
-                          strokeWidth="1.2"
-                          strokeDasharray="3 2"
-                        />
-
-                        {/* Curved Country Header Text */}
-                        <text
-                          fill={st.color}
-                          fontSize={st.country.length > 12 ? '9.5' : '11'}
-                          fontWeight="900"
-                          letterSpacing="0.12em"
+                        <svg
+                          viewBox="0 0 140 140"
+                          width="100%"
+                          height="100%"
+                          style={{ overflow: 'visible' }}
                         >
-                          <textPath
-                            href={`#arc-top-${passportBookPage}-${idx}`}
-                            startOffset="50%"
-                            textAnchor="middle"
-                          >
-                            ★ {st.country.toUpperCase()} ★
-                          </textPath>
-                        </text>
+                          <defs>
+                            <path
+                              id={`arc-top-${passportBookPage}-${idx}`}
+                              d="M 22 70 A 48 48 0 0 1 118 70"
+                              fill="none"
+                            />
+                            <path
+                              id={`arc-bot-${passportBookPage}-${idx}`}
+                              d="M 118 70 A 48 48 0 0 1 22 70"
+                              fill="none"
+                            />
+                          </defs>
 
-                        {/* Curved Bottom Visa Text */}
-                        <text
-                          fill={st.color}
-                          fontSize="8"
-                          fontWeight="800"
-                          letterSpacing="0.16em"
-                          opacity="0.85"
-                        >
-                          <textPath
-                            href={`#arc-bot-${passportBookPage}-${idx}`}
-                            startOffset="50%"
-                            textAnchor="middle"
-                          >
-                            • ENTRY · IMMIGRATION •
-                          </textPath>
-                        </text>
+                          {/* Outer Border Ring */}
+                          <circle
+                            cx="70"
+                            cy="70"
+                            r="64"
+                            fill="#fffdfa"
+                            stroke={st.color}
+                            strokeWidth="3"
+                          />
 
-                        {/* Center Inked Date & Spot Tally Box */}
-                        <rect
-                          x="24"
-                          y="52"
-                          width="92"
-                          height="36"
-                          rx="4"
-                          fill="#fffdfa"
-                          stroke={st.color}
-                          strokeWidth="1.6"
-                        />
+                          {/* Inner Inked Dashed Ring */}
+                          <circle
+                            cx="70"
+                            cy="70"
+                            r="57"
+                            fill="none"
+                            stroke={st.color}
+                            strokeWidth="1.2"
+                            strokeDasharray="3 2"
+                          />
 
-                        {/* Center Hero: Plane Silhouette */}
-                        <g transform="translate(32, 60)">
-                          <path
-                            d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                          {/* Top Arc: Country Name */}
+                          <text
                             fill={st.color}
-                            transform="scale(0.8) translate(0, -2)"
+                            fontSize={st.country.length > 12 ? '9.5' : '11'}
+                            fontWeight="900"
+                            letterSpacing="0.12em"
+                          >
+                            <textPath
+                              href={`#arc-top-${passportBookPage}-${idx}`}
+                              startOffset="50%"
+                              textAnchor="middle"
+                            >
+                              ★ {st.country.toUpperCase()} ★
+                            </textPath>
+                          </text>
+
+                          {/* Bottom Arc: Customs Entry Text */}
+                          <text
+                            fill={st.color}
+                            fontSize="8"
+                            fontWeight="800"
+                            letterSpacing="0.15em"
+                            opacity="0.85"
+                          >
+                            <textPath
+                              href={`#arc-bot-${passportBookPage}-${idx}`}
+                              startOffset="50%"
+                              textAnchor="middle"
+                            >
+                              • ENTRY · IMMIGRATION •
+                            </textPath>
+                          </text>
+
+                          {/* Center Inked Date Box */}
+                          <rect
+                            x="20"
+                            y="55"
+                            width="100"
+                            height="30"
+                            rx="5"
+                            fill="#fffdfa"
+                            stroke={st.color}
+                            strokeWidth="1.6"
                           />
-                        </g>
 
-                        {/* Inked Monospace Arrival Date */}
-                        <text
-                          x="76"
-                          y="68"
-                          textAnchor="middle"
-                          fill={st.color}
-                          fontSize="9.5"
-                          fontWeight="800"
-                          fontFamily="monospace"
-                          letterSpacing="0.06em"
-                        >
-                          {day} {month} {year}
-                        </text>
+                          {/* Centered Airplane Icon */}
+                          <g transform="translate(26, 62)">
+                            <path
+                              d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                              fill={st.color}
+                              transform="scale(0.7)"
+                            />
+                          </g>
 
-                        {/* Pin Count & Medal Tier */}
-                        <text
-                          x="76"
-                          y="80"
-                          textAnchor="middle"
-                          fill={
-                            tier === 'gold'
-                              ? '#d97706'
-                              : tier === 'silver'
-                              ? '#64748b'
-                              : st.color
-                          }
-                          fontSize="7.5"
-                          fontWeight="900"
-                          letterSpacing="0.08em"
-                        >
-                          {st.spotCount} PINS {tier === 'gold' ? '★ GOLD' : tier === 'silver' ? '★ SILVER' : ''}
-                        </text>
-                      </svg>
+                          {/* Centered Monospaced Date */}
+                          <text
+                            x="73"
+                            y="75"
+                            textAnchor="middle"
+                            fill={st.color}
+                            fontSize="11.5"
+                            fontWeight="900"
+                            fontFamily="monospace"
+                            letterSpacing="0.07em"
+                          >
+                            {day} {month} {year}
+                          </text>
+                        </svg>
+                      </div>
+
+                      {/* Discreet External Traveler Margin Note */}
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: 700,
+                          color: tier === 'gold' ? '#b45309' : tier === 'silver' ? '#475569' : '#78716c',
+                          letterSpacing: '0.04em',
+                          fontFamily: 'monospace',
+                          opacity: 0.85,
+                        }}
+                      >
+                        {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
+                      </span>
                     </div>
                   );
                 })}
@@ -5886,45 +5884,65 @@ const showToast = (msg: string) => {
                   <div
                     key={`unclaimed-${passportBookPage}-${idx}`}
                     style={{
-                      width: '136px',
-                      height: '136px',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0.45,
+                      gap: '4px',
                     }}
                   >
-                    <svg viewBox="0 0 140 140" width="100%" height="100%">
-                      <circle
-                        cx="70"
-                        cy="70"
-                        r="62"
-                        fill="none"
-                        stroke="#a8a29e"
-                        strokeWidth="1.8"
-                        strokeDasharray="4 3"
-                      />
-                      <text
-                        x="70"
-                        y="65"
-                        textAnchor="middle"
-                        fill="#78716c"
-                        fontSize="8.5"
-                        fontWeight="800"
-                        letterSpacing="0.2em"
-                      >
-                        UNCLAIMED
-                      </text>
-                      <text
-                        x="70"
-                        y="86"
-                        textAnchor="middle"
-                        fill="#a8a29e"
-                        fontSize="18"
-                      >
-                        ✈︎
-                      </text>
-                    </svg>
+                    <div
+                      style={{
+                        width: '128px',
+                        height: '128px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0.4,
+                      }}
+                    >
+                      <svg viewBox="0 0 140 140" width="100%" height="100%">
+                        <circle
+                          cx="70"
+                          cy="70"
+                          r="62"
+                          fill="none"
+                          stroke="#a8a29e"
+                          strokeWidth="1.8"
+                          strokeDasharray="4 3"
+                        />
+                        <text
+                          x="70"
+                          y="65"
+                          textAnchor="middle"
+                          fill="#78716c"
+                          fontSize="8.5"
+                          fontWeight="800"
+                          letterSpacing="0.2em"
+                        >
+                          UNCLAIMED
+                        </text>
+                        <text
+                          x="70"
+                          y="86"
+                          textAnchor="middle"
+                          fill="#a8a29e"
+                          fontSize="18"
+                        >
+                          ✈︎
+                        </text>
+                      </svg>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 600,
+                        color: 'transparent',
+                        fontFamily: 'monospace',
+                        userSelect: 'none',
+                      }}
+                    >
+                      empty
+                    </span>
                   </div>
                 ))}
               </div>
