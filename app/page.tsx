@@ -760,7 +760,13 @@ const showToast = (msg: string) => {
     return { refLat, refLng };
   };
 
-  const myNotesSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
+  const myNotesSpots = currentUser
+    ? spots.filter(
+        (s: Spot) =>
+          (s.user_id === currentUser.id) ||
+          (s.id && mustTrySpotIds.includes(s.id))
+      )
+    : [];
 
   // Single source of truth for the drawer list — always sorted
   const displayedDrawerSpots = (() => {
@@ -2087,10 +2093,21 @@ const showToast = (msg: string) => {
       });
     };
 
+    const tryAddLayers = (attempt: number) => {
+      if (mapInstance.getSource('spots-cluster-source') || attempt > 40) return;
+      if (mapInstance.isStyleLoaded()) {
+        updateClustering();
+      } else {
+        setTimeout(() => tryAddLayers(attempt + 1), 250);
+      }
+    };
+
     if (mapInstance.isStyleLoaded()) {
       updateClustering();
     } else {
-      mapInstance.on('load', updateClustering);
+      mapInstance.once('load', () => tryAddLayers(0));
+      mapInstance.once('idle', () => tryAddLayers(0));
+      tryAddLayers(0);
     }
   }, [filteredSpots, spots, mapReady]);
   // Apply map tile filter to canvas only, so markers keep true brand colors
