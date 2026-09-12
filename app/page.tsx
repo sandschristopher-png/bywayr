@@ -1947,7 +1947,11 @@ const showToast = (msg: string) => {
 
   // Marker Clustering Effect
   useEffect(() => {
-    if (!map.current || !mapReady) return;
+    if (!map.current) {
+      console.warn('[bywayr-pins] effect ran but map ref is null');
+      return;
+    }
+    if (!mapReady) return;
     const mapInstance = map.current;
 
     const updateClustering = () => {
@@ -1956,6 +1960,8 @@ const showToast = (msg: string) => {
         const lng = Number(s.longitude);
         return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
       });
+
+      console.log('[bywayr-pins] spots total:', spots.length, '| filtered:', filteredSpots.length, '| valid coords:', validSpots.length);
 
       const geojson: any = {
         type: 'FeatureCollection',
