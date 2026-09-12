@@ -342,6 +342,7 @@ export default function Home() {
   const map = useRef<maplibregl.Map | null>(null);
   const previewMarkerRef = useRef<maplibregl.Marker | null>(null);
   const userLocationMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const spotMarkersRef = useRef<maplibregl.Marker[]>([]);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
   const profileStampScrollRef = useRef<HTMLDivElement>(null);
   const publicStampScrollRef = useRef<HTMLDivElement>(null);
@@ -1612,12 +1613,13 @@ const showToast = (msg: string) => {
       previewMarkerRef.current = null;
     }
 
+    const pinColor = getCategoryColor(spot.category || 'Hidden Gems');
     const pinEl = document.createElement('div');
     pinEl.style.width = '26px';
     pinEl.style.height = '26px';
     pinEl.style.cursor = 'pointer';
     pinEl.innerHTML = `
-      <svg viewBox="0 0 24 24" width="26" height="26" fill="#e05a47" stroke="#ffffff" stroke-width="1.5">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
         <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
       </svg>
@@ -1945,129 +1947,49 @@ const showToast = (msg: string) => {
     };
   }, [spots]);
 
-  // Marker Clustering Effect
+  // Render All Pinned Locations as DOM Markers
   useEffect(() => {
-    if (!map.current) {
-      console.warn('[bywayr-pins] effect ran but map ref is null');
-      return;
-    }
-    if (!mapReady) return;
-    const mapInstance = map.current;
+    if (!map.current || !mapReady) return;
 
-    const updateClustering = () => {
-      const validSpots = filteredSpots.filter((s) => {
-        const lat = Number(s.latitude);
-        const lng = Number(s.longitude);
-        return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+    // Remove existing spot markers
+    spotMarkersRef.current.forEach((m) => m.remove());
+    spotMarkersRef.current = [];
+
+    const spotsToRender = filteredSpots.length > 0 ? filteredSpots : spots;
+
+    const validSpots = spotsToRender.filter((s) => {
+      const lat = Number(s.latitude);
+      const lng = Number(s.longitude);
+      return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+    });
+
+    validSpots.forEach((spot) => {
+      const pinColor = getCategoryColor(spot.category || 'Hidden Gems');
+      const pinEl = document.createElement('div');
+      pinEl.style.width = '28px';
+      pinEl.style.height = '28px';
+      pinEl.style.cursor = 'pointer';
+      pinEl.style.zIndex = '10';
+      pinEl.innerHTML = `
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+          <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
+        </svg>
+      `;
+
+      pinEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerHaptic(8);
+        setViewingSpot(spot);
+        pushModalHistoryState('viewingSpot');
       });
 
-      console.log('[bywayr-pins] spots total:', spots.length, '| filtered:', filteredSpots.length, '| valid coords:', validSpots.length);
+      const marker = new maplibregl.Marker({ element: pinEl, anchor: 'bottom' })
+        .setLngLat([Number(spot.longitude), Number(spot.latitude)])
+        .addTo(map.current!);
 
-      const geojson: any = {
-        type: 'FeatureCollection',
-        features: validSpots.map((spot) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [Number(spot.longitude), Number(spot.latitude)],
-          },
-          properties: {
-            id: String(spot.id || ''),
-            name: spot.name || '',
-            category: spot.category || 'Hidden Gems',
-            city: spot.city || '',
-            image_url: spot.image_url || '',
-            color: getCategoryColor(spot.category || 'Hidden Gems'),
-          },
-        })),
-      };
-
-      const sourceId = 'spots-cluster-source';
-      const clusterLayerId = 'clusters';
-      // const clusterCountLayerId = 'cluster-count'; // removed with text layer
-      const unclusteredLayerId = 'unclustered-point';
-
-      if (mapInstance.getSource(sourceId)) {
-        (mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource).setData(geojson);
-        return;
-      }
-
-      mapInstance.addSource(sourceId, {
-        type: 'geojson',
-        data: geojson,
-        cluster: false,
-      });
-
-      mapInstance.addLayer({
-        id: unclusteredLayerId,
-        type: 'circle',
-        source: sourceId,
-        paint: {
-          'circle-radius': 7,
-          'circle-color': ['get', 'color'],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      mapInstance.on('click', clusterLayerId, (e) => {
-        const features = mapInstance.queryRenderedFeatures(e.point, { layers: [clusterLayerId] });
-        const clusterId = features[0].properties.cluster_id;
-        const source = mapInstance.getSource(sourceId) as maplibregl.GeoJSONSource;
-        source
-          .getClusterExpansionZoom(clusterId)
-          .then((zoom: number) => {
-            if (!features[0].geometry) return;
-            const coords = (features[0].geometry as any).coordinates;
-            mapInstance.flyTo({
-              center: [coords[0], coords[1]],
-              zoom: zoom || 16,
-              essential: true,
-            });
-          })
-          .catch(() => {});
-      });
-
-      mapInstance.on('click', unclusteredLayerId, (e) => {
-        if (!e.features || e.features.length === 0) return;
-        const props = e.features[0].properties;
-        const clickedSpot = spots.find((s) => String(s.id) === String(props.id));
-        if (clickedSpot) {
-          triggerHaptic(8);
-          flyToSpot(clickedSpot);
-        }
-      });
-
-      mapInstance.on('mouseenter', clusterLayerId, () => {
-        mapInstance.getCanvas().style.cursor = 'pointer';
-      });
-      mapInstance.on('mouseleave', clusterLayerId, () => {
-        mapInstance.getCanvas().style.cursor = '';
-      });
-      mapInstance.on('mouseenter', unclusteredLayerId, () => {
-        mapInstance.getCanvas().style.cursor = 'pointer';
-      });
-      mapInstance.on('mouseleave', unclusteredLayerId, () => {
-        mapInstance.getCanvas().style.cursor = '';
-      });
-    };
-
-    const tryAddLayers = (attempt: number) => {
-      if (mapInstance.getSource('spots-cluster-source') || attempt > 40) return;
-      if (mapInstance.isStyleLoaded()) {
-        updateClustering();
-      } else {
-        setTimeout(() => tryAddLayers(attempt + 1), 250);
-      }
-    };
-
-    if (mapInstance.isStyleLoaded()) {
-      updateClustering();
-    } else {
-      mapInstance.once('load', () => tryAddLayers(0));
-      mapInstance.once('idle', () => tryAddLayers(0));
-      tryAddLayers(0);
-    }
+      spotMarkersRef.current.push(marker);
+    });
   }, [filteredSpots, spots, mapReady]);
   // Apply map tile filter to canvas only, so markers keep true brand colors
   useEffect(() => {
@@ -2650,6 +2572,8 @@ const showToast = (msg: string) => {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      spotMarkersRef.current.forEach((m) => m.remove());
+      spotMarkersRef.current = [];
       if (previewMarkerRef.current) {
         previewMarkerRef.current.remove();
         previewMarkerRef.current = null;
