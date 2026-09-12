@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
@@ -752,11 +752,54 @@ const showToast = (msg: string) => {
       return timeB - timeA;
     });
 
-  const displayedDrawerSpots = drawerTab === 'fieldNotes' 
-    ? (notesViewMode === 'mine' 
-        ? (currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : []) 
-        : filteredSpots)
-    : mustTryList;
+  const drawerRefPoint = useMemo(() => {
+    const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+    const refLat = 'lat' in center ? center.lat : 36.1699;
+    const refLng = 'lng' in center ? center.lng : -115.1398;
+    return { refLat, refLng };
+  }, [userCoords]);
+
+  const myNotesSpots = useMemo(() => {
+    if (!currentUser) return [];
+    return spots.filter((s: Spot) => s.user_id === currentUser.id);
+  }, [spots, currentUser]);
+
+  // Single source of truth for the drawer list — always sorted
+  const displayedDrawerSpots = useMemo(() => {
+    const source =
+      drawerTab === 'fieldNotes'
+        ? notesViewMode === 'mine'
+          ? myNotesSpots
+          : filteredSpots
+        : mustTryList;
+
+    if (drawerSortMode !== 'nearest') {
+      return [...source].sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        const idA = a.id ? Number(a.id) : 0;
+        const idB = b.id ? Number(b.id) : 0;
+        return idB - idA;
+      });
+    }
+
+    const { refLat, refLng } = drawerRefPoint;
+    return [...source].sort(
+      (a, b) =>
+        getDistanceFromLatLonInKm(refLat, refLng, a.latitude, a.longitude) -
+        getDistanceFromLatLonInKm(refLat, refLng, b.latitude, b.longitude)
+    );
+  }, [drawerTab, notesViewMode, myNotesSpots, filteredSpots, mustTryList, drawerSortMode, drawerRefPoint]);
+
+  // Index where the far group starts (nearest sort only) — drives the headers
+  const firstFarIndex = useMemo(() => {
+    if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
+    const { refLat, refLng } = drawerRefPoint;
+    return displayedDrawerSpots.findIndex(
+      (s) => getDistanceFromLatLonInKm(refLat, refLng, s.latitude, s.longitude) > 50
+    );
+  }, [displayedDrawerSpots, drawerTab, drawerSortMode, drawerRefPoint]);
   const mySpotsCount = myUserSpots.length;
   const myCitiesCount = currentUser ? new Set(myUserSpots.map((s) => s.city.trim())).size : 0;
   const myCountriesCount = myPassportStamps.length;
@@ -4934,15 +4977,14 @@ const showToast = (msg: string) => {
                       : `${Math.round(distanceVal / 1000)}k km`;
 
                   const showHeaders = drawerTab === 'fieldNotes' && drawerSortMode === 'nearest';
-                  const isNearby = distanceVal <= 50;
                   let header = null;
-                  if (showHeaders && isNearby && (idx === 0 || getDistanceFromLatLonInKm(refLat, refLng, displayedDrawerSpots[idx - 1].latitude, displayedDrawerSpots[idx - 1].longitude) > 50)) {
+                  if (showHeaders && idx === 0) {
                     header = (
                       <div key={`header-nearby`} style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
                         Field Notes Nearby
                       </div>
                     );
-                  } else if (showHeaders && !isNearby && (idx === 0 || getDistanceFromLatLonInKm(refLat, refLng, displayedDrawerSpots[idx - 1].latitude, displayedDrawerSpots[idx - 1].longitude) <= 50)) {
+                  } else if (showHeaders && idx === firstFarIndex) {
                     header = (
                       <div key={`header-far`} style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
                         Further Afield
