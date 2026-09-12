@@ -752,20 +752,18 @@ const showToast = (msg: string) => {
       return timeB - timeA;
     });
 
-  const drawerRefPoint = useMemo(() => {
+  // Live reference point — read at render time so sort and distance badges always agree
+  const drawerRefPoint = () => {
     const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
     const refLat = 'lat' in center ? center.lat : 36.1699;
     const refLng = 'lng' in center ? center.lng : -115.1398;
     return { refLat, refLng };
-  }, [userCoords]);
+  };
 
-  const myNotesSpots = useMemo(() => {
-    if (!currentUser) return [];
-    return spots.filter((s: Spot) => s.user_id === currentUser.id);
-  }, [spots, currentUser]);
+  const myNotesSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
 
   // Single source of truth for the drawer list — always sorted
-  const displayedDrawerSpots = useMemo(() => {
+  const displayedDrawerSpots = (() => {
     const source =
       drawerTab === 'fieldNotes'
         ? notesViewMode === 'mine'
@@ -784,22 +782,22 @@ const showToast = (msg: string) => {
       });
     }
 
-    const { refLat, refLng } = drawerRefPoint;
+    const { refLat, refLng } = drawerRefPoint();
     return [...source].sort(
       (a, b) =>
         getDistanceFromLatLonInKm(refLat, refLng, a.latitude, a.longitude) -
         getDistanceFromLatLonInKm(refLat, refLng, b.latitude, b.longitude)
     );
-  }, [drawerTab, notesViewMode, myNotesSpots, filteredSpots, mustTryList, drawerSortMode, drawerRefPoint]);
+  })();
 
   // Index where the far group starts (nearest sort only) — drives the headers
-  const firstFarIndex = useMemo(() => {
+  const firstFarIndex = (() => {
     if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
-    const { refLat, refLng } = drawerRefPoint;
+    const { refLat, refLng } = drawerRefPoint();
     return displayedDrawerSpots.findIndex(
       (s) => getDistanceFromLatLonInKm(refLat, refLng, s.latitude, s.longitude) > 50
     );
-  }, [displayedDrawerSpots, drawerTab, drawerSortMode, drawerRefPoint]);
+  })();
   const mySpotsCount = myUserSpots.length;
   const myCitiesCount = currentUser ? new Set(myUserSpots.map((s) => s.city.trim())).size : 0;
   const myCountriesCount = myPassportStamps.length;
