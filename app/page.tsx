@@ -1995,52 +1995,17 @@ const showToast = (msg: string) => {
       mapInstance.addSource(sourceId, {
         type: 'geojson',
         data: geojson,
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
+        cluster: false,
       });
-
-      mapInstance.addLayer({
-        id: clusterLayerId,
-        type: 'circle',
-        source: sourceId,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': [
-            'step',
-            ['get', 'point_count'],
-            '#e05a47',
-            10,
-            '#d97706',
-            25,
-            '#0284c7',
-          ],
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            20,
-            10,
-            24,
-            25,
-            28,
-          ],
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      // cluster-count text layer removed — the raster CARTO style has no glyph
-      // fonts, so 'Open Sans Bold' fails and kills all subsequent layer rendering.
 
       mapInstance.addLayer({
         id: unclusteredLayerId,
         type: 'circle',
         source: sourceId,
-        filter: ['!has', 'point_count'],
         paint: {
-          'circle-radius': 8,
+          'circle-radius': 7,
           'circle-color': ['get', 'color'],
-          'circle-stroke-width': 2.5,
+          'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff',
         },
       });
