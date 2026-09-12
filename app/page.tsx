@@ -1984,7 +1984,7 @@ const showToast = (msg: string) => {
 
       const sourceId = 'spots-cluster-source';
       const clusterLayerId = 'clusters';
-      const clusterCountLayerId = 'cluster-count';
+      // const clusterCountLayerId = 'cluster-count'; // removed with text layer
       const unclusteredLayerId = 'unclustered-point';
 
       if (mapInstance.getSource(sourceId)) {
@@ -2029,20 +2029,8 @@ const showToast = (msg: string) => {
         },
       });
 
-      mapInstance.addLayer({
-        id: clusterCountLayerId,
-        type: 'symbol',
-        source: sourceId,
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 12,
-        },
-        paint: {
-          'text-color': '#ffffff',
-        },
-      });
+      // cluster-count text layer removed — the raster CARTO style has no glyph
+      // fonts, so 'Open Sans Bold' fails and kills all subsequent layer rendering.
 
       mapInstance.addLayer({
         id: unclusteredLayerId,
