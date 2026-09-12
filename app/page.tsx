@@ -626,6 +626,33 @@ const showToast = (msg: string) => {
       });
     }
   }, []);
+    // Startup self-heal: verify Bywayr Plus entitlement from Google Play on native
+  useEffect(() => {
+    if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
+
+    (async () => {
+      try {
+        const { NativePurchases } = await import('@capgo/native-purchases');
+        const restored: any = await NativePurchases.restorePurchases();
+        const entitlements = restored?.customerInfo?.entitlements || {};
+        const hasPlus =
+          Object.keys(entitlements).length > 0 ||
+          restored?.transactions?.some(
+            (tx: any) => tx.productId === 'bywayr_plus_lifetime' || tx.productIdentifier === 'bywayr_plus_lifetime'
+          );
+
+        if (hasPlus) {
+          localStorage.setItem('bywayr_is_plus', 'true');
+          setIsPlusSubscriber(true);
+        } else if (localStorage.getItem('bywayr_is_plus') === 'true') {
+          localStorage.removeItem('bywayr_is_plus');
+          setIsPlusSubscriber(false);
+        }
+      } catch (err) {
+        console.warn('Plus entitlement check failed:', err);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
@@ -2214,13 +2241,13 @@ const showToast = (msg: string) => {
       triggerHaptic(12);
 
       if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-        const { NativePurchases: Purchases } = (await import('@capgo/native-purchases')) as any;
-        const productId = 'bywayr_plus_lifetime';
+        const { NativePurchases: Purchases, PURCHASE_TYPE } = (await import('@capgo/native-purchases')) as any;
         const purchaseResult = await Purchases.purchaseProduct({
-          productId: productId,
+          productIdentifier: 'bywayr_plus_lifetime',
+          productType: PURCHASE_TYPE.INAPP,
         });
 
-        if (purchaseResult && purchaseResult.transaction) {
+        if (purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_lifetime' || purchaseResult?.transaction) {
           setIsPlusSubscriber(true);
           localStorage.setItem('bywayr_is_plus', 'true');
           setIsPlusModalOpen(false);
@@ -2244,9 +2271,13 @@ const showToast = (msg: string) => {
       if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
         const { NativePurchases: Purchases } = (await import('@capgo/native-purchases')) as any;
         const restored = await Purchases.restorePurchases();
-        const hasPlus = restored?.transactions?.some(
-          (tx: any) => tx.productId === 'bywayr_plus_lifetime'
-        );
+        const entitlements = restored?.customerInfo?.entitlements || {};
+        const hasPlus =
+          'bywayr_plus_lifetime' in entitlements ||
+          Object.keys(entitlements).length > 0 ||
+          restored?.transactions?.some(
+            (tx: any) => tx.productId === 'bywayr_plus_lifetime' || tx.productIdentifier === 'bywayr_plus_lifetime'
+          );
 
         if (hasPlus) {
           setIsPlusSubscriber(true);
@@ -5123,8 +5154,8 @@ const showToast = (msg: string) => {
 
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
                 {isPlusSubscriber
-                  ? 'Your lifetime membership is active. Enjoy Google Drive cloud syncing, offline map caches, and unlimited curated notes.'
-                  : 'Unlock Google Drive cloud sync, unlimited passport entries, and offline field note backups forever.'}
+                  ? 'Your lifetime membership is active. Enjoy ad-free exploring and portable journal exports, forever.'
+                  : 'Unlock ad-free exploring and portable journal exports with a one-time payment, forever.'}
               </p>
 
               {driveStatusMessage && (
@@ -5155,7 +5186,7 @@ const showToast = (msg: string) => {
                     }}
                   >
                     {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
-                    {isBackingUpDrive ? 'Backing Up...' : 'Backup to Google Drive'}
+                    {isBackingUpDrive ? 'Exporting...' : 'Export Journal Backup'}
                   </button>
 
                   <label
@@ -5326,7 +5357,11 @@ const showToast = (msg: string) => {
                 {isDeletingAccount ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Permanently Delete Account'}
               </button>
 
-              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10.5px', color: '#a8a29e', textDecoration: 'underline', marginBottom: '4px' }}>Terms of Service</a>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#a8a29e', marginBottom: '4px' }}>
+                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Terms of Service</a>
+                <span style={{ color: '#c4beb5' }}>·</span>
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Privacy Policy</a>
+              </div>
 
               <button
                 onClick={() => dismissModalWithHistory(() => setIsDeleteAccountModalOpen(false))}
@@ -5440,7 +5475,8 @@ const showToast = (msg: string) => {
             <p style={{ margin: '0', fontSize: '10.5px', color: '#a8a29e', lineHeight: 1.5 }}>
               By continuing you agree to our{' '}
               <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#e05a47', fontWeight: 600, textDecoration: 'underline' }}>Terms of Service</a>
-              {' '}and acknowledge our Privacy Policy.
+              {' '}and our{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#e05a47', fontWeight: 600, textDecoration: 'underline' }}>Privacy Policy</a>.
             </p>
 
             <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -5500,21 +5536,14 @@ const showToast = (msg: string) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '10px 0 20px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
-                  <HardDrive style={{ width: '15px', height: '15px' }} />
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Google Drive Cloud Sync</strong> — Automatically backup & sync your pinned notes and passport stamps across all your devices.
-                </div>
-              </div>
+
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
                   <Download style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Offline Map Caching</strong> — Download offline city regions so your field journal is always ready in remote areas.
+                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
                 </div>
               </div>
 
@@ -5523,7 +5552,7 @@ const showToast = (msg: string) => {
                   <ShieldCheck style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Verified Curator Badge</strong> — Stand out with an authentic gold checkmark on your public passport stamps.
+                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero banner ads, forever.
                 </div>
               </div>
 
