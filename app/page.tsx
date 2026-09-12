@@ -518,15 +518,18 @@ const [isPlusClosing, setIsPlusClosing] = useState(false);
   const [onlyMySpots, setOnlyMySpots] = useState(false);
   const [maxRadiusKm, setMaxRadiusKm] = useState<number | null>(null);
 
-  const [spots, setSpots] = useState<Spot[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('bywayr_cached_spots');
-      if (cached) {
-        try { return JSON.parse(cached); } catch {}
-      }
+  const [spots, setSpots] = useState<Spot[]>([]);
+
+  // Hydrate cached spots on the client only (after mount) to avoid SSR mismatches
+  useEffect(() => {
+    const cached = localStorage.getItem('bywayr_cached_spots');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as Spot[];
+        if (Array.isArray(parsed) && parsed.length > 0) setSpots(parsed);
+      } catch {}
     }
-    return [];
-  });
+  }, []);
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -535,6 +538,7 @@ const [isPlusClosing, setIsPlusClosing] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
   const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry' | 'essentials'>('fieldNotes');
+  const [notesViewMode, setNotesViewMode] = useState<'mine' | 'explore'>('mine');
   const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
   const [savingBookmark, setSavingBookmark] = useState(false);
 
@@ -748,7 +752,11 @@ const showToast = (msg: string) => {
       return timeB - timeA;
     });
 
-  const displayedDrawerSpots = drawerTab === 'fieldNotes' ? filteredSpots : mustTryList;
+  const displayedDrawerSpots = drawerTab === 'fieldNotes' 
+    ? (notesViewMode === 'mine' 
+        ? (currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : []) 
+        : filteredSpots)
+    : mustTryList;
   const mySpotsCount = myUserSpots.length;
   const myCitiesCount = currentUser ? new Set(myUserSpots.map((s) => s.city.trim())).size : 0;
   const myCountriesCount = myPassportStamps.length;
@@ -4737,19 +4745,80 @@ const showToast = (msg: string) => {
           >
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
-                {drawerTab === 'fieldNotes' ? 'Field Notes' : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
+                {drawerTab === 'fieldNotes' 
+                  ? (notesViewMode === 'mine' ? 'My Field Notes' : 'Explore Field Notes') 
+                  : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
               </h2>
               <button onClick={handleCloseDrawer} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
 
-            <div className="animate-slide-up" style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
+            <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
+              {/* Main Tabs */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '14px', padding: '3px', width: '100%' }}>
                 <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
                 <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
                 <button onClick={() => setDrawerTab('essentials')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
               </div>
+
+              {/* Field Notes Sub-View Toggle (Only visible when on Field Notes tab) */}
+              {drawerTab === 'fieldNotes' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '12px', padding: '2px', width: '100%', border: '1px solid #e7e5e4' }}>
+                  <button
+                    onClick={() => {
+                      triggerHaptic(4);
+                      setNotesViewMode('mine');
+                      if (!currentUser) {
+                        // If not signed in, maybe toast them or just switch to explore? 
+                        // Let's switch to explore if they try to click Mine without login
+                        setIsAuthModalOpen(true);
+                        pushModalHistoryState('auth');
+                      }
+                    }}
+                    style={{
+                      border: 'none',
+                      padding: '5px 2px',
+                      borderRadius: '9px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      backgroundColor: notesViewMode === 'mine' ? '#ffffff' : 'transparent',
+                      color: notesViewMode === 'mine' ? '#e05a47' : '#78716c',
+                      boxShadow: notesViewMode === 'mine' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <User style={{ width: '10px', height: '10px' }} /> My Notes
+                  </button>
+                  <button
+                    onClick={() => {
+                      triggerHaptic(4);
+                      setNotesViewMode('explore');
+                    }}
+                    style={{
+                      border: 'none',
+                      padding: '5px 2px',
+                      borderRadius: '9px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      backgroundColor: notesViewMode === 'explore' ? '#ffffff' : 'transparent',
+                      color: notesViewMode === 'explore' ? '#e05a47' : '#78716c',
+                      boxShadow: notesViewMode === 'explore' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Compass style={{ width: '10px', height: '10px' }} /> Explore
+                  </button>
+                </div>
+              )}
             </div>
 
             {drawerTab === 'fieldNotes' && (
