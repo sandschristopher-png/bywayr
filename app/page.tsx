@@ -863,11 +863,11 @@ const showToast = (msg: string) => {
 
   const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-  const uiGlass = isDarkMode ? 'rgba(38, 36, 33, 0.94)' : 'rgba(255, 255, 255, 0.92)';
-  const uiSolid = isDarkMode ? '#332f2c' : '#ecebe7';
-  const uiBorder = isDarkMode ? '#44403c' : '#e7e5e4';
-  const uiText = isDarkMode ? '#f5f5f4' : '#1c1917';
-  const uiSubtext = isDarkMode ? '#a8a29e' : '#78716c'; 
+  const uiGlass = isDarkMode ? 'rgba(20, 18, 16, 0.96)' : 'rgba(255, 255, 255, 0.92)';
+  const uiSolid = isDarkMode ? '#121110' : '#ecebe7';
+  const uiBorder = isDarkMode ? '#2a2826' : '#e7e5e4';
+  const uiText = isDarkMode ? '#fafaf9' : '#1c1917';
+  const uiSubtext = isDarkMode ? '#78716c' : '#78716c'; 
 
   const mapCenter = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
   const proximitySortedSpots: Spot[] = [...spots]
@@ -2248,7 +2248,7 @@ const showToast = (msg: string) => {
           "></div>
         </div>
       `;
-
+placeholder="Search places, Plus Codes..."
       pinEl.addEventListener('click', (e) => {
         e.stopPropagation();
         triggerHaptic(8);
@@ -2268,7 +2268,7 @@ const showToast = (msg: string) => {
     if (!map.current || !mapReady) return;
     const canvas = map.current.getCanvas();
     const base = isDarkMode
-      ? 'grayscale(0.78) sepia(0.18) saturate(1.1) brightness(0.68) contrast(1.06) hue-rotate(-12deg)'
+      ? 'grayscale(0.85) sepia(0.25) saturate(0.8) brightness(0.45) contrast(1.15) hue-rotate(-15deg)'
       : 'grayscale(0) sepia(0.1) saturate(0.72) brightness(1.0) contrast(1.02) hue-rotate(-6deg)';
     canvas.style.filter = base + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : '');
     canvas.style.transition = 'filter 0.6s ease';
@@ -2932,7 +2932,7 @@ const showToast = (msg: string) => {
     };
   }, [spots]);
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#262421' : '#ecebe7' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#0a0a0a' : '#ecebe7' }}>
       <style jsx global>{`
         html, body {
           position: fixed;
@@ -3330,7 +3330,7 @@ const showToast = (msg: string) => {
             <div style={{ flex: 1, position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="Search places, Plus Codes..."
+                placeholder="Search spots or Plus Codes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
@@ -3948,17 +3948,35 @@ const showToast = (msg: string) => {
           transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
+        {/* Zoom In Button */}
         <button
-          onClick={handleLocateMe}
-          disabled={isLocating}
-          style={{ width: '36px', height: '36px', backgroundColor: 'transparent', border: 'none', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }}
-          title="Locate Me"
+          onPointerDown={(e) => startZoomHold(1, e)}
+          onPointerUp={stopZoomHold}
+          onPointerLeave={stopZoomHold}
+          style={{ width: '36px', height: '36px', backgroundColor: 'transparent', border: 'none', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#e05a47' : '#57534e' }}
+          title="Hold to Zoom In"
         >
-          {isLocating ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '16px', height: '16px' }} />}
+          <Plus style={{ width: '16px', height: '16px' }} />
         </button>
 
+        {/* Separator */}
         <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '1px 3px' }} />
 
+        {/* Zoom Out Button */}
+        <button
+          onPointerDown={(e) => startZoomHold(-1, e)}
+          onPointerUp={stopZoomHold}
+          onPointerLeave={stopZoomHold}
+          style={{ width: '36px', height: '36px', backgroundColor: 'transparent', border: 'none', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#e05a47' : '#57534e' }}
+          title="Hold to Zoom Out"
+        >
+          <Minus style={{ width: '16px', height: '16px' }} />
+        </button>
+
+        {/* Separator */}
+        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '1px 3px' }} />
+
+        {/* Dark Mode Toggle */}
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
           style={{ width: '36px', height: '36px', borderRadius: '14px', border: 'none', backgroundColor: 'transparent', color: isDarkMode ? '#e05a47' : '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
