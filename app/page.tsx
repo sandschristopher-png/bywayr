@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as maplibregl from 'maplibre-gl';
@@ -64,7 +64,7 @@ import {
   HardDrive,
   Download,
   Sparkle,
-} from 'lucide-react';
+ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Spot {
   id?: string;
@@ -187,7 +187,7 @@ const formatWalkDistanceAndTime = (distKm: number) => {
       : `${Math.round(distKm)}km`;
 
   if (distKm > 25) return distStr;
-  return `${walkMinutes}m walk · ${distStr}`;
+  return `${walkMinutes}m walk Â· ${distStr}`;
 };
 
 const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
@@ -459,11 +459,20 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
   const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
   const [isPassportBookOpen, setIsPassportBookOpen] = useState(false);
-const passportBookTouchStartRef = useRef<number | null>(null);
+  const passportBookTouchStartRef = useRef<number | null>(null);
+  const passportDesktopDragStartRef = useRef<number | null>(null);
   const [isBookClosing, setIsBookClosing] = useState(false);
-const [passportBookPage, setPassportBookPage] = useState(0);
-const STAMPS_PER_SPREAD = 4;
-const [isPlusClosing, setIsPlusClosing] = useState(false);
+  const [passportBookPage, setPassportBookPage] = useState(0);
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  const [isPlusClosing, setIsPlusClosing] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updateViewport = () => setIsDesktopViewport(window.innerWidth >= 768);
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_is_plus') === 'true';
@@ -815,7 +824,7 @@ const showToast = (msg: string) => {
       return timeB - timeA;
     });
 
-  // Live reference point — read at render time so sort and distance badges always agree
+  // Live reference point â€” read at render time so sort and distance badges always agree
   const drawerRefPoint = () => {
     const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
     const refLat = 'lat' in center ? center.lat : 36.1699;
@@ -831,7 +840,7 @@ const showToast = (msg: string) => {
       )
     : [];
 
-  // Single source of truth for the drawer list — always sorted
+  // Single source of truth for the drawer list â€” always sorted
   const displayedDrawerSpots = (() => {
     const source =
       drawerTab === 'fieldNotes'
@@ -859,7 +868,7 @@ const showToast = (msg: string) => {
     );
   })();
 
-  // Index where the far group starts (nearest sort only) — drives the headers
+  // Index where the far group starts (nearest sort only) â€” drives the headers
   const firstFarIndex = (() => {
     if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
     const { refLat, refLng } = drawerRefPoint();
@@ -908,7 +917,7 @@ const showToast = (msg: string) => {
               spot.category.toLowerCase().includes(q.toLowerCase())
           )
           .map((spot) => ({
-            display_name: `${spot.name} (${spot.city} — ${spot.category})`,
+            display_name: `${spot.name} (${spot.city} â€” ${spot.category})`,
             name: spot.name,
             lat: spot.latitude,
             lon: spot.longitude,
@@ -1393,7 +1402,7 @@ const showToast = (msg: string) => {
         setIsLocating(false);
       },
       () => {
-        showToast("Couldn't get your location — check permissions");
+        showToast("Couldn't get your location â€” check permissions");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -1436,7 +1445,7 @@ const showToast = (msg: string) => {
         setIsModalLocating(false);
       },
       () => {
-        showToast("Couldn't get your location — check permissions");
+        showToast("Couldn't get your location â€” check permissions");
         setIsModalLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -1451,7 +1460,7 @@ const showToast = (msg: string) => {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
+        await navigator.share({ title: `Bywayr â€” ${spot.name}`, text: shareText, url: shareUrl });
         return;
       } catch {}
     }
@@ -1473,7 +1482,7 @@ const showToast = (msg: string) => {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${handle}'s Field Journal — Bywayr`, text: shareText, url: shareUrl });
+        await navigator.share({ title: `${handle}'s Field Journal â€” Bywayr`, text: shareText, url: shareUrl });
         return;
       } catch {}
     }
@@ -1935,6 +1944,141 @@ const showToast = (msg: string) => {
     }
   }, [currentUser]);
 
+  const renderStampCard = (st: { country: string; firstVisit?: string | number | Date; spotCount: number; color: string }, idx: number, page: number) => {
+    const d = new Date(st.firstVisit || Date.now());
+    const day = d.toLocaleDateString('en-US', { day: '2-digit' });
+    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+    const year = d.getFullYear();
+    const tier = getStampTier(st.spotCount);
+    const tilts = [-4.5, 3.8, 4.0, -3.5];
+    const tiltAngle = tilts[idx % 4];
+
+    return (
+      <div
+        key={`${page}-stamp-${idx}`}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', maxWidth: '100%' }}
+      >
+        <div
+          className={`passport-stamp-cachet ${tier === 'gold' ? 'stamp-tier-gold' : tier === 'silver' ? 'stamp-tier-silver' : ''}`}
+          onClick={() => {
+            if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
+            triggerHaptic(12);
+            setSelectedCountryFilter(st.country);
+            const matchingSpots = spots.filter(
+              (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
+            );
+            dismissModalWithHistory(handleClosePassportBook);
+            setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
+          }}
+          style={{
+            width: isDesktopViewport ? '104px' : '122px',
+            height: isDesktopViewport ? '104px' : '122px',
+            cursor: 'pointer',
+            transform: `rotate(${tiltAngle}deg)`,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))',
+            mixBlendMode: 'multiply',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            userSelect: 'none',
+          }}
+        >
+          <svg viewBox="0 0 140 140" width="100%" height="100%" style={{ overflow: 'visible' }}>
+            <defs>
+              <path id={`arc-top-${page}-${idx}`} d="M 22 70 A 48 48 0 0 1 118 70" fill="none" />
+              <path id={`arc-bot-${page}-${idx}`} d="M 118 70 A 48 48 0 0 1 22 70" fill="none" />
+            </defs>
+            <circle cx="70" cy="70" r="64" fill="#fffdfa" stroke={st.color} strokeWidth="3.2" />
+            <circle cx="70" cy="70" r="57" fill="none" stroke={st.color} strokeWidth="1.3" strokeDasharray="3 2" />
+            <text fill={st.color} fontSize={st.country.length > 12 ? '9.5' : '11'} fontWeight="900" letterSpacing="0.12em">
+              <textPath href={`#arc-top-${page}-${idx}`} startOffset="50%" textAnchor="middle">
+                â˜… {st.country.toUpperCase()} â˜…
+              </textPath>
+            </text>
+            <text fill={st.color} fontSize="8" fontWeight="800" letterSpacing="0.15em" opacity="0.85">
+              <textPath href={`#arc-bot-${page}-${idx}`} startOffset="50%" textAnchor="middle">
+                â€¢ ENTRY Â· IMMIGRATION â€¢
+              </textPath>
+            </text>
+            <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
+              <path
+                d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                fill={st.color}
+              />
+            </g>
+            <rect x="20" y="55" width="100" height="30" rx="5" fill="#fffdfa" stroke={st.color} strokeWidth="1.6" />
+            <text x="70" y="74.5" textAnchor="middle" fill={st.color} fontSize="12" fontWeight="900" fontFamily="monospace" letterSpacing="0.08em">
+              {day} {month} {year}
+            </text>
+          </svg>
+        </div>
+
+        <span
+          style={{
+            fontSize: '8.5px',
+            fontWeight: 700,
+            color: tier === 'gold' ? '#b45309' : tier === 'silver' ? '#475569' : '#8c8273',
+            letterSpacing: '0.04em',
+            fontFamily: 'monospace',
+            opacity: 0.9,
+          }}
+        >
+          {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' â˜… gold' : tier === 'silver' ? ' â˜… silver' : ''}
+        </span>
+      </div>
+    );
+  };
+
+  const renderUnclaimedSlot = (idx: number, page: number) => (
+    <div
+      key={`unclaimed-${page}-${idx}`}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', maxWidth: '100%' }}
+    >
+      <div
+        style={{
+          width: isDesktopViewport ? '104px' : '122px',
+          height: isDesktopViewport ? '104px' : '122px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: 0.35,
+        }}
+      >
+        <svg viewBox="0 0 140 140" width="100%" height="100%">
+          <circle cx="70" cy="70" r="62" fill="none" stroke="#8c8273" strokeWidth="1.6" strokeDasharray="4 3" />
+          <text x="70" y="65" textAnchor="middle" fill="#57534e" fontSize="8.5" fontWeight="800" letterSpacing="0.2em">
+            UNCLAIMED
+          </text>
+          <text x="70" y="86" textAnchor="middle" fill="#8c8273" fontSize="18">
+            âœˆï¸Ž
+          </text>
+        </svg>
+      </div>
+      <span style={{ fontSize: '8.5px', fontWeight: 600, color: 'transparent', fontFamily: 'monospace', userSelect: 'none' }}>
+        empty
+      </span>
+    </div>
+  );
+
+  useEffect(() => {
+    if (!isPassportBookOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        triggerHaptic(6);
+        setPassportBookPage((p) => Math.max(0, p - 1));
+      } else if (e.key === 'ArrowRight') {
+        const stampsPerPage = isDesktopViewport ? 8 : 4;
+        const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / stampsPerPage));
+        triggerHaptic(6);
+        setPassportBookPage((p) => Math.min(totalPages - 1, p + 1));
+      } else if (e.key === 'Escape') {
+        handleClosePassportBook();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPassportBookOpen, isDesktopViewport, myPassportStamps.length]);
+
   // Deep Link Auto-Focus: open ?spot=ID shared links automatically
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -2260,7 +2404,7 @@ const showToast = (msg: string) => {
           setIsPlusSubscriber(true);
           localStorage.setItem('bywayr_is_plus', 'true');
           setIsPlusModalOpen(false);
-          showToast('Thank you for upgrading to Bywayr Plus! 👑');
+          showToast('Thank you for upgrading to Bywayr Plus! ðŸ‘‘');
         }
       } else {
         showToast('Purchases are available in the Android app');
@@ -2349,7 +2493,7 @@ const showToast = (msg: string) => {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        setDriveStatusMessage('Not connected to Drive — backup downloaded instead');
+        setDriveStatusMessage('Not connected to Drive â€” backup downloaded instead');
       } else {
         const fileMetadata = {
           name: `bywayr_backup_${activeUser.id}_${Date.now()}.json`,
@@ -2507,7 +2651,7 @@ const showToast = (msg: string) => {
             type: 'raster',
             tiles: primaryCartoTiles,
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors © CARTO',
+            attribution: 'Â© OpenStreetMap contributors Â© CARTO',
           },
         },
         layers: [
@@ -3040,7 +3184,7 @@ const showToast = (msg: string) => {
           pointerEvents: 'none',
         }}>
           <WifiOff style={{ width: '14px', height: '14px', color: '#e05a47' }} />
-          <span>Offline mode active · Using cached field notes</span>
+          <span>Offline mode active Â· Using cached field notes</span>
         </div>
       )}
 
@@ -3719,7 +3863,7 @@ const showToast = (msg: string) => {
               </span>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>
-                {activeSearchedSpot.city}{activeSearchedSpot.country ? ` · ${activeSearchedSpot.country}` : ''}
+                {activeSearchedSpot.city}{activeSearchedSpot.country ? ` Â· ${activeSearchedSpot.country}` : ''}
               </p>
             </div>
             <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
@@ -3868,7 +4012,7 @@ const showToast = (msg: string) => {
                           {spot.name}
                         </h4>
                         <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                          {spot.city} Â· <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                         </p>
                       </div>
 
@@ -3973,7 +4117,7 @@ const showToast = (msg: string) => {
                             {spot.name}
                           </h4>
                           <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
-                            {spot.city} · Map Location
+                            {spot.city} Â· Map Location
                           </p>
                         </div>
                         
@@ -4099,10 +4243,10 @@ const showToast = (msg: string) => {
                 {viewingSpot.name}
               </h3>
               <p style={{ margin: 0, fontSize: '12px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
-                {viewingSpot.city}{viewingSpot.country ? ` · ${viewingSpot.country}` : ''}
+                {viewingSpot.city}{viewingSpot.country ? ` Â· ${viewingSpot.country}` : ''}
                 {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
                   <>
-                    {' · '}
+                    {' Â· '}
                     <span
                       onClick={(e) => {
                         e.stopPropagation();
@@ -4308,7 +4452,7 @@ const showToast = (msg: string) => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. ÔDELICE"
+                  placeholder="e.g. Ã”DELICE"
                   value={newSpot.name}
                   onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
@@ -4492,7 +4636,7 @@ const showToast = (msg: string) => {
                     fontWeight: 700,
                     padding: '2px 8px',
                     borderRadius: '6px'
-                  }}>{publicPassportStamps.length} Countries{publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? ' · Gold' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? ' · Silver' : ''}</span>
+                  }}>{publicPassportStamps.length} Countries{publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? ' Â· Gold' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? ' Â· Silver' : ''}</span>
                 </div>
 
                 {publicPassportStamps.length === 0 ? (
@@ -4558,7 +4702,7 @@ const showToast = (msg: string) => {
                           }}
                         >
                           <div style={{ fontSize: '7px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
-                            ENTRY · IMMIGRATION
+                            ENTRY Â· IMMIGRATION
                           </div>
                           
                           <div style={{
@@ -4628,7 +4772,7 @@ const showToast = (msg: string) => {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      📍 {city}
+                      ðŸ“ {city}
                     </button>
                   ))}
                 </div>
@@ -4667,7 +4811,7 @@ const showToast = (msg: string) => {
                         </div>
                         <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
                         <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                          {s.city}{s.country ? ` · ${s.country}` : ''}
+                          {s.city}{s.country ? ` Â· ${s.country}` : ''}
                         </p>
                       </div>
 
@@ -4750,7 +4894,7 @@ const showToast = (msg: string) => {
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
                 <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
-                  <span style={{ fontSize: '18px', fontWeight: 800 }}>𝕏</span>
+                  <span style={{ fontSize: '18px', fontWeight: 800 }}>ð•</span>
                 </div>
                 Post
               </a>
@@ -5101,7 +5245,7 @@ const showToast = (msg: string) => {
                             textOverflow: 'ellipsis',
                           }}
                         >
-                          {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                          {spot.city} Â· <span style={{ color, fontWeight: 600 }}>{spot.category}</span> Â· <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
                         </p>
                       </div>
                     </div>
@@ -5272,7 +5416,7 @@ const showToast = (msg: string) => {
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: '24px' }}>🛂</span>
+                  <span style={{ fontSize: '24px' }}>ðŸ›‚</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Passport</div>
@@ -5391,7 +5535,7 @@ const showToast = (msg: string) => {
                     marginTop: '2px',
                   }}
                 >
-                  <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus — $19.99
+                  <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus â€” $19.99
                 </button>
               )}
             </div>
@@ -5512,7 +5656,7 @@ const showToast = (msg: string) => {
 
               <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#a8a29e', marginBottom: '4px' }}>
                 <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Terms of Service</a>
-                <span style={{ color: '#c4beb5' }}>·</span>
+                <span style={{ color: '#c4beb5' }}>Â·</span>
                 <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Privacy Policy</a>
               </div>
 
@@ -5646,7 +5790,7 @@ const showToast = (msg: string) => {
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                 />
                 <span style={{ fontSize: '10.5px', color: '#78716c', display: 'block', marginTop: '4px' }}>
-                  🔒 Your email is never shared publicly or displayed on your profile.
+                  ðŸ”’ Your email is never shared publicly or displayed on your profile.
                 </span>
               </div>
 
@@ -5696,7 +5840,7 @@ const showToast = (msg: string) => {
                   <Download style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
+                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> â€” Download a portable copy of your entire field journal, any time.
                 </div>
               </div>
 
@@ -5705,7 +5849,7 @@ const showToast = (msg: string) => {
                   <ShieldCheck style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero banner ads, forever.
+                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> â€” Browse the entire map with zero banner ads, forever.
                 </div>
               </div>
 
@@ -5714,7 +5858,7 @@ const showToast = (msg: string) => {
                   <Sparkle style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
+                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> â€” No monthly subscriptions or recurring fees.
                 </div>
               </div>
             </div>
@@ -5738,7 +5882,7 @@ const showToast = (msg: string) => {
                       letterSpacing: '0.01em',
                     }}
                   >
-                    One-time Payment — $19.99
+                    One-time Payment â€” $19.99
                   </button>
 
                   <button
@@ -5766,14 +5910,29 @@ const showToast = (msg: string) => {
         </div>
       )}
 
-{/* Passport — authentic physical open booklet spread with swipe */}
+responsive booklet with custom image artwork, pagination & drag/swipe */}
       {(isPassportBookOpen || isBookClosing) && (() => {
-        const totalSpreads = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
-        const spreadStamps = myPassportStamps.slice(
-          passportBookPage * STAMPS_PER_SPREAD,
-          (passportBookPage + 1) * STAMPS_PER_SPREAD
+        const stampsPerPage = isDesktopViewport ? 8 : 4;
+        const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / stampsPerPage));
+        const pageStamps = myPassportStamps.slice(
+          passportBookPage * stampsPerPage,
+          (passportBookPage + 1) * stampsPerPage
         );
-        const unclaimedSlots = Math.max(0, STAMPS_PER_SPREAD - spreadStamps.length);
+        const unclaimedCount = Math.max(0, stampsPerPage - pageStamps.length);
+
+        const handlePrevPage = () => {
+          if (passportBookPage > 0) {
+            triggerHaptic(6);
+            setPassportBookPage((p) => p - 1);
+          }
+        };
+
+        const handleNextPage = () => {
+          if (passportBookPage < totalPages - 1) {
+            triggerHaptic(6);
+            setPassportBookPage((p) => p + 1);
+          }
+        };
 
         return (
           <div
@@ -5801,29 +5960,34 @@ const showToast = (msg: string) => {
               if (passportBookTouchStartRef.current === null) return;
               const dx = e.changedTouches[0].clientX - passportBookTouchStartRef.current;
               passportBookTouchStartRef.current = null;
-              if (dx > 45 && passportBookPage > 0) {
-                triggerHaptic(4);
-                setTimeout(() => triggerHaptic(8), 120);
-                setPassportBookPage((p) => p - 1);
+              if (dx > 45) handlePrevPage();
+              if (dx < -45) handleNextPage();
+            }}
+            onMouseDown={(e) => {
+              if (isDesktopViewport && e.button === 0) {
+                passportDesktopDragStartRef.current = e.clientX;
               }
-              if (dx < -45 && passportBookPage < totalSpreads - 1) {
-                triggerHaptic(4);
-                setTimeout(() => triggerHaptic(8), 120);
-                setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1));
+            }}
+            onMouseUp={(e) => {
+              if (isDesktopViewport && passportDesktopDragStartRef.current !== null) {
+                const dx = e.clientX - passportDesktopDragStartRef.current;
+                passportDesktopDragStartRef.current = null;
+                if (dx > 50) handlePrevPage();
+                if (dx < -50) handleNextPage();
               }
             }}
             onClick={(e) => {
               if (e.target === e.currentTarget) handleClosePassportBook();
             }}
           >
-            {/* Top Bar with Bywayr Style Close Button */}
+            {/* Top Bar Header */}
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 width: '100%',
-                maxWidth: '460px',
+                maxWidth: isDesktopViewport ? '720px' : '360px',
                 marginBottom: '10px',
                 padding: '0 4px',
               }}
@@ -5859,409 +6023,176 @@ const showToast = (msg: string) => {
               </button>
             </div>
 
-            {/* Passport Leatherette Outer Cover */}
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '460px',
-                backgroundColor: '#1c2638',
-                backgroundImage: 'radial-gradient(ellipse at 50% 50%, #25334a 0%, #131c2b 100%)',
-                padding: '7px',
-                borderRadius: '22px',
-                boxShadow: '0 28px 60px -15px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.15)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                position: 'relative',
-                boxSizing: 'border-box',
-              }}
-            >
-              {/* Authentic Open Booklet Paper Spread */}
+            {/* Passport Container with Desktop Arrow Overlays */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: isDesktopViewport ? '720px' : '360px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {isDesktopViewport && (
+                <button
+                  type="button"
+                  onClick={handlePrevPage}
+                  disabled={passportBookPage === 0}
+                  style={{
+                    position: 'absolute',
+                    left: '-22px',
+                    zIndex: 10,
+                    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                    border: '1px solid #e7e5e4',
+                    borderRadius: '50%',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: passportBookPage === 0 ? 'default' : 'pointer',
+                    opacity: passportBookPage === 0 ? 0.3 : 1,
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+                    color: '#1c1917',
+                  }}
+                  title="Previous Spread"
+                >
+                  <ChevronLeft style={{ width: '18px', height: '18px' }} />
+                </button>
+              )}
+
+              {/* Responsive Passport Canvas */}
               <div
                 key={passportBookPage}
                 className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
                 style={{
                   width: '100%',
-                  height: 'min(58vh, 440px)',
-                  background: `
-                    linear-gradient(to right, 
-                      #e8dfcc 0%, 
-                      #faf6ec 4%, 
-                      #faf6ec 46%, 
-                      #d4c8aa 48.5%, 
-                      #9f8f6b 50%, 
-                      #d4c8aa 51.5%, 
-                      #faf6ec 54%, 
-                      #faf6ec 96%, 
-                      #e8dfcc 100%
-                    )
-                  `,
-                  borderRadius: '16px',
-                  boxShadow: 'inset 0 0 0 1px rgba(180, 160, 120, 0.4), inset 0 3px 18px rgba(0,0,0,0.06)',
+                  aspectRatio: '1.45 / 1',
+                  maxHeight: 'min(64vh, 500px)',
                   position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: '12px 14px 8px 14px',
-                  boxSizing: 'border-box',
+                  borderRadius: '18px',
                   overflow: 'hidden',
+                  boxShadow: '0 28px 60px -15px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.15)',
+                  userSelect: 'none',
+                  cursor: isDesktopViewport ? 'grab' : 'default',
                 }}
               >
-                {/* Center Thread Stitching Line */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: '50%',
-                    width: '0px',
-                    borderLeft: '2px dashed #b8aa8d',
-                    opacity: 0.7,
-                    zIndex: 1,
-                    pointerEvents: 'none',
-                  }}
-                />
-
-                {/* Subtle Security Guilloché Background */}
-                <svg
+                {/* Background Passport Graphic */}
+                <img
+                  src="/passport.png"
+                  alt="Passport"
                   style={{
                     position: 'absolute',
                     inset: 0,
                     width: '100%',
                     height: '100%',
-                    opacity: 0.04,
+                    objectFit: 'cover',
                     pointerEvents: 'none',
-                    zIndex: 0,
                   }}
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <pattern id="passport-guilloche" width="50" height="50" patternUnits="userSpaceOnUse">
-                      <path d="M0 25 Q 12.5 0, 25 25 T 50 25" fill="none" stroke="#2c2518" strokeWidth="1" />
-                      <circle cx="25" cy="25" r="20" fill="none" stroke="#2c2518" strokeWidth="0.75" />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#passport-guilloche)" />
-                </svg>
+                />
 
-                {/* Visa Header */}
+                {/* Content & Stamp Layer */}
                 <div
                   style={{
+                    position: 'absolute',
+                    inset: 0,
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0 6px 4px 6px',
-                    borderBottom: '1px dashed rgba(184, 170, 141, 0.5)',
-                    zIndex: 2,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#8c8273', letterSpacing: '0.22em', textTransform: 'uppercase' }}>
-                      VISAS
-                    </span>
-                    <span style={{ fontSize: '8.5px', color: '#c4beb5' }}>·</span>
-                    <span style={{ fontSize: '8px', fontWeight: 700, color: '#a8a29e', fontFamily: 'monospace' }}>
-                      PAGE {passportBookPage * 2 + 1}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ fontSize: '8px', fontWeight: 700, color: '#a8a29e', fontFamily: 'monospace' }}>
-                      PAGE {passportBookPage * 2 + 2}
-                    </span>
-                    <span style={{ fontSize: '8.5px', color: '#c4beb5' }}>·</span>
-                    <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#8c8273', letterSpacing: '0.22em', textTransform: 'uppercase' }}>
-                      VISAS
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2x2 Grid of Stamp Cachets */}
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gridAutoRows: '1fr',
-                    gap: '10px 16px',
-                    padding: '6px 2px 2px 2px',
+                    flexDirection: 'column',
+                    padding: isDesktopViewport ? '16px 28px 12px 28px' : '14px 14px 10px 14px',
                     boxSizing: 'border-box',
-                    alignItems: 'center',
-                    justifyItems: 'center',
                     zIndex: 2,
                   }}
                 >
-                  {spreadStamps.map((st, idx) => {
-                    const d = new Date(st.firstVisit || Date.now());
-                    const day = d.toLocaleDateString('en-US', { day: '2-digit' });
-                    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-                    const year = d.getFullYear();
-                    const tier = getStampTier(st.spotCount);
-                    const tiltAngle = idx === 0 ? -4.5 : idx === 1 ? 3.8 : idx === 2 ? 4.0 : -3.5;
-
-                    return (
-                      <div
-                        key={`${passportBookPage}-${idx}`}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '2px',
-                        }}
-                      >
-                        <div
-                          className={`passport-stamp-cachet ${
-                            tier === 'gold'
-                              ? 'stamp-tier-gold'
-                              : tier === 'silver'
-                              ? 'stamp-tier-silver'
-                              : ''
-                          }`}
-                          onClick={() => {
-                            if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
-                            triggerHaptic(12);
-                            setSelectedCountryFilter(st.country);
-                            const matchingSpots = spots.filter(
-                              (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
-                            );
-                            dismissModalWithHistory(handleClosePassportBook);
-                            setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
-                          }}
-                          style={{
-                            width: '122px',
-                            height: '122px',
-                            cursor: 'pointer',
-                            transform: `rotate(${tiltAngle}deg)`,
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))',
-                            mixBlendMode: 'multiply',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            userSelect: 'none',
-                          }}
-                        >
-                          <svg
-                            viewBox="0 0 140 140"
-                            width="100%"
-                            height="100%"
-                            style={{ overflow: 'visible' }}
-                          >
-                            <defs>
-                              <path
-                                id={`arc-top-${passportBookPage}-${idx}`}
-                                d="M 22 70 A 48 48 0 0 1 118 70"
-                                fill="none"
-                              />
-                              <path
-                                id={`arc-bot-${passportBookPage}-${idx}`}
-                                d="M 118 70 A 48 48 0 0 1 22 70"
-                                fill="none"
-                              />
-                            </defs>
-
-                            {/* Outer Border Ring */}
-                            <circle
-                              cx="70"
-                              cy="70"
-                              r="64"
-                              fill="#fffdfa"
-                              stroke={st.color}
-                              strokeWidth="3.2"
-                            />
-
-                            {/* Inner Dashed Ring */}
-                            <circle
-                              cx="70"
-                              cy="70"
-                              r="57"
-                              fill="none"
-                              stroke={st.color}
-                              strokeWidth="1.3"
-                              strokeDasharray="3 2"
-                            />
-
-                            {/* Top Arc: Country Name */}
-                            <text
-                              fill={st.color}
-                              fontSize={st.country.length > 12 ? '9.5' : '11'}
-                              fontWeight="900"
-                              letterSpacing="0.12em"
-                            >
-                              <textPath
-                                href={`#arc-top-${passportBookPage}-${idx}`}
-                                startOffset="50%"
-                                textAnchor="middle"
-                              >
-                                ★ {st.country.toUpperCase()} ★
-                              </textPath>
-                            </text>
-
-                            {/* Bottom Arc: Customs Entry Text */}
-                            <text
-                              fill={st.color}
-                              fontSize="8"
-                              fontWeight="800"
-                              letterSpacing="0.15em"
-                              opacity="0.85"
-                            >
-                              <textPath
-                                href={`#arc-bot-${passportBookPage}-${idx}`}
-                                startOffset="50%"
-                                textAnchor="middle"
-                              >
-                                • ENTRY · IMMIGRATION •
-                              </textPath>
-                            </text>
-
-                            {/* Background Airplane Watermark (Ascending Diagonal) */}
-                            <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
-                              <path
-                                d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
-                                fill={st.color}
-                              />
-                            </g>
-
-                            {/* Center Date Box */}
-                            <rect
-                              x="20"
-                              y="55"
-                              width="100"
-                              height="30"
-                              rx="5"
-                              fill="#fffdfa"
-                              stroke={st.color}
-                              strokeWidth="1.6"
-                            />
-
-                            {/* Centered Date */}
-                            <text
-                              x="70"
-                              y="74.5"
-                              textAnchor="middle"
-                              fill={st.color}
-                              fontSize="12"
-                              fontWeight="900"
-                              fontFamily="monospace"
-                              letterSpacing="0.08em"
-                            >
-                              {day} {month} {year}
-                            </text>
-                          </svg>
-                        </div>
-
-                        {/* Margin Pin Count */}
-                        <span
-                          style={{
-                            fontSize: '8.5px',
-                            fontWeight: 700,
-                            color: tier === 'gold' ? '#b45309' : tier === 'silver' ? '#475569' : '#8c8273',
-                            letterSpacing: '0.04em',
-                            fontFamily: 'monospace',
-                            opacity: 0.9,
-                          }}
-                        >
-                          {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
-                        </span>
-                      </div>
-                    );
-                  })}
-
-                  {/* Unclaimed Slots */}
-                  {Array.from({ length: unclaimedSlots }).map((_, idx) => (
-                    <div
-                      key={`unclaimed-${passportBookPage}-${idx}`}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '2px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '122px',
-                          height: '122px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          opacity: 0.35,
-                        }}
-                      >
-                        <svg viewBox="0 0 140 140" width="100%" height="100%">
-                          <circle
-                            cx="70"
-                            cy="70"
-                            r="62"
-                            fill="none"
-                            stroke="#8c8273"
-                            strokeWidth="1.6"
-                            strokeDasharray="4 3"
-                          />
-                          <text
-                            x="70"
-                            y="65"
-                            textAnchor="middle"
-                            fill="#57534e"
-                            fontSize="8.5"
-                            fontWeight="800"
-                            letterSpacing="0.2em"
-                          >
-                            UNCLAIMED
-                          </text>
-                          <text
-                            x="70"
-                            y="86"
-                            textAnchor="middle"
-                            fill="#8c8273"
-                            fontSize="18"
-                          >
-                            ✈︎
-                          </text>
-                        </svg>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '8.5px',
-                          fontWeight: 600,
-                          color: 'transparent',
-                          fontFamily: 'monospace',
-                          userSelect: 'none',
-                        }}
-                      >
-                        empty
+                  {/* Top Visa Page Labels */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '0 8px 4px 8px',
+                      borderBottom: '1px dashed rgba(184, 170, 141, 0.5)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '8px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+                      {isDesktopViewport ? `VISAS Â· PAGE ${passportBookPage * 2 + 1}` : `VISAS Â· PAGE ${passportBookPage + 1}`}
+                    </span>
+                    {isDesktopViewport && (
+                      <span style={{ fontSize: '8px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+                        VISAS Â· PAGE {passportBookPage * 2 + 2}
                       </span>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
 
-                {/* Footer Serial */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingTop: '3px',
-                    borderTop: '1px dashed rgba(184, 170, 141, 0.45)',
-                    fontSize: '7.5px',
-                    fontWeight: 700,
-                    color: '#9ca3af',
-                    letterSpacing: '0.12em',
-                    fontFamily: 'monospace',
-                    textTransform: 'uppercase',
-                    zIndex: 2,
-                  }}
-                >
-                  <span>OFFICIAL TRAVEL LOG</span>
-                  <span>BYWAYR FIELD JOURNAL</span>
+                  {/* Stamp Slots Grid */}
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'grid',
+                      gridTemplateColumns: isDesktopViewport ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)',
+                      gridAutoRows: '1fr',
+                      gap: isDesktopViewport ? '10px 14px' : '8px 10px',
+                      alignItems: 'center',
+                      justifyItems: 'center',
+                      padding: '8px 0',
+                    }}
+                  >
+                    {pageStamps.map((st, idx) => renderStampCard(st, idx, passportBookPage))}
+                    {Array.from({ length: unclaimedCount }).map((_, idx) => renderUnclaimedSlot(idx, passportBookPage))}
+                  </div>
+
+                  {/* Official Travel Log Footer */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingTop: '3px',
+                      borderTop: '1px dashed rgba(184, 170, 141, 0.45)',
+                      fontSize: '7.5px',
+                      fontWeight: 700,
+                      color: '#9ca3af',
+                      letterSpacing: '0.12em',
+                      fontFamily: 'monospace',
+                      textTransform: 'uppercase',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span>OFFICIAL TRAVEL LOG</span>
+                    <span>BYWAYR FIELD JOURNAL</span>
+                  </div>
                 </div>
               </div>
+
+              {isDesktopViewport && (
+                <button
+                  type="button"
+                  onClick={handleNextPage}
+                  disabled={passportBookPage >= totalPages - 1}
+                  style={{
+                    position: 'absolute',
+                    right: '-22px',
+                    zIndex: 10,
+                    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                    border: '1px solid #e7e5e4',
+                    borderRadius: '50%',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: passportBookPage >= totalPages - 1 ? 'default' : 'pointer',
+                    opacity: passportBookPage >= totalPages - 1 ? 0.3 : 1,
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+                    color: '#1c1917',
+                  }}
+                  title="Next Spread"
+                >
+                  <ChevronRight style={{ width: '18px', height: '18px' }} />
+                </button>
+              )}
             </div>
 
-            {/* Bywayr Style Floating Navigation Pill */}
+            {/* Floating Pagination Pill */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
-                maxWidth: '460px',
+                maxWidth: isDesktopViewport ? '720px' : '360px',
                 marginTop: '12px',
                 padding: '4px 6px',
                 backgroundColor: '#ecebe7',
@@ -6272,13 +6203,10 @@ const showToast = (msg: string) => {
               }}
             >
               <button
-                onClick={() => {
-                  triggerHaptic(6);
-                  setPassportBookPage((p) => Math.max(0, p - 1));
-                }}
+                onClick={handlePrevPage}
                 disabled={passportBookPage === 0}
                 style={{
-                  backgroundColor: passportBookPage === 0 ? 'transparent' : '#ecebe7',
+                  backgroundColor: passportBookPage === 0 ? 'transparent' : '#ffffff',
                   border: '1px solid ' + (passportBookPage === 0 ? 'transparent' : '#e7e5e4'),
                   color: passportBookPage === 0 ? '#a8a29e' : '#1c1917',
                   borderRadius: '14px',
@@ -6293,7 +6221,7 @@ const showToast = (msg: string) => {
                   transition: 'all 0.15s ease',
                 }}
               >
-                ← Prev
+                â† Prev
               </button>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
@@ -6306,7 +6234,7 @@ const showToast = (msg: string) => {
                     fontFamily: 'monospace',
                   }}
                 >
-                  SPREAD {passportBookPage + 1} OF {totalSpreads}
+                  {isDesktopViewport ? `SPREAD ${passportBookPage + 1} OF ${totalPages}` : `PAGE ${passportBookPage + 1} OF ${totalPages}`}
                 </span>
                 <span
                   style={{
@@ -6321,46 +6249,44 @@ const showToast = (msg: string) => {
               </div>
 
               <button
-                onClick={() => {
-                  triggerHaptic(6);
-                  setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1));
-                }}
-                disabled={passportBookPage >= totalSpreads - 1}
+                onClick={handleNextPage}
+                disabled={passportBookPage >= totalPages - 1}
                 style={{
-                  backgroundColor: passportBookPage >= totalSpreads - 1 ? 'transparent' : '#e05a47',
-                  border: passportBookPage >= totalSpreads - 1 ? '1px solid transparent' : 'none',
-                  color: passportBookPage >= totalSpreads - 1 ? '#a8a29e' : '#ffffff',
+                  backgroundColor: passportBookPage >= totalPages - 1 ? 'transparent' : '#e05a47',
+                  border: passportBookPage >= totalPages - 1 ? '1px solid transparent' : 'none',
+                  color: passportBookPage >= totalPages - 1 ? '#a8a29e' : '#ffffff',
                   borderRadius: '14px',
                   padding: '7px 16px',
                   fontSize: '12px',
                   fontWeight: 700,
-                  cursor: passportBookPage >= totalSpreads - 1 ? 'default' : 'pointer',
-                  opacity: passportBookPage >= totalSpreads - 1 ? 0.35 : 1,
+                  cursor: passportBookPage >= totalPages - 1 ? 'default' : 'pointer',
+                  opacity: passportBookPage >= totalPages - 1 ? 0.35 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  boxShadow: passportBookPage >= totalSpreads - 1 ? 'none' : '0 4px 12px rgba(224, 90, 71, 0.3)',
+                  boxShadow: passportBookPage >= totalPages - 1 ? 'none' : '0 4px 12px rgba(224, 90, 71, 0.3)',
                   transition: 'all 0.15s ease',
                 }}
               >
-                Next →
+                Next â†’
               </button>
             </div>
           </div>
         );
       })()}
-      {/* Welcome / Onboarding Carousel — full screen */}
+        
+      {/* Welcome / Onboarding Carousel â€” full screen */}
       {showWelcome && (() => {
         const ONBOARDING_STEPS = [
           {
             image: '/onboarding-1.png',
             title: 'The map guidebooks forgot',
-            body: 'Bywayr is a pocket field guide for the places nobody bothers to map — pin your finds, discover other locals\' secrets, and keep the good spots alive.',
+            body: 'Bywayr is a pocket field guide for the places nobody bothers to map â€” pin your finds, discover other locals\' secrets, and keep the good spots alive.',
           },
           {
             image: '/onboarding-2.png',
             title: 'Pin what maps miss',
-            body: 'Backstreet food stalls, hidden viewpoints, quiet neighborhood corners — plot the spots you know and browse what others have curated near you.',
+            body: 'Backstreet food stalls, hidden viewpoints, quiet neighborhood corners â€” plot the spots you know and browse what others have curated near you.',
           },
           {
             image: '/onboarding-3.png',
