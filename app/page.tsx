@@ -177,6 +177,19 @@ const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
+const formatWalkDistanceAndTime = (distKm: number) => {
+  const walkMinutes = Math.max(1, Math.round((distKm / 4.8) * 60));
+  const distStr =
+    distKm < 1
+      ? `${Math.round(distKm * 1000)}m`
+      : distKm < 100
+      ? `${distKm.toFixed(1)}km`
+      : `${Math.round(distKm)}km`;
+
+  if (distKm > 25) return distStr;
+  return `${walkMinutes}m walk · ${distStr}`;
+};
+
 const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
   let cCity = (city || '').trim();
   let cCountry = (country || '').trim();
@@ -469,8 +482,57 @@ const [isPlusClosing, setIsPlusClosing] = useState(false);
   const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
   const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
   const [walkSearchQuery, setWalkSearchQuery] = useState('');
+  const [walkRadiusFilter, setWalkRadiusFilter] = useState<'all' | '10min' | '20min'>('all');
   const [liveOsmResults, setLiveOsmResults] = useState<Spot[]>([]);
   const [isSearchingOsm, setIsSearchingOsm] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const q = walkSearchQuery.trim();
+    if (!q || q.length < 2) {
+      setLiveOsmResults([]);
+      setIsSearchingOsm(false);
+      return;
+    }
+
+    const handler = setTimeout(async () => {
+      setIsSearchingOsm(true);
+      try {
+        const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+        const refLat = 'lat' in center ? center.lat : 36.1699;
+        const refLng = 'lng' in center ? center.lng : -115.1398;
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=6&accept-language=en`
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const formatted: Spot[] = data.map((item: any) => {
+            const placeCity = item.address?.city || item.address?.town || item.address?.suburb || item.address?.municipality || 'Local Area';
+            const rawCountry = item.address?.country || '';
+            const sanitized = sanitizeCountryAndCity(placeCity, rawCountry);
+            return {
+              name: item.name || item.display_name.split(',')[0],
+              city: sanitized.city,
+              country: sanitized.country,
+              category: 'Practical Staples',
+              description: item.display_name,
+              latitude: parseFloat(item.lat),
+              longitude: parseFloat(item.lon),
+              isLiveOsm: true,
+              distanceKm: getDistanceFromLatLonInKm(refLat, refLng, parseFloat(item.lat), parseFloat(item.lon)),
+            };
+          });
+          setLiveOsmResults(formatted);
+        }
+      } catch (err) {
+        console.error('Walk modal OSM search error:', err);
+      } finally {
+        setIsSearchingOsm(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(handler);
+  }, [walkSearchQuery, userCoords]);
 
   const [drawerSortMode, setDrawerSortMode] = useState<'nearest' | 'recent'>('nearest');
 
@@ -3743,66 +3805,127 @@ const showToast = (msg: string) => {
 
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '48vh', paddingRight: '2px' }}>
               {(() => {
-                const curatedMatches = proximitySortedSpots.filter((s: Spot) => {
-                  if (!walkSearchQuery.trim()) return true;
-                  const q = walkSearchQuery.toLowerCase();
-                  return (
-                    s.name.toLowerCase().includes(q) ||
-                    s.city.toLowerCase().includes(q) ||
-                    s.category.toLowerCase().includes(q)
-                  );
-                });
+                const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+                const refLat = 'lat' in center ? center.lat : 36.1699;
+                const refLng = 'lng' in center ? center.lng : -115.1398;
 
-                const hasCloseSpots = curatedMatches.length > 0 && (curatedMatches[0] as any).distanceKm <= 50;
+                const sortedCurated = [...spots]
+                  .map((spot) => ({
+                    ...spot,
+                    distanceKm: getDistanceFromLatLonInKm(refLat, refLng, spot.latitude, spot.longitude),
+                  }))
+                  .sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0))
+                  .filter((s) => {
+                    if (!walkSearchQuery.trim()) return true;
+                    const q = walkSearchQuery.toLowerCase();
+                    return (
+                      s.name.toLowerCase().includes(q) ||
+                      s.city.toLowerCase().includes(q) ||
+                      s.category.toLowerCase().includes(q)
+                    );
+                  });
+
+                const nearbySpots = sortedCurated.filter((s) => (s.distanceKm || 0) <= 50);
+                const furtherSpots = sortedCurated.filter((s) => (s.distanceKm || 0) > 50);
+
+                const renderWalkItem = (spot: Spot & { distanceKm?: number }) => {
+                  const dist = spot.distanceKm ?? 0;
+                  const distStr =
+                    dist < 1
+                      ? `${Math.round(dist * 1000)}m away`
+                      : dist < 100
+                      ? `${dist.toFixed(1)}km away`
+                      : dist < 1000
+                      ? `${Math.round(dist)}km away`
+                      : `${Math.round(dist / 1000)}k km`;
+
+                  return (
+                    <div
+                      key={spot.id || spot.name}
+                      onClick={() => {
+                        triggerHaptic(8);
+                        setWalkTargetSpot(spot);
+                        dismissModalWithHistory(() => {
+                          setIsWalkModalOpen(false);
+                          setWalkSearchQuery('');
+                        });
+                        flyToSpot(spot);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '14px',
+                        border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
+                        backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {spot.name}
+                        </h4>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px' }}>
+                          {distStr}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerHaptic(8);
+                            openNativeWalkNavigation(spot.latitude, spot.longitude, spot.name);
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#e05a47',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          title="Open in Google Maps"
+                        >
+                          <Navigation2 style={{ width: '14px', height: '14px' }} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                };
 
                 return (
                   <>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 4px' }}>
-                      {hasCloseSpots ? `Field Notes Nearby (${curatedMatches.length})` : `Recent Field Notes (${curatedMatches.length})`}
-                    </div>
-
-                    {curatedMatches.length === 0 ? (
-                      <p style={{ margin: '4px 0 8px 0', fontSize: '11.5px', color: '#a8a29e', padding: '0 4px' }}>
-                        No curated spots match "{walkSearchQuery}".
-                      </p>
-                    ) : (
-                      curatedMatches.map((spot: Spot) => (
-                        <div
-                          key={spot.id || spot.name}
-                          onClick={() => {
-                            triggerHaptic(8);
-                            setWalkTargetSpot(spot);
-                            dismissModalWithHistory(() => {
-                              setIsWalkModalOpen(false);
-                              setWalkSearchQuery('');
-                            });
-                            flyToSpot(spot);
-                          }}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '14px',
-                            border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
-                            backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <div style={{ minWidth: 0, paddingRight: '8px' }}>
-                            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {spot.name}
-                            </h4>
-                            <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                              {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
-                            </p>
-                          </div>
-                          
-                          <div style={{ display: 'flex', alignItems: 'center', color: '#e05a47', flexShrink: 0 }}>
-                            <Navigation2 style={{ width: '14px', height: '14px' }} />
-                          </div>
+                    {nearbySpots.length > 0 && (
+                      <>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 4px' }}>
+                          Field Notes Nearby ({nearbySpots.length})
                         </div>
-                      ))
+                        {nearbySpots.map(renderWalkItem)}
+                      </>
+                    )}
+
+                    {furtherSpots.length > 0 && (
+                      <>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', padding: nearbySpots.length > 0 ? '8px 4px 2px 4px' : '2px 4px' }}>
+                          {nearbySpots.length > 0 ? `Further Afield (${furtherSpots.length})` : `All Field Notes (${furtherSpots.length})`}
+                        </div>
+                        {furtherSpots.map(renderWalkItem)}
+                      </>
+                    )}
+
+                    {sortedCurated.length === 0 && (
+                      <p style={{ margin: '8px 0', fontSize: '12px', color: '#a8a29e', textAlign: 'center' }}>
+                        No field notes matching "{walkSearchQuery}".
+                      </p>
                     )}
                   </>
                 );
@@ -3842,9 +3965,10 @@ const showToast = (msg: string) => {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
+                          gap: '8px',
                         }}
                       >
-                        <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
                           <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {spot.name}
                           </h4>
@@ -3853,8 +3977,28 @@ const showToast = (msg: string) => {
                           </p>
                         </div>
                         
-                        <div style={{ display: 'flex', alignItems: 'center', color: '#0284c7', flexShrink: 0 }}>
-                          <Navigation2 style={{ width: '14px', height: '14px' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerHaptic(8);
+                              openNativeWalkNavigation(spot.latitude, spot.longitude, spot.name);
+                            }}
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#0284c7',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            title="Open in Google Maps"
+                          >
+                            <Navigation2 style={{ width: '14px', height: '14px' }} />
+                          </button>
                         </div>
                       </div>
                     ))
@@ -5638,6 +5782,604 @@ const showToast = (msg: string) => {
               position: 'fixed',
               inset: 0,
               zIndex: 100030,
+              backgroundColor: 'rgba(10, 9, 8, 0.82)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
+              animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              boxSizing: 'border-box',
+              fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            }}
+            onTouchStart={(e) => {
+              passportBookTouchStartRef.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (passportBookTouchStartRef.current === null) return;
+              const dx = e.changedTouches[0].clientX - passportBookTouchStartRef.current;
+              passportBookTouchStartRef.current = null;
+              if (dx > 45 && passportBookPage > 0) {
+                triggerHaptic(4);
+                setTimeout(() => triggerHaptic(8), 120);
+                setPassportBookPage((p) => p - 1);
+              }
+              if (dx < -45 && passportBookPage < totalSpreads - 1) {
+                triggerHaptic(4);
+                setTimeout(() => triggerHaptic(8), 120);
+                setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1));
+              }
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleClosePassportBook();
+            }}
+          >
+            {/* Top Close Button Bar */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                width: '100%',
+                maxWidth: '520px',
+                marginBottom: '8px',
+              }}
+            >
+              <button
+                onClick={handleClosePassportBook}
+                type="button"
+                aria-label="Close Passport"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  borderRadius: '50%',
+                  width: '34px',
+                  height: '34px',
+                  cursor: 'pointer',
+                  color: '#fafaf9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                }}
+              >
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+
+            {/* Leatherette Outer Cover Framing Overhang */}
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '520px',
+                backgroundColor: '#162238',
+                backgroundImage: 'radial-gradient(ellipse at 50% 50%, #1e2e4a 0%, #0f172a 100%)',
+                padding: '6px 7px',
+                borderRadius: '24px',
+                boxShadow: '0 32px 70px -15px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.08), inset 0 2px 4px rgba(255,255,255,0.15)',
+                position: 'relative',
+                boxSizing: 'border-box',
+              }}
+            >
+              {/* Authentic Open Passport Pages Spread */}
+              <div
+                key={passportBookPage}
+                className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
+                style={{
+                  width: '100%',
+                  height: 'min(62vh, 480px)',
+                  background: `
+                    linear-gradient(to right, 
+                      #e8dfcc 0%, 
+                      #faf6ec 4%, 
+                      #faf6ec 46%, 
+                      #d4c8aa 48.5%, 
+                      #9f8f6b 50%, 
+                      #d4c8aa 51.5%, 
+                      #faf6ec 54%, 
+                      #faf6ec 96%, 
+                      #e8dfcc 100%
+                    )
+                  `,
+                  borderRadius: '18px',
+                  boxShadow: 'inset 0 0 0 1px rgba(180, 160, 120, 0.4), inset 0 3px 20px rgba(0,0,0,0.08)',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '14px 16px 10px 16px',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Physical Center Stitching Line */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: '50%',
+                    width: '0px',
+                    borderLeft: '2px dashed #b8aa8d',
+                    opacity: 0.75,
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                {/* Guilloché / Security Watermark Pattern Layer */}
+                <svg
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0.045,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                  }}
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <pattern id="guilloche" width="60" height="60" patternUnits="userSpaceOnUse">
+                      <path d="M0 30 Q 15 0, 30 30 T 60 30" fill="none" stroke="#2c2518" strokeWidth="1" />
+                      <path d="M0 15 Q 15 45, 30 15 T 60 15" fill="none" stroke="#2c2518" strokeWidth="1" />
+                      <circle cx="30" cy="30" r="24" fill="none" stroke="#2c2518" strokeWidth="0.8" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#guilloche)" />
+                </svg>
+
+                {/* Header: Official Visa & Perforation Labels */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0 8px 6px 8px',
+                    borderBottom: '1px solid rgba(184, 170, 141, 0.45)',
+                    zIndex: 2,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 900,
+                        color: '#8c8273',
+                        letterSpacing: '0.24em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      VISAS
+                    </span>
+                    <span style={{ fontSize: '9px', color: '#c4beb5' }}>·</span>
+                    <span
+                      style={{
+                        fontSize: '8.5px',
+                        fontWeight: 700,
+                        color: '#a8a29e',
+                        fontFamily: 'monospace',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      PAGE {passportBookPage * 2 + 1}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontSize: '8.5px',
+                        fontWeight: 700,
+                        color: '#a8a29e',
+                        fontFamily: 'monospace',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      PAGE {passportBookPage * 2 + 2}
+                    </span>
+                    <span style={{ fontSize: '9px', color: '#c4beb5' }}>·</span>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 900,
+                        color: '#8c8273',
+                        letterSpacing: '0.24em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      VISAS
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2x2 Grid of Inked Passport Entry Stamps */}
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gridAutoRows: '1fr',
+                    gap: '12px 24px',
+                    padding: '8px 4px 4px 4px',
+                    boxSizing: 'border-box',
+                    alignItems: 'center',
+                    justifyItems: 'center',
+                    zIndex: 2,
+                  }}
+                >
+                  {spreadStamps.map((st, idx) => {
+                    const d = new Date(st.firstVisit || Date.now());
+                    const day = d.toLocaleDateString('en-US', { day: '2-digit' });
+                    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                    const year = d.getFullYear();
+                    const tier = getStampTier(st.spotCount);
+                    
+                    // Organic rotation variance
+                    const tiltAngle = idx === 0 ? -4.5 : idx === 1 ? 3.8 : idx === 2 ? 4.2 : -3.2;
+
+                    return (
+                      <div
+                        key={`${passportBookPage}-${idx}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                      >
+                        <div
+                          className={`passport-stamp-cachet ${
+                            tier === 'gold'
+                              ? 'stamp-tier-gold'
+                              : tier === 'silver'
+                              ? 'stamp-tier-silver'
+                              : ''
+                          }`}
+                          onClick={() => {
+                            if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
+                            triggerHaptic(12);
+                            setSelectedCountryFilter(st.country);
+                            const matchingSpots = spots.filter(
+                              (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
+                            );
+                            dismissModalWithHistory(handleClosePassportBook);
+                            setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
+                          }}
+                          style={{
+                            width: '126px',
+                            height: '126px',
+                            cursor: 'pointer',
+                            transform: `rotate(${tiltAngle}deg)`,
+                            filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.06))',
+                            mixBlendMode: 'multiply',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <svg
+                            viewBox="0 0 140 140"
+                            width="100%"
+                            height="100%"
+                            style={{ overflow: 'visible' }}
+                          >
+                            <defs>
+                              <path
+                                id={`arc-top-${passportBookPage}-${idx}`}
+                                d="M 22 70 A 48 48 0 0 1 118 70"
+                                fill="none"
+                              />
+                              <path
+                                id={`arc-bot-${passportBookPage}-${idx}`}
+                                d="M 118 70 A 48 48 0 0 1 22 70"
+                                fill="none"
+                              />
+                            </defs>
+
+                            {/* Outer Border Ring */}
+                            <circle
+                              cx="70"
+                              cy="70"
+                              r="64"
+                              fill="#fffdfa"
+                              stroke={st.color}
+                              strokeWidth="3.2"
+                            />
+
+                            {/* Inner Inked Dashed Ring */}
+                            <circle
+                              cx="70"
+                              cy="70"
+                              r="57"
+                              fill="none"
+                              stroke={st.color}
+                              strokeWidth="1.4"
+                              strokeDasharray="3 2"
+                            />
+
+                            {/* Top Arc: Country Name */}
+                            <text
+                              fill={st.color}
+                              fontSize={st.country.length > 12 ? '9.5' : '11'}
+                              fontWeight="900"
+                              letterSpacing="0.12em"
+                            >
+                              <textPath
+                                href={`#arc-top-${passportBookPage}-${idx}`}
+                                startOffset="50%"
+                                textAnchor="middle"
+                              >
+                                ★ {st.country.toUpperCase()} ★
+                              </textPath>
+                            </text>
+
+                            {/* Bottom Arc: Customs Entry Text */}
+                            <text
+                              fill={st.color}
+                              fontSize="8"
+                              fontWeight="800"
+                              letterSpacing="0.15em"
+                              opacity="0.85"
+                            >
+                              <textPath
+                                href={`#arc-bot-${passportBookPage}-${idx}`}
+                                startOffset="50%"
+                                textAnchor="middle"
+                              >
+                                • ENTRY · IMMIGRATION •
+                              </textPath>
+                            </text>
+
+                            {/* Background Airplane Watermark */}
+                            <g transform="translate(70, 70) rotate(-15) scale(3.2) translate(-10, -11)" opacity="0.14">
+                              <path
+                                d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                                fill={st.color}
+                              />
+                            </g>
+
+                            {/* Center Inked Date Box */}
+                            <rect
+                              x="20"
+                              y="55"
+                              width="100"
+                              height="30"
+                              rx="5"
+                              fill="#fffdfa"
+                              stroke={st.color}
+                              strokeWidth="1.6"
+                            />
+
+                            {/* Perfectly Centered Monospaced Date */}
+                            <text
+                              x="70"
+                              y="74.5"
+                              textAnchor="middle"
+                              fill={st.color}
+                              fontSize="12"
+                              fontWeight="900"
+                              fontFamily="monospace"
+                              letterSpacing="0.08em"
+                            >
+                              {day} {month} {year}
+                            </text>
+                          </svg>
+                        </div>
+
+                        {/* Margin Note */}
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            color: tier === 'gold' ? '#b45309' : tier === 'silver' ? '#475569' : '#8c8273',
+                            letterSpacing: '0.04em',
+                            fontFamily: 'monospace',
+                            opacity: 0.9,
+                          }}
+                        >
+                          {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  {/* Circular Unclaimed Slots */}
+                  {Array.from({ length: unclaimedSlots }).map((_, idx) => (
+                    <div
+                      key={`unclaimed-${passportBookPage}-${idx}`}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '3px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '126px',
+                          height: '126px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0.35,
+                        }}
+                      >
+                        <svg viewBox="0 0 140 140" width="100%" height="100%">
+                          <circle
+                            cx="70"
+                            cy="70"
+                            r="62"
+                            fill="none"
+                            stroke="#8c8273"
+                            strokeWidth="1.8"
+                            strokeDasharray="4 3"
+                          />
+                          <text
+                            x="70"
+                            y="65"
+                            textAnchor="middle"
+                            fill="#57534e"
+                            fontSize="8.5"
+                            fontWeight="800"
+                            letterSpacing="0.2em"
+                          >
+                            UNCLAIMED
+                          </text>
+                          <text
+                            x="70"
+                            y="86"
+                            textAnchor="middle"
+                            fill="#8c8273"
+                            fontSize="18"
+                          >
+                            ✈︎
+                          </text>
+                        </svg>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: 600,
+                          color: 'transparent',
+                          fontFamily: 'monospace',
+                          userSelect: 'none',
+                        }}
+                      >
+                        empty
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom Microprint Border */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingTop: '4px',
+                    borderTop: '1px dashed rgba(184, 170, 141, 0.45)',
+                    fontSize: '7.5px',
+                    fontWeight: 700,
+                    color: '#9ca3af',
+                    letterSpacing: '0.14em',
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    zIndex: 2,
+                  }}
+                >
+                  <span>OFFICIAL TRAVEL LOG</span>
+                  <span>BYWAYR FIELD JOURNAL</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating High-Contrast Navigation Pill */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                maxWidth: '520px',
+                marginTop: '14px',
+                padding: '0 4px',
+              }}
+            >
+              <button
+                onClick={() => {
+                  triggerHaptic(6);
+                  setPassportBookPage((p) => Math.max(0, p - 1));
+                }}
+                disabled={passportBookPage === 0}
+                style={{
+                  backgroundColor: '#1c1917',
+                  border: '1px solid #44403c',
+                  color: '#fafaf9',
+                  borderRadius: '12px',
+                  padding: '8px 18px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: passportBookPage === 0 ? 'default' : 'pointer',
+                  opacity: passportBookPage === 0 ? 0.35 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                }}
+              >
+                ← Prev
+              </button>
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    color: '#f5f5f4',
+                    letterSpacing: '0.08em',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  SPREAD {passportBookPage + 1} OF {totalSpreads}
+                </span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    color: '#a8a29e',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {myPassportStamps.length} stamps collected
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  triggerHaptic(6);
+                  setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1));
+                }}
+                disabled={passportBookPage >= totalSpreads - 1}
+                style={{
+                  backgroundColor: '#1c1917',
+                  border: '1px solid #44403c',
+                  color: '#fafaf9',
+                  borderRadius: '12px',
+                  padding: '8px 18px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: passportBookPage >= totalSpreads - 1 ? 'default' : 'pointer',
+                  opacity: passportBookPage >= totalSpreads - 1 ? 0.35 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                }}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+        const totalSpreads = Math.max(1, Math.ceil(myPassportStamps.length / STAMPS_PER_SPREAD));
+        const spreadStamps = myPassportStamps.slice(
+          passportBookPage * STAMPS_PER_SPREAD,
+          (passportBookPage + 1) * STAMPS_PER_SPREAD
+        );
+        const unclaimedSlots = Math.max(0, STAMPS_PER_SPREAD - spreadStamps.length);
+
+        return (
+          <div
+            className="animate-fade-in"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100030,
               backgroundColor: 'rgba(15, 13, 11, 0.78)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
@@ -5925,6 +6667,14 @@ const showToast = (msg: string) => {
                             </textPath>
                           </text>
 
+                          {/* Background Airplane Watermark */}
+                          <g transform="translate(70, 70) rotate(-15) scale(3.2) translate(-10, -11)" opacity="0.14">
+                            <path
+                              d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                              fill={st.color}
+                            />
+                          </g>
+
                           {/* Center Inked Date Box */}
                           <rect
                             x="20"
@@ -5937,25 +6687,16 @@ const showToast = (msg: string) => {
                             strokeWidth="1.6"
                           />
 
-                          {/* Centered Airplane Icon */}
-                          <g transform="translate(26, 62)">
-                            <path
-                              d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
-                              fill={st.color}
-                              transform="scale(0.7)"
-                            />
-                          </g>
-
-                          {/* Centered Monospaced Date */}
+                          {/* Perfectly Centered Monospaced Date */}
                           <text
-                            x="73"
-                            y="75"
+                            x="70"
+                            y="74.5"
                             textAnchor="middle"
                             fill={st.color}
-                            fontSize="11.5"
+                            fontSize="12"
                             fontWeight="900"
                             fontFamily="monospace"
-                            letterSpacing="0.07em"
+                            letterSpacing="0.08em"
                           >
                             {day} {month} {year}
                           </text>
