@@ -5782,7 +5782,7 @@ const showToast = (msg: string) => {
               position: 'fixed',
               inset: 0,
               zIndex: 100030,
-              backgroundColor: 'rgba(15, 13, 11, 0.78)',
+              backgroundColor: 'rgba(28, 25, 23, 0.65)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               animation: isBookClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined,
@@ -5816,391 +5816,461 @@ const showToast = (msg: string) => {
               if (e.target === e.currentTarget) handleClosePassportBook();
             }}
           >
-            {/* Top Close Button Bar */}
+            {/* Top Bar with Bywayr Style Close Button */}
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 width: '100%',
-                maxWidth: '480px',
+                maxWidth: '460px',
                 marginBottom: '10px',
+                padding: '0 4px',
               }}
             >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
+                  <Compass style={{ width: '15px', height: '15px' }} />
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#fafaf9', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  Official Field Journal
+                </span>
+              </div>
+
               <button
                 onClick={handleClosePassportBook}
                 type="button"
                 aria-label="Close Passport"
                 style={{
-                  background: '#ecebe7',
-                  border: 'none',
+                  backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                  border: '1px solid #e7e5e4',
                   borderRadius: '50%',
                   width: '32px',
                   height: '32px',
                   cursor: 'pointer',
-                  color: '#78716c',
+                  color: '#1c1917',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                 }}
               >
-                <X style={{ width: '18px', height: '18px' }} />
+                <X style={{ width: '16px', height: '16px' }} />
               </button>
             </div>
 
-            {/* Authentic Open Passport Booklet Spread */}
+            {/* Passport Leatherette Outer Cover */}
             <div
-              key={passportBookPage}
-              className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
               style={{
                 width: '100%',
-                maxWidth: '480px',
-                height: 'min(58vh, 460px)',
-                background: `
-                  linear-gradient(to right, #ece3d0 0%, #faf5ea 3%, #faf5ea 47%, #d6cbaf 49.5%, #bfae8a 50%, #d6cbaf 50.5%, #faf5ea 53%, #faf5ea 97%, #ece3d0 100%)
-                `,
-                borderRadius: '16px',
-                boxShadow:
-                  '0 28px 60px -16px rgba(0, 0, 0, 0.75), inset 0 0 0 1px rgba(0,0,0,0.12), inset 0 2px 14px rgba(0,0,0,0.06)',
-                border: '1.5px solid #c9bea3',
+                maxWidth: '460px',
+                backgroundColor: '#1c2638',
+                backgroundImage: 'radial-gradient(ellipse at 50% 50%, #25334a 0%, #131c2b 100%)',
+                padding: '7px',
+                borderRadius: '22px',
+                boxShadow: '0 28px 60px -15px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '12px 14px 10px 14px',
                 boxSizing: 'border-box',
-                overflow: 'hidden',
               }}
             >
-              {/* Authentic Passport Watermark Top Headers */}
+              {/* Authentic Open Booklet Paper Spread */}
               <div
+                key={passportBookPage}
+                className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
                 style={{
+                  width: '100%',
+                  height: 'min(58vh, 440px)',
+                  background: `
+                    linear-gradient(to right, 
+                      #e8dfcc 0%, 
+                      #faf6ec 4%, 
+                      #faf6ec 46%, 
+                      #d4c8aa 48.5%, 
+                      #9f8f6b 50%, 
+                      #d4c8aa 51.5%, 
+                      #faf6ec 54%, 
+                      #faf6ec 96%, 
+                      #e8dfcc 100%
+                    )
+                  `,
+                  borderRadius: '16px',
+                  boxShadow: 'inset 0 0 0 1px rgba(180, 160, 120, 0.4), inset 0 3px 18px rgba(0,0,0,0.06)',
+                  position: 'relative',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '2px 12px 4px 12px',
-                  borderBottom: '1px dashed rgba(168, 162, 158, 0.35)',
-                  zIndex: 2,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span
-                    style={{
-                      fontSize: '9px',
-                      fontWeight: 800,
-                      color: '#a8a29e',
-                      letterSpacing: '0.22em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    VISAS
-                  </span>
-                  <span style={{ fontSize: '9px', color: '#c4beb5' }}>·</span>
-                  <span
-                    style={{
-                      fontSize: '8.5px',
-                      fontWeight: 700,
-                      color: '#a8a29e',
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    PAGE {passportBookPage * 2 + 1}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span
-                    style={{
-                      fontSize: '8.5px',
-                      fontWeight: 700,
-                      color: '#a8a29e',
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    PAGE {passportBookPage * 2 + 2}
-                  </span>
-                  <span style={{ fontSize: '9px', color: '#c4beb5' }}>·</span>
-                  <span
-                    style={{
-                      fontSize: '9px',
-                      fontWeight: 800,
-                      color: '#a8a29e',
-                      letterSpacing: '0.22em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    VISAS
-                  </span>
-                </div>
-              </div>
-
-              {/* 2x2 Grid of Flight Entry Cachet Stamps */}
-              <div
-                style={{
-                  flex: 1,
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gridAutoRows: '1fr',
-                  gap: '8px 16px',
-                  padding: '4px 2px',
+                  flexDirection: 'column',
+                  padding: '12px 14px 8px 14px',
                   boxSizing: 'border-box',
-                  alignItems: 'center',
-                  justifyItems: 'center',
-                  zIndex: 2,
+                  overflow: 'hidden',
                 }}
               >
-                {spreadStamps.map((st, idx) => {
-                  const d = new Date(st.firstVisit || Date.now());
-                  const day = d.toLocaleDateString('en-US', { day: '2-digit' });
-                  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-                  const year = d.getFullYear();
-                  const tier = getStampTier(st.spotCount);
-                  const tiltAngle = idx % 2 === 0 ? -2.2 + idx * 0.9 : 2.0 - idx * 0.8;
+                {/* Center Thread Stitching Line */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: '50%',
+                    width: '0px',
+                    borderLeft: '2px dashed #b8aa8d',
+                    opacity: 0.7,
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  }}
+                />
 
-                  return (
+                {/* Subtle Security Guilloché Background */}
+                <svg
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0.04,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                  }}
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <pattern id="passport-guilloche" width="50" height="50" patternUnits="userSpaceOnUse">
+                      <path d="M0 25 Q 12.5 0, 25 25 T 50 25" fill="none" stroke="#2c2518" strokeWidth="1" />
+                      <circle cx="25" cy="25" r="20" fill="none" stroke="#2c2518" strokeWidth="0.75" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#passport-guilloche)" />
+                </svg>
+
+                {/* Visa Header */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0 6px 4px 6px',
+                    borderBottom: '1px dashed rgba(184, 170, 141, 0.5)',
+                    zIndex: 2,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#8c8273', letterSpacing: '0.22em', textTransform: 'uppercase' }}>
+                      VISAS
+                    </span>
+                    <span style={{ fontSize: '8.5px', color: '#c4beb5' }}>·</span>
+                    <span style={{ fontSize: '8px', fontWeight: 700, color: '#a8a29e', fontFamily: 'monospace' }}>
+                      PAGE {passportBookPage * 2 + 1}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '8px', fontWeight: 700, color: '#a8a29e', fontFamily: 'monospace' }}>
+                      PAGE {passportBookPage * 2 + 2}
+                    </span>
+                    <span style={{ fontSize: '8.5px', color: '#c4beb5' }}>·</span>
+                    <span style={{ fontSize: '8.5px', fontWeight: 900, color: '#8c8273', letterSpacing: '0.22em', textTransform: 'uppercase' }}>
+                      VISAS
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2x2 Grid of Stamp Cachets */}
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gridAutoRows: '1fr',
+                    gap: '10px 16px',
+                    padding: '6px 2px 2px 2px',
+                    boxSizing: 'border-box',
+                    alignItems: 'center',
+                    justifyItems: 'center',
+                    zIndex: 2,
+                  }}
+                >
+                  {spreadStamps.map((st, idx) => {
+                    const d = new Date(st.firstVisit || Date.now());
+                    const day = d.toLocaleDateString('en-US', { day: '2-digit' });
+                    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                    const year = d.getFullYear();
+                    const tier = getStampTier(st.spotCount);
+                    const tiltAngle = idx === 0 ? -4.5 : idx === 1 ? 3.8 : idx === 2 ? 4.0 : -3.5;
+
+                    return (
+                      <div
+                        key={`${passportBookPage}-${idx}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                        }}
+                      >
+                        <div
+                          className={`passport-stamp-cachet ${
+                            tier === 'gold'
+                              ? 'stamp-tier-gold'
+                              : tier === 'silver'
+                              ? 'stamp-tier-silver'
+                              : ''
+                          }`}
+                          onClick={() => {
+                            if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
+                            triggerHaptic(12);
+                            setSelectedCountryFilter(st.country);
+                            const matchingSpots = spots.filter(
+                              (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
+                            );
+                            dismissModalWithHistory(handleClosePassportBook);
+                            setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
+                          }}
+                          style={{
+                            width: '122px',
+                            height: '122px',
+                            cursor: 'pointer',
+                            transform: `rotate(${tiltAngle}deg)`,
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))',
+                            mixBlendMode: 'multiply',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <svg
+                            viewBox="0 0 140 140"
+                            width="100%"
+                            height="100%"
+                            style={{ overflow: 'visible' }}
+                          >
+                            <defs>
+                              <path
+                                id={`arc-top-${passportBookPage}-${idx}`}
+                                d="M 22 70 A 48 48 0 0 1 118 70"
+                                fill="none"
+                              />
+                              <path
+                                id={`arc-bot-${passportBookPage}-${idx}`}
+                                d="M 118 70 A 48 48 0 0 1 22 70"
+                                fill="none"
+                              />
+                            </defs>
+
+                            {/* Outer Border Ring */}
+                            <circle
+                              cx="70"
+                              cy="70"
+                              r="64"
+                              fill="#fffdfa"
+                              stroke={st.color}
+                              strokeWidth="3.2"
+                            />
+
+                            {/* Inner Dashed Ring */}
+                            <circle
+                              cx="70"
+                              cy="70"
+                              r="57"
+                              fill="none"
+                              stroke={st.color}
+                              strokeWidth="1.3"
+                              strokeDasharray="3 2"
+                            />
+
+                            {/* Top Arc: Country Name */}
+                            <text
+                              fill={st.color}
+                              fontSize={st.country.length > 12 ? '9.5' : '11'}
+                              fontWeight="900"
+                              letterSpacing="0.12em"
+                            >
+                              <textPath
+                                href={`#arc-top-${passportBookPage}-${idx}`}
+                                startOffset="50%"
+                                textAnchor="middle"
+                              >
+                                ★ {st.country.toUpperCase()} ★
+                              </textPath>
+                            </text>
+
+                            {/* Bottom Arc: Customs Entry Text */}
+                            <text
+                              fill={st.color}
+                              fontSize="8"
+                              fontWeight="800"
+                              letterSpacing="0.15em"
+                              opacity="0.85"
+                            >
+                              <textPath
+                                href={`#arc-bot-${passportBookPage}-${idx}`}
+                                startOffset="50%"
+                                textAnchor="middle"
+                              >
+                                • ENTRY · IMMIGRATION •
+                              </textPath>
+                            </text>
+
+                            {/* Background Airplane Watermark (Ascending Diagonal) */}
+                            <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
+                              <path
+                                d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
+                                fill={st.color}
+                              />
+                            </g>
+
+                            {/* Center Date Box */}
+                            <rect
+                              x="20"
+                              y="55"
+                              width="100"
+                              height="30"
+                              rx="5"
+                              fill="#fffdfa"
+                              stroke={st.color}
+                              strokeWidth="1.6"
+                            />
+
+                            {/* Centered Date */}
+                            <text
+                              x="70"
+                              y="74.5"
+                              textAnchor="middle"
+                              fill={st.color}
+                              fontSize="12"
+                              fontWeight="900"
+                              fontFamily="monospace"
+                              letterSpacing="0.08em"
+                            >
+                              {day} {month} {year}
+                            </text>
+                          </svg>
+                        </div>
+
+                        {/* Margin Pin Count */}
+                        <span
+                          style={{
+                            fontSize: '8.5px',
+                            fontWeight: 700,
+                            color: tier === 'gold' ? '#b45309' : tier === 'silver' ? '#475569' : '#8c8273',
+                            letterSpacing: '0.04em',
+                            fontFamily: 'monospace',
+                            opacity: 0.9,
+                          }}
+                        >
+                          {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  {/* Unclaimed Slots */}
+                  {Array.from({ length: unclaimedSlots }).map((_, idx) => (
                     <div
-                      key={`${passportBookPage}-${idx}`}
+                      key={`unclaimed-${passportBookPage}-${idx}`}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '4px',
+                        gap: '2px',
                       }}
                     >
                       <div
-                        className={`passport-stamp-cachet ${
-                          tier === 'gold'
-                            ? 'stamp-tier-gold'
-                            : tier === 'silver'
-                            ? 'stamp-tier-silver'
-                            : ''
-                        }`}
-                        onClick={() => {
-                          if (typeof isStampDragging !== 'undefined' && isStampDragging) return;
-                          triggerHaptic(12);
-                          setSelectedCountryFilter(st.country);
-                          const matchingSpots = spots.filter(
-                            (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
-                          );
-                          dismissModalWithHistory(handleClosePassportBook);
-                          setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
-                        }}
                         style={{
-                          width: '128px',
-                          height: '128px',
-                          cursor: 'pointer',
-                          transform: `rotate(${tiltAngle}deg)`,
-                          filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.06))',
-                          mixBlendMode: 'multiply',
+                          width: '122px',
+                          height: '122px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          userSelect: 'none',
+                          opacity: 0.35,
                         }}
                       >
-                        <svg
-                          viewBox="0 0 140 140"
-                          width="100%"
-                          height="100%"
-                          style={{ overflow: 'visible' }}
-                        >
-                          <defs>
-                            <path
-                              id={`arc-top-${passportBookPage}-${idx}`}
-                              d="M 22 70 A 48 48 0 0 1 118 70"
-                              fill="none"
-                            />
-                            <path
-                              id={`arc-bot-${passportBookPage}-${idx}`}
-                              d="M 118 70 A 48 48 0 0 1 22 70"
-                              fill="none"
-                            />
-                          </defs>
-
-                          {/* Outer Border Ring */}
+                        <svg viewBox="0 0 140 140" width="100%" height="100%">
                           <circle
                             cx="70"
                             cy="70"
-                            r="64"
-                            fill="#fffdfa"
-                            stroke={st.color}
-                            strokeWidth="3"
-                          />
-
-                          {/* Inner Inked Dashed Ring */}
-                          <circle
-                            cx="70"
-                            cy="70"
-                            r="57"
+                            r="62"
                             fill="none"
-                            stroke={st.color}
-                            strokeWidth="1.2"
-                            strokeDasharray="3 2"
-                          />
-
-                          {/* Top Arc: Country Name */}
-                          <text
-                            fill={st.color}
-                            fontSize={st.country.length > 12 ? '9.5' : '11'}
-                            fontWeight="900"
-                            letterSpacing="0.12em"
-                          >
-                            <textPath
-                              href={`#arc-top-${passportBookPage}-${idx}`}
-                              startOffset="50%"
-                              textAnchor="middle"
-                            >
-                              ★ {st.country.toUpperCase()} ★
-                            </textPath>
-                          </text>
-
-                          {/* Bottom Arc: Customs Entry Text */}
-                          <text
-                            fill={st.color}
-                            fontSize="8"
-                            fontWeight="800"
-                            letterSpacing="0.15em"
-                            opacity="0.85"
-                          >
-                            <textPath
-                              href={`#arc-bot-${passportBookPage}-${idx}`}
-                              startOffset="50%"
-                              textAnchor="middle"
-                            >
-                              • ENTRY · IMMIGRATION •
-                            </textPath>
-                          </text>
-
-                          {/* Background Airplane Watermark */}
-                          <g transform="translate(70, 70) rotate(-15) scale(3.2) translate(-10, -11)" opacity="0.14">
-                            <path
-                              d="M2 10 L10 2 L13 3 L9 9 L15 10 L17 8 L18 9 L16 12 L18 15 L17 16 L15 14 L9 15 L13 21 L10 22 L2 14 L0 12 Z"
-                              fill={st.color}
-                            />
-                          </g>
-
-                          {/* Center Inked Date Box */}
-                          <rect
-                            x="20"
-                            y="55"
-                            width="100"
-                            height="30"
-                            rx="5"
-                            fill="#fffdfa"
-                            stroke={st.color}
+                            stroke="#8c8273"
                             strokeWidth="1.6"
+                            strokeDasharray="4 3"
                           />
-
-                          {/* Perfectly Centered Monospaced Date */}
                           <text
                             x="70"
-                            y="74.5"
+                            y="65"
                             textAnchor="middle"
-                            fill={st.color}
-                            fontSize="12"
-                            fontWeight="900"
-                            fontFamily="monospace"
-                            letterSpacing="0.08em"
+                            fill="#57534e"
+                            fontSize="8.5"
+                            fontWeight="800"
+                            letterSpacing="0.2em"
                           >
-                            {day} {month} {year}
+                            UNCLAIMED
+                          </text>
+                          <text
+                            x="70"
+                            y="86"
+                            textAnchor="middle"
+                            fill="#8c8273"
+                            fontSize="18"
+                          >
+                            ✈︎
                           </text>
                         </svg>
                       </div>
-
-                      {/* Discreet External Traveler Margin Note */}
                       <span
                         style={{
-                          fontSize: '9px',
-                          fontWeight: 700,
-                          color: tier === 'gold' ? '#b45309' : tier === 'silver' ? '#475569' : '#78716c',
-                          letterSpacing: '0.04em',
+                          fontSize: '8.5px',
+                          fontWeight: 600,
+                          color: 'transparent',
                           fontFamily: 'monospace',
-                          opacity: 0.85,
+                          userSelect: 'none',
                         }}
                       >
-                        {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
+                        empty
                       </span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
 
-                {/* Circular Unclaimed Slots */}
-                {Array.from({ length: unclaimedSlots }).map((_, idx) => (
-                  <div
-                    key={`unclaimed-${passportBookPage}-${idx}`}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '128px',
-                        height: '128px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: 0.4,
-                      }}
-                    >
-                      <svg viewBox="0 0 140 140" width="100%" height="100%">
-                        <circle
-                          cx="70"
-                          cy="70"
-                          r="62"
-                          fill="none"
-                          stroke="#a8a29e"
-                          strokeWidth="1.8"
-                          strokeDasharray="4 3"
-                        />
-                        <text
-                          x="70"
-                          y="65"
-                          textAnchor="middle"
-                          fill="#78716c"
-                          fontSize="8.5"
-                          fontWeight="800"
-                          letterSpacing="0.2em"
-                        >
-                          UNCLAIMED
-                        </text>
-                        <text
-                          x="70"
-                          y="86"
-                          textAnchor="middle"
-                          fill="#a8a29e"
-                          fontSize="18"
-                        >
-                          ✈︎
-                        </text>
-                      </svg>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: '9px',
-                        fontWeight: 600,
-                        color: 'transparent',
-                        fontFamily: 'monospace',
-                        userSelect: 'none',
-                      }}
-                    >
-                      empty
-                    </span>
-                  </div>
-                ))}
+                {/* Footer Serial */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingTop: '3px',
+                    borderTop: '1px dashed rgba(184, 170, 141, 0.45)',
+                    fontSize: '7.5px',
+                    fontWeight: 700,
+                    color: '#9ca3af',
+                    letterSpacing: '0.12em',
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    zIndex: 2,
+                  }}
+                >
+                  <span>OFFICIAL TRAVEL LOG</span>
+                  <span>BYWAYR FIELD JOURNAL</span>
+                </div>
               </div>
             </div>
 
-            {/* Floating High-Contrast Navigation Pill */}
+            {/* Bywayr Style Floating Navigation Pill */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
-                maxWidth: '480px',
+                maxWidth: '460px',
                 marginTop: '12px',
-                padding: '0 4px',
+                padding: '4px 6px',
+                backgroundColor: 'rgba(255, 255, 255, 0.94)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderRadius: '20px',
+                border: '1px solid #e7e5e4',
+                boxShadow: '0 12px 30px -8px rgba(0, 0, 0, 0.25)',
+                boxSizing: 'border-box',
               }}
             >
               <button
@@ -6210,31 +6280,31 @@ const showToast = (msg: string) => {
                 }}
                 disabled={passportBookPage === 0}
                 style={{
-                  backgroundColor: '#1c1917',
-                  border: '1px solid #44403c',
-                  color: '#fafaf9',
-                  borderRadius: '12px',
-                  padding: '8px 18px',
-                  fontSize: '12.5px',
+                  backgroundColor: passportBookPage === 0 ? 'transparent' : '#ecebe7',
+                  border: '1px solid ' + (passportBookPage === 0 ? 'transparent' : '#e7e5e4'),
+                  color: passportBookPage === 0 ? '#a8a29e' : '#1c1917',
+                  borderRadius: '14px',
+                  padding: '7px 14px',
+                  fontSize: '12px',
                   fontWeight: 700,
                   cursor: passportBookPage === 0 ? 'default' : 'pointer',
                   opacity: passportBookPage === 0 ? 0.35 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 ← Prev
               </button>
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
                 <span
                   style={{
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                     fontWeight: 800,
-                    color: '#f5f5f4',
-                    letterSpacing: '0.08em',
+                    color: '#1c1917',
+                    letterSpacing: '0.06em',
                     fontFamily: 'monospace',
                   }}
                 >
@@ -6244,7 +6314,7 @@ const showToast = (msg: string) => {
                   style={{
                     fontSize: '10px',
                     fontWeight: 600,
-                    color: '#a8a29e',
+                    color: '#e05a47',
                     letterSpacing: '0.02em',
                   }}
                 >
@@ -6259,19 +6329,20 @@ const showToast = (msg: string) => {
                 }}
                 disabled={passportBookPage >= totalSpreads - 1}
                 style={{
-                  backgroundColor: '#1c1917',
-                  border: '1px solid #44403c',
-                  color: '#fafaf9',
-                  borderRadius: '12px',
-                  padding: '8px 18px',
-                  fontSize: '12.5px',
+                  backgroundColor: passportBookPage >= totalSpreads - 1 ? 'transparent' : '#1c1917',
+                  border: 'none',
+                  color: passportBookPage >= totalSpreads - 1 ? '#a8a29e' : '#fafaf9',
+                  borderRadius: '14px',
+                  padding: '7px 16px',
+                  fontSize: '12px',
                   fontWeight: 700,
                   cursor: passportBookPage >= totalSpreads - 1 ? 'default' : 'pointer',
                   opacity: passportBookPage >= totalSpreads - 1 ? 0.35 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  boxShadow: passportBookPage >= totalSpreads - 1 ? 'none' : '0 2px 8px rgba(28,25,23,0.2)',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Next →
