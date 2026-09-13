@@ -43,6 +43,11 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Translucent.NoTitleBar">
 
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9375478521280538~5041406785"/>
+
         <meta-data
             android:name="asset_statements"
             android:resource="@string/assetStatements" />

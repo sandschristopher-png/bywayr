@@ -1,6 +1,10 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+
+// AdMob Configuration
+const BYWAYR_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888'; // Production ID
+// const BYWAYR_NATIVE_AD_UNIT_ID = 'ca-app-pub-3940256099942544/2247696110'; // Test ID (use while testing)
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
@@ -187,7 +191,7 @@ const formatWalkDistanceAndTime = (distKm: number) => {
       : `${Math.round(distKm)}km`;
 
   if (distKm > 25) return distStr;
-  return `${walkMinutes}m walk Â· ${distStr}`;
+  return `${walkMinutes}m walk · ${distStr}`;
 };
 
 const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
@@ -427,6 +431,9 @@ export default function Home() {
   const currentUserRef = useRef<any>(null);
 
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nativeAd, setNativeAd] = useState<any>(null);
+  const [nativeAdLoaded, setNativeAdLoaded] = useState(false);
+  const [nativeAdError, setNativeAdError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
@@ -805,7 +812,7 @@ const showToast = (msg: string) => {
       return timeB - timeA;
     });
 
-  // Live reference point â€” read at render time so sort and distance badges always agree
+  // Live reference point — read at render time so sort and distance badges always agree
   const drawerRefPoint = () => {
     const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
     const refLat = 'lat' in center ? center.lat : 36.1699;
@@ -821,7 +828,7 @@ const showToast = (msg: string) => {
       )
     : [];
 
-  // Single source of truth for the drawer list â€” always sorted
+  // Single source of truth for the drawer list — always sorted
   const displayedDrawerSpots = (() => {
     const source =
       drawerTab === 'fieldNotes'
@@ -849,7 +856,7 @@ const showToast = (msg: string) => {
     );
   })();
 
-  // Index where the far group starts (nearest sort only) â€” drives the headers
+  // Index where the far group starts (nearest sort only) — drives the headers
   const firstFarIndex = (() => {
     if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
     const { refLat, refLng } = drawerRefPoint();
@@ -898,7 +905,7 @@ const showToast = (msg: string) => {
               spot.category.toLowerCase().includes(q.toLowerCase())
           )
           .map((spot) => ({
-            display_name: `${spot.name} (${spot.city} â€” ${spot.category})`,
+            display_name: `${spot.name} (${spot.city} — ${spot.category})`,
             name: spot.name,
             lat: spot.latitude,
             lon: spot.longitude,
@@ -956,7 +963,7 @@ const showToast = (msg: string) => {
     activeOverlayRef.current = isAnyOverlayActive;
   }, [isAnyOverlayActive]);
 
-  // Banner pause/resume hook removed — live map is completely ad-free
+  // Banner pause/resume hook removed � live map is completely ad-free
 
   const pushModalHistoryState = useCallback((sheetKey: string) => {
     if (typeof window !== 'undefined') {
@@ -1371,7 +1378,7 @@ const showToast = (msg: string) => {
         setIsLocating(false);
       },
       () => {
-        showToast("Couldn't get your location â€” check permissions");
+        showToast("Couldn't get your location — check permissions");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -1414,7 +1421,7 @@ const showToast = (msg: string) => {
         setIsModalLocating(false);
       },
       () => {
-        showToast("Couldn't get your location â€” check permissions");
+        showToast("Couldn't get your location — check permissions");
         setIsModalLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -1429,7 +1436,7 @@ const showToast = (msg: string) => {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Bywayr â€” ${spot.name}`, text: shareText, url: shareUrl });
+        await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
         return;
       } catch {}
     }
@@ -1451,7 +1458,7 @@ const showToast = (msg: string) => {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${handle}'s Field Journal â€” Bywayr`, text: shareText, url: shareUrl });
+        await navigator.share({ title: `${handle}'s Field Journal — Bywayr`, text: shareText, url: shareUrl });
         return;
       } catch {}
     }
@@ -1641,7 +1648,7 @@ const showToast = (msg: string) => {
         if (isNewCountryUnlocked) {
           setTimeout(() => {
             triggerHaptic(30);
-            showToast(`🎉 New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
+            showToast(`?? New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
           }, 600);
         }
       }
@@ -1974,12 +1981,12 @@ const showToast = (msg: string) => {
             <circle cx="70" cy="70" r="57" fill="none" stroke={st.color} strokeWidth="1.3" strokeDasharray="3 2" />
             <text fill={st.color} fontSize={st.country.length > 12 ? '9.5' : '11'} fontWeight="900" letterSpacing="0.12em">
               <textPath href={`#arc-top-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                â˜… {st.country.toUpperCase()} â˜…
+                ★ {st.country.toUpperCase()} ★
               </textPath>
             </text>
             <text fill={st.color} fontSize="8" fontWeight="800" letterSpacing="0.15em" opacity="0.85">
               <textPath href={`#arc-bot-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                â€¢ ENTRY Â· IMMIGRATION â€¢
+                • ENTRY · IMMIGRATION •
               </textPath>
             </text>
             <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
@@ -2005,7 +2012,7 @@ const showToast = (msg: string) => {
             opacity: 0.9,
           }}
         >
-          {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' â˜… gold' : tier === 'silver' ? ' â˜… silver' : ''}
+          {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
         </span>
       </div>
     );
@@ -2033,7 +2040,7 @@ const showToast = (msg: string) => {
             UNCLAIMED
           </text>
           <text x="70" y="86" textAnchor="middle" fill="#8c8273" fontSize="18">
-            ✈︎
+            ??
           </text>
         </svg>
       </div>
@@ -2076,13 +2083,13 @@ const showToast = (msg: string) => {
           <circle cx="70" cy="70" r="64" fill="#fffdfa" stroke="#0284c7" strokeWidth="3" />
           <circle cx="70" cy="70" r="57" fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
           <text x="70" y="48" textAnchor="middle" fill="#0284c7" fontSize="9" fontWeight="900" letterSpacing="0.12em">
-            ★ SPONSORED ★
+            ? SPONSORED ?
           </text>
           <text x="70" y="74" textAnchor="middle" fill="#0284c7" fontSize="11" fontWeight="900" fontFamily="sans-serif">
             FLIGHT DEALS
           </text>
           <text x="70" y="98" textAnchor="middle" fill="#0284c7" fontSize="7.5" fontWeight="800" letterSpacing="0.1em">
-            VIA AVIASALES ↗
+            VIA AVIASALES ?
           </text>
         </svg>
       </div>
@@ -2248,7 +2255,6 @@ const showToast = (msg: string) => {
           "></div>
         </div>
       `;
-placeholder="Search places, Plus Codes..."
       pinEl.addEventListener('click', (e) => {
         e.stopPropagation();
         triggerHaptic(8);
@@ -2264,15 +2270,34 @@ placeholder="Search places, Plus Codes..."
     });
   }, [filteredSpots, spots, mapReady]);
   // Apply map tile filter to canvas only, so markers keep true brand colors
+    // Load Native Ad when component mounts and user is not Plus
   useEffect(() => {
-    if (!map.current || !mapReady) return;
-    const canvas = map.current.getCanvas();
-    const base = isDarkMode
-      ? 'grayscale(0.85) sepia(0.25) saturate(0.8) brightness(0.45) contrast(1.15) hue-rotate(-15deg)'
-      : 'grayscale(0) sepia(0.1) saturate(0.72) brightness(1.0) contrast(1.02) hue-rotate(-6deg)';
-    canvas.style.filter = base + (isAnyOverlayActive && !viewingSpot ? ' blur(6px)' : '');
-    canvas.style.transition = 'filter 0.6s ease';
-  }, [isDarkMode, isAnyOverlayActive, viewingSpot, mapReady]);
+    if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
+    if (isPlusSubscriber) return;
+
+    const loadNativeAd = async () => {
+      try {
+        const { AdMob } = await import('@capacitor-community/admob');
+        const AdMobAny = AdMob as any;
+        
+        // Load the native ad (cast to any — API shape varies by plugin version)
+        const ad = await AdMobAny.loadNativeAd({
+          adUnitId: BYWAYR_NATIVE_AD_UNIT_ID,
+        });
+        
+        setNativeAd(ad);
+        setNativeAdLoaded(true);
+        setNativeAdError(null);
+      } catch (err: any) {
+        console.error('Failed to load native ad:', err);
+        setNativeAdError(err.message || 'Unknown error');
+        setNativeAdLoaded(false);
+      }
+      
+    };
+
+    loadNativeAd();
+  }, [isPlusSubscriber]);
   // Proximity Alert Watcher
   useEffect(() => {
     if (!navigator.geolocation || mustTrySpotIds.length === 0) return;
@@ -2470,7 +2495,7 @@ placeholder="Search places, Plus Codes..."
           setIsPlusSubscriber(true);
           localStorage.setItem('bywayr_is_plus', 'true');
           setIsPlusModalOpen(false);
-          showToast('Thank you for upgrading to Bywayr Plus! ðŸ‘‘');
+          showToast('Thank you for upgrading to Bywayr Plus! 👑');
         }
       } else {
         showToast('Purchases are available in the Android app');
@@ -2559,7 +2584,7 @@ placeholder="Search places, Plus Codes..."
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        setDriveStatusMessage('Not connected to Drive â€” backup downloaded instead');
+        setDriveStatusMessage('Not connected to Drive — backup downloaded instead');
       } else {
         const fileMetadata = {
           name: `bywayr_backup_${activeUser.id}_${Date.now()}.json`,
@@ -2717,7 +2742,7 @@ placeholder="Search places, Plus Codes..."
             type: 'raster',
             tiles: primaryCartoTiles,
             tileSize: 256,
-            attribution: 'Â© OpenStreetMap contributors Â© CARTO',
+            attribution: '© OpenStreetMap contributors © CARTO',
           },
         },
         layers: [
@@ -3279,7 +3304,7 @@ placeholder="Search places, Plus Codes..."
           pointerEvents: 'none',
         }}>
           <WifiOff style={{ width: '14px', height: '14px', color: '#e05a47' }} />
-          <span>Offline mode active Â· Using cached field notes</span>
+          <span>Offline mode active · Using cached field notes</span>
         </div>
       )}
 
@@ -3996,7 +4021,7 @@ placeholder="Search places, Plus Codes..."
               </span>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>
-                {activeSearchedSpot.city}{activeSearchedSpot.country ? ` Â· ${activeSearchedSpot.country}` : ''}
+                {activeSearchedSpot.city}{activeSearchedSpot.country ? ` · ${activeSearchedSpot.country}` : ''}
               </p>
             </div>
             <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
@@ -4145,7 +4170,7 @@ placeholder="Search places, Plus Codes..."
                           {spot.name}
                         </h4>
                         <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {spot.city} Â· <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                          {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                         </p>
                       </div>
 
@@ -4250,7 +4275,7 @@ placeholder="Search places, Plus Codes..."
                             {spot.name}
                           </h4>
                           <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
-                            {spot.city} Â· Map Location
+                            {spot.city} · Map Location
                           </p>
                         </div>
                         
@@ -4424,10 +4449,10 @@ placeholder="Search places, Plus Codes..."
                 {viewingSpot.name}
               </h3>
               <p style={{ margin: 0, fontSize: '12px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
-                {viewingSpot.city}{viewingSpot.country ? ` Â· ${viewingSpot.country}` : ''}
+                {viewingSpot.city}{viewingSpot.country ? ` · ${viewingSpot.country}` : ''}
                 {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
                   <>
-                    {' Â· '}
+                    {' · '}
                     <span
                       onClick={(e) => {
                         e.stopPropagation();
@@ -4457,7 +4482,7 @@ placeholder="Search places, Plus Codes..."
                 onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(224, 90, 71, 0.28)' }}
               >
-                <ExternalLink style={{ width: '15px', height: '15px' }} /> Open in Maps ↗
+                <ExternalLink style={{ width: '15px', height: '15px' }} /> Open in Maps ?
               </button>
 
               <button
@@ -4633,7 +4658,7 @@ placeholder="Search places, Plus Codes..."
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Ã”DELICE"
+                  placeholder="e.g. ÔDELICE"
                   value={newSpot.name}
                   onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
@@ -4909,7 +4934,7 @@ placeholder="Search places, Plus Codes..."
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      ðŸ“ {city}
+                      📍 {city}
                     </button>
                   ))}
                 </div>
@@ -4948,7 +4973,7 @@ placeholder="Search places, Plus Codes..."
                         </div>
                         <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
                         <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                          {s.city}{s.country ? ` Â· ${s.country}` : ''}
+                          {s.city}{s.country ? ` · ${s.country}` : ''}
                         </p>
                       </div>
 
@@ -5031,7 +5056,7 @@ placeholder="Search places, Plus Codes..."
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
               >
                 <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
-                  <span style={{ fontSize: '18px', fontWeight: 800 }}>ð•</span>
+                  <span style={{ fontSize: '18px', fontWeight: 800 }}>𝕏</span>
                 </div>
                 Post
               </a>
@@ -5291,45 +5316,84 @@ placeholder="Search places, Plus Codes..."
                     );
                   }
 
-                  const showAdCard = !isPlusSubscriber && idx === 3;
-                  const adCard = showAdCard ? (
-                    <a
-                      key="infeed-ad-saily"
-                      href="https://saily.tpk.lv/DWenwZYZ"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  const showNativeAd = !isPlusSubscriber && idx === 3 && nativeAdLoaded;
+                  const adCard = showNativeAd ? (
+                    <div
+                      key="native-ad-slot"
                       className="spot-card-hover"
                       style={{
                         padding: '12px 13px',
                         borderRadius: '14px',
-                        border: '1px dashed #bae6fd',
-                        backgroundColor: '#f0f9ff',
+                        border: '1px solid #e7e5e4',
+                        backgroundColor: '#fafaf9',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px',
                         cursor: 'pointer',
                         flexShrink: 0,
-                        textDecoration: 'none',
-                        color: 'inherit',
+                        position: 'relative',
+                      }}
+                      onClick={() => {
+                        if (nativeAd) {
+                          import('@capacitor-community/admob').then(({ AdMob }) => {
+                            (AdMob as any).clickNativeAd({ adId: nativeAd.adId });
+                          });
+                        }
                       }}
                     >
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #bae6fd', flexShrink: 0 }}>
-                        <img src="/saily.svg" alt="Saily" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                      {/* Ad Label */}
+                      <div style={{ 
+                        position: 'absolute', 
+                        top: '4px', 
+                        right: '4px', 
+                        fontSize: '9px', 
+                        fontWeight: 700, 
+                        color: '#a8a29e', 
+                        textTransform: 'uppercase' 
+                      }}>
+                        Ad
                       </div>
+
+                      {/* Media Image */}
+                      {nativeAd?.mediaImage && (
+                        <img
+                          src={nativeAd.mediaImage.url}
+                          alt="Ad"
+                          style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      )}
+
+                      {/* Text Content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0369a1' }}>
-                            Saily Travel eSIM
+                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {nativeAd?.headline || 'Discover Local Deals'}
                           </h4>
                           <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '1px 6px', borderRadius: '6px' }}>
                             Sponsored
                           </span>
                         </div>
-                        <p style={{ margin: 0, fontSize: '11px', color: '#0284c7', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          Instant mobile data anywhere you wander ↗
+                        <p style={{ margin: 0, fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {nativeAd?.body || 'Sponsored travel offers nearby'}
                         </p>
                       </div>
-                    </a>
+
+                      {/* Call to Action */}
+                      {nativeAd?.callToAction && (
+                        <button style={{ 
+                          backgroundColor: '#e05a47', 
+                          color: '#fff', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          padding: '6px 10px', 
+                          fontSize: '11px', 
+                          fontWeight: 600,
+                          flexShrink: 0
+                        }}>
+                          {nativeAd.callToAction}
+                        </button>
+                      )}
+                    </div>
                   ) : null;
 
                   return [
@@ -5400,7 +5464,7 @@ placeholder="Search places, Plus Codes..."
                             textOverflow: 'ellipsis',
                           }}
                         >
-                          {spot.city} Â· <span style={{ color, fontWeight: 600 }}>{spot.category}</span> Â· <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                          {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
                         </p>
                       </div>
                     </div>
@@ -5571,7 +5635,7 @@ placeholder="Search places, Plus Codes..."
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: '24px' }}>ðŸ›‚</span>
+                  <span style={{ fontSize: '24px' }}>🛂</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Passport</div>
@@ -5690,7 +5754,7 @@ placeholder="Search places, Plus Codes..."
                     marginTop: '2px',
                   }}
                 >
-                  <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus â€” $19.99
+                  <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus — $19.99
                 </button>
               )}
             </div>
@@ -5811,7 +5875,7 @@ placeholder="Search places, Plus Codes..."
 
               <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#a8a29e', marginBottom: '4px' }}>
                 <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Terms of Service</a>
-                <span style={{ color: '#c4beb5' }}>Â·</span>
+                <span style={{ color: '#c4beb5' }}>·</span>
                 <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Privacy Policy</a>
               </div>
 
@@ -5945,7 +6009,7 @@ placeholder="Search places, Plus Codes..."
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                 />
                 <span style={{ fontSize: '10.5px', color: '#78716c', display: 'block', marginTop: '4px' }}>
-                  ðŸ”’ Your email is never shared publicly or displayed on your profile.
+                  🔒 Your email is never shared publicly or displayed on your profile.
                 </span>
               </div>
 
@@ -5993,7 +6057,7 @@ placeholder="Search places, Plus Codes..."
                   <Download style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
+                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> � Download a portable copy of your entire field journal, any time.
                 </div>
               </div>
 
@@ -6002,7 +6066,7 @@ placeholder="Search places, Plus Codes..."
                   <ShieldCheck style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero banner ads, forever.
+                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> � Browse the entire map with zero banner ads, forever.
                 </div>
               </div>
 
@@ -6011,7 +6075,7 @@ placeholder="Search places, Plus Codes..."
                   <Sparkle style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
+                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> � No monthly subscriptions or recurring fees.
                 </div>
               </div>
             </div>
@@ -6035,7 +6099,7 @@ placeholder="Search places, Plus Codes..."
                       letterSpacing: '0.01em',
                     }}
                   >
-                    One-time Payment — $19.99
+                    One-time Payment � $19.99
                   </button>
 
                   <button
@@ -6063,7 +6127,7 @@ placeholder="Search places, Plus Codes..."
         </div>
       )}
 
-      {/* Scrollable Passport Booklet — Clean Organic Spread */}
+      {/* Scrollable Passport Booklet � Clean Organic Spread */}
       {(isPassportBookOpen || isBookClosing) && (() => {
         // Book can render YOUR passport or a viewed public profile's (read-only)
         const isViewingOther = !!viewingPassportProfile;
@@ -6187,7 +6251,7 @@ placeholder="Search places, Plus Codes..."
                   scrollbarWidth: 'thin',
                 }}
               >
-                {/* Full-Bleed Organic Guilloché Mesh — Terracotta page / Teal page */}
+                {/* Full-Bleed Organic Guilloch� Mesh � Terracotta page / Teal page */}
                 <div
                   style={{
                     position: 'absolute',
@@ -6210,7 +6274,7 @@ placeholder="Search places, Plus Codes..."
                     <rect width="100%" height="100%" fill="url(#guilloche-mesh-warm)" />
                   </svg>
 
-                  {/* Rosettes — organic terracotta left, teal right, intentionally imperfect */}
+                  {/* Rosettes � organic terracotta left, teal right, intentionally imperfect */}
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: isDesktopViewport ? 'space-around' : 'center', alignItems: 'center' }}>
                     {/* Left Page Rosette (Terracotta) */}
                     <svg viewBox="0 0 500 500" style={{ width: isDesktopViewport ? '430px' : '340px', height: isDesktopViewport ? '430px' : '340px', flexShrink: 0 }}>
@@ -6286,7 +6350,7 @@ placeholder="Search places, Plus Codes..."
                   }}
                 >
                   <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
-                    BW · {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
+                    BW � {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
                   </span>
                   {isDesktopViewport && (
                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
@@ -6295,7 +6359,7 @@ placeholder="Search places, Plus Codes..."
                   )}
                 </div>
 
-                {/* Bottom Official Page Number Badges — tracks real spread */}
+                {/* Bottom Official Page Number Badges � tracks real spread */}
                 {activeStampItems.length > 0 && (() => {
                   const STAMPS_PER_SPREAD = 4;
                   const totalSpreads = Math.max(1, Math.ceil(activeStampItems.length / STAMPS_PER_SPREAD));
@@ -6405,7 +6469,7 @@ placeholder="Search places, Plus Codes..."
                           zIndex: 1,
                         }}
                       >
-                        {/* LEFT PAGE — Identity */}
+                        {/* LEFT PAGE � Identity */}
                         <div
                           className="book-page-turn"
                           key={`identity-page-${page}`}
@@ -6494,7 +6558,7 @@ placeholder="Search places, Plus Codes..."
                           </div>
                         </div>
 
-                        {/* RIGHT PAGE — Paginated Stamp Spread */}
+                        {/* RIGHT PAGE � Paginated Stamp Spread */}
                         <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '36px', minWidth: 0 }}>
                           <div
                             className="book-page-turn"
@@ -6581,18 +6645,18 @@ placeholder="Search places, Plus Codes..."
           </div>
         );
       })()}        
-      {/* Welcome / Onboarding Carousel â€” full screen */}
+      {/* Welcome / Onboarding Carousel — full screen */}
       {showWelcome && (() => {
         const ONBOARDING_STEPS = [
           {
             image: '/onboarding-1.png',
             title: 'The map guidebooks forgot',
-            body: 'Bywayr is a pocket field guide for the places nobody bothers to map â€” pin your finds, discover other locals\' secrets, and keep the good spots alive.',
+            body: 'Bywayr is a pocket field guide for the places nobody bothers to map — pin your finds, discover other locals\' secrets, and keep the good spots alive.',
           },
           {
             image: '/onboarding-2.png',
             title: 'Pin what maps miss',
-            body: 'Backstreet food stalls, hidden viewpoints, quiet neighborhood corners â€” plot the spots you know and browse what others have curated near you.',
+            body: 'Backstreet food stalls, hidden viewpoints, quiet neighborhood corners — plot the spots you know and browse what others have curated near you.',
           },
           {
             image: '/onboarding-3.png',
@@ -6809,3 +6873,6 @@ onKeyDown={(e) => {
     </div>
   );
 }
+
+
+

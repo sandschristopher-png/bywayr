@@ -4,11 +4,13 @@ const config: CapacitorConfig = {
   appId: 'com.bywayr.app',
   appName: 'Bywayr',
   webDir: 'out',
-  server: {
-    androidScheme: 'https',
-  },
   android: {
     allowMixedContent: true,
+  },
+  plugins: {
+    AdMob: {
+      appId: 'ca-app-pub-9375478521280538~5041406785',
+    },
   },
 };
 
