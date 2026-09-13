@@ -5833,7 +5833,7 @@ const showToast = (msg: string) => {
                   <Compass style={{ width: '15px', height: '15px' }} />
                 </div>
                 <span style={{ fontSize: '13px', fontWeight: 800, color: '#fafaf9', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                  Official Field Journal
+                  Passport
                 </span>
               </div>
 
@@ -6264,12 +6264,10 @@ const showToast = (msg: string) => {
                 maxWidth: '460px',
                 marginTop: '12px',
                 padding: '4px 6px',
-                backgroundColor: 'rgba(255, 255, 255, 0.94)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                borderRadius: '20px',
+                backgroundColor: '#ecebe7',
+                borderRadius: '18px',
                 border: '1px solid #e7e5e4',
-                boxShadow: '0 12px 30px -8px rgba(0, 0, 0, 0.25)',
+                boxShadow: '0 12px 30px -8px rgba(28, 25, 23, 0.18)',
                 boxSizing: 'border-box',
               }}
             >
@@ -6329,9 +6327,9 @@ const showToast = (msg: string) => {
                 }}
                 disabled={passportBookPage >= totalSpreads - 1}
                 style={{
-                  backgroundColor: passportBookPage >= totalSpreads - 1 ? 'transparent' : '#1c1917',
-                  border: 'none',
-                  color: passportBookPage >= totalSpreads - 1 ? '#a8a29e' : '#fafaf9',
+                  backgroundColor: passportBookPage >= totalSpreads - 1 ? 'transparent' : '#e05a47',
+                  border: passportBookPage >= totalSpreads - 1 ? '1px solid transparent' : 'none',
+                  color: passportBookPage >= totalSpreads - 1 ? '#a8a29e' : '#ffffff',
                   borderRadius: '14px',
                   padding: '7px 16px',
                   fontSize: '12px',
@@ -6341,7 +6339,7 @@ const showToast = (msg: string) => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  boxShadow: passportBookPage >= totalSpreads - 1 ? 'none' : '0 2px 8px rgba(28,25,23,0.2)',
+                  boxShadow: passportBookPage >= totalSpreads - 1 ? 'none' : '0 4px 12px rgba(224, 90, 71, 0.3)',
                   transition: 'all 0.15s ease',
                 }}
               >
