@@ -487,6 +487,8 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
   const [profileCityFilter, setProfileCityFilter] = useState<string>('All');
+  const [viewingPassportProfile, setViewingPassportProfile] = useState<UserProfile | null>(null);
+  const [viewingPassportSpots, setViewingPassportSpots] = useState<Spot[]>([]);
 
   const [isWalkModalOpen, setIsWalkModalOpen] = useState(false);
   const [walkTargetSpot, setWalkTargetSpot] = useState<Spot | null>(null);
@@ -739,42 +741,21 @@ const showToast = (msg: string) => {
     }
   }, [isDarkMode]);
 
-  // AdMob initialization & lifecycle
+  // AdMob initialization (No persistent bottom banner on live map)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!(window as any).Capacitor?.isNativePlatform()) return;
     if (isPlusSubscriber) return;
 
-    let disposed = false;
-
     (async () => {
       try {
-        const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob');
+        const { AdMob } = await import('@capacitor-community/admob');
         await AdMob.initialize();
-
-        await (AdMob as any).addListener('banner:sizechanged', (info: any) => {
-          setBannerHeight(info.height || 0);
-          if (map.current) map.current.resize();
-        });
-
-        await AdMob.showBanner({
-          adId: 'ca-app-pub-9375478521280538/4566973495',
-          adSize: BannerAdSize.ADAPTIVE_BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 0,
-          isTesting: false,
-        });
-
-        if (!disposed) setAdReady(true);
+        setAdReady(true);
       } catch (err) {
         console.error('AdMob init failed:', err);
       }
     })();
-
-    return () => {
-      disposed = true;
-      import('@capacitor-community/admob').then(({ AdMob }) => AdMob.removeBanner()).catch(() => {});
-    };
   }, [isPlusSubscriber]);
 
   const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
@@ -975,22 +956,7 @@ const showToast = (msg: string) => {
     activeOverlayRef.current = isAnyOverlayActive;
   }, [isAnyOverlayActive]);
 
-  // Pause/resume banner based on Plus status or open sheets
-  useEffect(() => {
-    if (!adReady) return;
-    (async () => {
-      try {
-        const { AdMob } = await import('@capacitor-community/admob');
-        if (isPlusSubscriber || isAnyOverlayActive) {
-          await AdMob.hideBanner();
-          setBannerHeight(0);
-        } else {
-          await AdMob.resumeBanner();
-          setBannerHeight(bannerHeight || 50);
-        }
-      } catch {}
-    })();
-  }, [adReady, isAnyOverlayActive, isPlusSubscriber, bannerHeight]);
+  // Banner pause/resume hook removed — live map is completely ad-free
 
   const pushModalHistoryState = useCallback((sheetKey: string) => {
     if (typeof window !== 'undefined') {
@@ -1026,6 +992,9 @@ const showToast = (msg: string) => {
     setTimeout(() => {
       setIsPassportBookOpen(false);
       setIsBookClosing(false);
+      setViewingPassportProfile(null);
+      setViewingPassportSpots([]);
+      setPassportBookPage(0);
     }, 240);
     if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
       window.history.back();
@@ -1657,11 +1626,24 @@ const showToast = (msg: string) => {
           previewMarkerRef.current.remove();
           previewMarkerRef.current = null;
         }
-        setSpots((prev) => [data[0] as Spot, ...prev]);
+        
+        const addedSpot = data[0] as Spot;
+        const previousCountries = new Set(myUserSpots.map((s) => (s.country || '').toLowerCase().trim()));
+        const newCountry = (addedSpot.country || sanitized.country || '').toLowerCase().trim();
+        const isNewCountryUnlocked = newCountry && !previousCountries.has(newCountry);
+
+        setSpots((prev) => [addedSpot, ...prev]);
         dismissModalWithHistory(() => setIsModalOpen(false));
         setSearchQuery('');
         setActiveSearchedSpot(null);
         if (map.current) map.current.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 16 });
+
+        if (isNewCountryUnlocked) {
+          setTimeout(() => {
+            triggerHaptic(30);
+            showToast(`🎉 New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
+          }, 600);
+        }
       }
     }
     setSaving(false);
@@ -1944,7 +1926,7 @@ const showToast = (msg: string) => {
     }
   }, [currentUser]);
 
-  const renderStampCard = (st: { country: string; firstVisit?: string | number | Date; spotCount: number; color: string }, idx: number, page: number) => {
+  const renderStampCard = (st: PassportStampData, idx: number, page: number) => {
     const d = new Date(st.firstVisit || Date.now());
     const day = d.toLocaleDateString('en-US', { day: '2-digit' });
     const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
@@ -2029,6 +2011,7 @@ const showToast = (msg: string) => {
     );
   };
 
+
   const renderUnclaimedSlot = (idx: number, page: number) => (
     <div
       key={`unclaimed-${page}-${idx}`}
@@ -2050,7 +2033,7 @@ const showToast = (msg: string) => {
             UNCLAIMED
           </text>
           <text x="70" y="86" textAnchor="middle" fill="#8c8273" fontSize="18">
-            âœˆï¸Ž
+            ✈︎
           </text>
         </svg>
       </div>
@@ -2060,6 +2043,64 @@ const showToast = (msg: string) => {
     </div>
   );
 
+  const renderSponsoredPassportStamp = (idx: number) => (
+    <a
+      key={`sponsored-stamp-${idx}`}
+      href="https://aviasales.tpk.lv/Y7mdLlKw"
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '2px',
+        maxWidth: '100%',
+        textDecoration: 'none',
+      }}
+    >
+      <div
+        className="passport-stamp-cachet"
+        style={{
+          width: isDesktopViewport ? '104px' : '122px',
+          height: isDesktopViewport ? '104px' : '122px',
+          cursor: 'pointer',
+          transform: 'rotate(-2.5deg)',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))',
+          mixBlendMode: 'multiply',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg viewBox="0 0 140 140" width="100%" height="100%">
+          <circle cx="70" cy="70" r="64" fill="#fffdfa" stroke="#0284c7" strokeWidth="3" />
+          <circle cx="70" cy="70" r="57" fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
+          <text x="70" y="48" textAnchor="middle" fill="#0284c7" fontSize="9" fontWeight="900" letterSpacing="0.12em">
+            ★ SPONSORED ★
+          </text>
+          <text x="70" y="74" textAnchor="middle" fill="#0284c7" fontSize="11" fontWeight="900" fontFamily="sans-serif">
+            FLIGHT DEALS
+          </text>
+          <text x="70" y="98" textAnchor="middle" fill="#0284c7" fontSize="7.5" fontWeight="800" letterSpacing="0.1em">
+            VIA AVIASALES ↗
+          </text>
+        </svg>
+      </div>
+      <span
+        style={{
+          fontSize: '8.5px',
+          fontWeight: 700,
+          color: '#0284c7',
+          letterSpacing: '0.04em',
+          fontFamily: 'monospace',
+          opacity: 0.9,
+        }}
+      >
+        partner stamp
+      </span>
+    </a>
+  );
+
   useEffect(() => {
     if (!isPassportBookOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2067,7 +2108,7 @@ const showToast = (msg: string) => {
         triggerHaptic(6);
         setPassportBookPage((p) => Math.max(0, p - 1));
       } else if (e.key === 'ArrowRight') {
-        const stampsPerPage = isDesktopViewport ? 8 : 4;
+        const stampsPerPage = 4;
         const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / stampsPerPage));
         triggerHaptic(6);
         setPassportBookPage((p) => Math.min(totalPages - 1, p + 1));
@@ -2163,24 +2204,49 @@ const showToast = (msg: string) => {
 
     const spotsToRender = filteredSpots.length > 0 ? filteredSpots : spots;
 
-    const validSpots = spotsToRender.filter((s) => {
+    const validSpots: Spot[] = spotsToRender.filter((s: Spot) => {
       const lat = Number(s.latitude);
       const lng = Number(s.longitude);
       return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
     });
 
-    validSpots.forEach((spot) => {
+    validSpots.forEach((spot: Spot) => {
       const pinColor = getCategoryColor(spot.category || 'Hidden Gems');
       const pinEl = document.createElement('div');
-      pinEl.style.width = '28px';
-      pinEl.style.height = '28px';
+      pinEl.className = 'bywayr-map-pin';
       pinEl.style.cursor = 'pointer';
       pinEl.style.zIndex = '10';
+      pinEl.style.display = 'flex';
+      pinEl.style.flexDirection = 'column';
+      pinEl.style.alignItems = 'center';
+      pinEl.style.transform = 'translate3d(0,0,0)';
       pinEl.innerHTML = `
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-          <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
-        </svg>
+        <div style="
+          width: 32px;
+          height: 42px;
+          position: relative;
+        ">
+          <!-- Teardrop shape -->
+          <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}" stroke="white" stroke-width="2.5"/>
+            <!-- Outer white ring -->
+            <circle cx="16" cy="15" r="7" fill="white"/>
+            <!-- Inner colored dot -->
+            <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+          </svg>
+          <!-- Shadow -->
+          <div style="
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(0,0,0,0.25);
+            filter: blur(1px);
+          "></div>
+        </div>
       `;
 
       pinEl.addEventListener('click', (e) => {
@@ -2902,6 +2968,35 @@ const showToast = (msg: string) => {
         h3 {
           letter-spacing: -0.02em;
         }
+
+        /* Smooth momentum scrolling with rubberband bounce */
+        .smooth-bounce-scroll {
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          overscroll-behavior-y: contain !important;
+          scroll-behavior: smooth;
+        }
+
+        @keyframes stampPress {
+          0% { transform: scale(1.6) rotate(-8deg); opacity: 0; filter: blur(4px); }
+          60% { transform: scale(0.92) rotate(2deg); opacity: 1; filter: blur(0px); }
+          80% { transform: scale(1.05) rotate(-1deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes springBadge {
+          0% { transform: scale(0.7) translateY(12px); opacity: 0; }
+          70% { transform: scale(1.08) translateY(-2px); opacity: 1; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .animate-stamp-press {
+          animation: stampPress 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        .animate-spring-badge {
+          animation: springBadge 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
         .onboarding-shell {
           width: 100%;
           max-width: 460px;
@@ -3271,67 +3366,8 @@ const showToast = (msg: string) => {
               </div>
             </div>
 
-            {/* Right Group */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, pointerEvents: 'auto' }}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  triggerHaptic(8);
-                  setIsDrawerOpen(true);
-                  pushModalHistoryState('drawer');
-                }}
-                style={{
-                  backgroundColor: uiSolid,
-                  border: `1px solid ${uiBorder}`,
-                  borderRadius: '50%',
-                  width: '34px',
-                  height: '34px',
-                  color: uiText,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  pointerEvents: 'auto',
-                }}
-                title="Open Field Notes"
-              >
-                <List style={{ width: '16px', height: '16px', pointerEvents: 'none' }} />
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  triggerHaptic(8);
-                  if (!currentUserRef.current) {
-                    setIsAuthModalOpen(true);
-                    pushModalHistoryState('auth');
-                    return;
-                  }
-                  const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
-                  dropPreviewAndOpenModal(center.lat, center.lng);
-                }}
-                style={{
-                  backgroundColor: 'rgba(224, 90, 71, 0.12)',
-                  border: '1px solid rgba(224, 90, 71, 0.25)',
-                  borderRadius: '50%',
-                  width: '34px',
-                  height: '34px',
-                  color: '#e05a47',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  pointerEvents: 'auto',
-                }}
-                title="Add Curated Spot"
-              >
-                <Plus style={{ width: '18px', height: '18px', strokeWidth: 2.5, pointerEvents: 'none' }} />
-              </button>
-
+            {/* Right Group: Account / Profile Avatar */}
+            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, pointerEvents: 'auto' }}>
               {currentUser ? (
                 <button
                   type="button"
@@ -3345,8 +3381,8 @@ const showToast = (msg: string) => {
                     backgroundColor: '#fff1ee',
                     border: '2px solid #e05a47',
                     borderRadius: '50%',
-                    width: '38px',
-                    height: '38px',
+                    width: '34px',
+                    height: '34px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -3362,7 +3398,7 @@ const showToast = (msg: string) => {
                   {userProfile?.avatar_url ? (
                     <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
                   ) : (
-                    <User style={{ width: '19px', height: '19px', color: '#e05a47', pointerEvents: 'none' }} />
+                    <User style={{ width: '18px', height: '18px', color: '#e05a47', pointerEvents: 'none' }} />
                   )}
                 </button>
               ) : (
@@ -3379,8 +3415,8 @@ const showToast = (msg: string) => {
                   style={{
                     backgroundColor: '#1c1917',
                     border: 'none',
-                    borderRadius: '18px',
-                    padding: '6px 11px',
+                    borderRadius: '16px',
+                    padding: '6px 12px',
                     color: '#fafaf9',
                     fontSize: '12px',
                     fontWeight: 600,
@@ -3756,106 +3792,185 @@ const showToast = (msg: string) => {
         )}
       </div>
 
-      {/* 3. Floating Map Controls */}
-      <div style={{ 
-        position: 'fixed', 
-        bottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${bannerHeight}px)`, 
-        right: '20px', 
-        zIndex: 99999, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        backgroundColor: isDarkMode ? 'rgba(28, 25, 23, 0.92)' : 'rgba(255, 255, 255, 0.92)', 
-        backdropFilter: 'blur(12px)', 
-        WebkitBackdropFilter: 'blur(12px)', 
-        border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4', 
-        borderRadius: '22px', 
-        padding: '6px', 
-        boxShadow: '0 12px 30px -6px rgba(28, 25, 23, 0.18), 0 0 1px 1px rgba(28, 25, 23, 0.04)', 
-        gap: '6px', 
-        pointerEvents: isInteracting ? 'none' : 'auto',
-        opacity: isInteracting ? 0 : 1,
-        transform: isInteracting ? 'translateY(16px)' : 'translateY(0)',
-        transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}>
-        <button onClick={handleLocateMe} disabled={isLocating} style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }} title="Locate Me">
-          {isLocating ? <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '18px', height: '18px' }} />}
+      {/* 3. Floating Bottom Navigation Dock */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+          left: '50%',
+          transform: isInteracting ? 'translateX(-50%) translateY(24px)' : 'translateX(-50%) translateY(0)',
+          opacity: isInteracting ? 0 : 1,
+          transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+          zIndex: 99998,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: `1px solid ${uiBorder}`,
+          borderRadius: '32px',
+          padding: '6px 8px',
+          boxShadow: '0 20px 40px -10px rgba(28, 25, 23, 0.22), 0 0 1px 1px rgba(28, 25, 23, 0.05)',
+          pointerEvents: isInteracting ? 'none' : 'auto',
+        }}
+      >
+        {/* Field Notes (Left Drawer Trigger) */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic(8);
+            setIsDrawerOpen(true);
+            pushModalHistoryState('drawer');
+          }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '2px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            color: isDrawerOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+          }}
+        >
+          <List style={{ width: '18px', height: '18px' }} />
+          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Notes</span>
         </button>
 
+        {/* Where to Walk Modal Trigger */}
         <button
+          type="button"
           onClick={() => {
             triggerHaptic(8);
             setIsWalkModalOpen(true);
             pushModalHistoryState('walkModal');
           }}
           style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '2px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            color: walkTargetSpot ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+          }}
+        >
+          <Footprints style={{ width: '18px', height: '18px' }} />
+          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Walk</span>
+        </button>
+
+        {/* Center Primary Action: Add Spot */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic(8);
+            if (!currentUserRef.current) {
+              setIsAuthModalOpen(true);
+              pushModalHistoryState('auth');
+              return;
+            }
+            const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
+            dropPreviewAndOpenModal(center.lat, center.lng);
+          }}
+          style={{
+            backgroundColor: '#e05a47',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '50%',
             width: '42px',
             height: '42px',
-            backgroundColor: walkTargetSpot ? '#e05a47' : 'transparent',
-            color: walkTargetSpot ? '#ffffff' : (isDarkMode ? '#fafaf9' : '#44403c'),
-            border: 'none',
-            borderRadius: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(224, 90, 71, 0.4)',
+            margin: '0 4px',
+            flexShrink: 0,
           }}
-          title="Choose a destination to walk to"
+          title="Pin Curated Spot"
         >
-          <Footprints style={{ width: '18px', height: '18px' }} />
+          <Plus style={{ width: '22px', height: '22px', strokeWidth: 2.5 }} />
         </button>
 
-        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
+        {/* Passport Booklet Trigger */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic(8);
+            setPassportBookPage(0);
+            setIsPassportBookOpen(true);
+            pushModalHistoryState('passportBook');
+          }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '2px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            color: isPassportBookOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+          }}
+        >
+          <Compass style={{ width: '18px', height: '18px' }} />
+          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Passport</span>
+        </button>
+      </div>
+
+      {/* 4. Streamlined Map Utility Controls (Right Side) */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 'calc(82px + env(safe-area-inset-bottom, 0px))',
+          right: '16px',
+          zIndex: 99997,
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: isDarkMode ? 'rgba(28, 25, 23, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: isDarkMode ? '1px solid #44403c' : '1px solid #e7e5e4',
+          borderRadius: '20px',
+          padding: '4px',
+          boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.18)',
+          gap: '4px',
+          pointerEvents: isInteracting ? 'none' : 'auto',
+          opacity: isInteracting ? 0 : 1,
+          transform: isInteracting ? 'translateY(16px)' : 'translateY(0)',
+          transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <button
+          onClick={handleLocateMe}
+          disabled={isLocating}
+          style={{ width: '36px', height: '36px', backgroundColor: 'transparent', border: 'none', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e05a47' }}
+          title="Locate Me"
+        >
+          {isLocating ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '16px', height: '16px' }} />}
+        </button>
+
+        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '1px 3px' }} />
 
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '16px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#e05a47' : '#78716c',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
+          style={{ width: '36px', height: '36px', borderRadius: '14px', border: 'none', backgroundColor: 'transparent', color: isDarkMode ? '#e05a47' : '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
         >
-          <div key={isDarkMode ? 'moon' : 'sun'} style={{ animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards', display: 'flex' }}>
-            {isDarkMode ? <MoonStar style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px' }} />}
-          </div>
-        </button>
-
-        <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '2px 4px' }} />
-
-        <button 
-          onPointerDown={(e) => startZoomHold(1, e)}
-          onPointerUp={stopZoomHold}
-          onPointerLeave={stopZoomHold}
-          onPointerCancel={stopZoomHold}
-          onContextMenu={(e) => e.preventDefault()}
-          style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }} 
-          title="Zoom In (hold for continuous)"
-        >
-          <Plus style={{ width: '18px', height: '18px', pointerEvents: 'none' }} />
-        </button>
-        <button 
-          onPointerDown={(e) => startZoomHold(-1, e)}
-          onPointerUp={stopZoomHold}
-          onPointerLeave={stopZoomHold}
-          onPointerCancel={stopZoomHold}
-          onContextMenu={(e) => e.preventDefault()}
-          style={{ width: '42px', height: '42px', backgroundColor: 'transparent', border: 'none', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#fafaf9' : '#1c1917', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }} 
-          title="Zoom Out (hold for continuous)"
-        >
-          <Minus style={{ width: '18px', height: '18px', pointerEvents: 'none' }} />
+          {isDarkMode ? <MoonStar style={{ width: '16px', height: '16px' }} /> : <Sun style={{ width: '16px', height: '16px' }} />}
         </button>
       </div>
 
       {/* Active Search Result Bottom Action Sheet */}
       {activeSearchedSpot && (
-        <div className="animate-slide-up" style={{ position: 'fixed', bottom: `calc(20px + env(safe-area-inset-bottom, 0px) + ${bannerHeight}px)`, left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box' }}>
+        <div className="animate-slide-up" style={{ position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '16px', right: '16px', maxWidth: '410px', margin: '0 auto', zIndex: 99999, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.25), 0 0 1px 1px rgba(28, 25, 23, 0.04)', border: '1px solid #e7e5e4', padding: '20px', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
             <div style={{ flex: 1, paddingRight: '10px' }}>
               <span style={{ display: 'inline-block', backgroundColor: '#e0f2fe', color: '#0284c7', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px', marginBottom: '6px' }}>
@@ -4184,23 +4299,26 @@ const showToast = (msg: string) => {
       {/* 4. Spot Details Bottom Sheet */}
       {viewingSpot && (
         <div className="animate-fade-in" onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px))' }}>
-          <div className="animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '410px', maxHeight: '78vh', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', border: '1px solid #e7e5e4', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '410px', maxHeight: '82vh', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', border: '1px solid #e7e5e4', padding: '18px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Header Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(viewingSpot.category)}18`, color: getCategoryColor(viewingSpot.category), fontSize: '10.5px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#f5f5f4', color: '#44403c', border: '1px solid #e7e5e4', fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '8px', letterSpacing: '0.01em' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: getCategoryColor(viewingSpot.category) }} />
                 {viewingSpot.category}
               </span>
               
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
+                {/* Vouch Button */}
                 <button
                   onClick={() => toggleVouch(viewingSpot.id)}
                   disabled={savingVouch}
                   style={{
-                    border: 'none',
-                    background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#ecebe7',
+                    border: '1px solid ' + (viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#a7f3d0' : '#e7e5e4'),
+                    background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#fafaf9',
                     borderRadius: '10px',
                     cursor: 'pointer',
                     color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
-                    padding: '6px 8px',
+                    padding: '5px 8px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
@@ -4210,30 +4328,75 @@ const showToast = (msg: string) => {
                   }}
                   title="Vouch for this spot"
                 >
-                  <ThumbsUp style={{ width: '14px', height: '14px' }} />
+                  <ThumbsUp style={{ width: '13px', height: '13px' }} />
                   <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
                 </button>
 
-                <button onClick={() => toggleMustTry(viewingSpot.id)} disabled={savingBookmark} style={{ border: 'none', background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#ecebe7', borderRadius: '10px', cursor: 'pointer', color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Save to Must-Try">
-                  {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '15px', height: '15px' }} /> : <Bookmark style={{ width: '15px', height: '15px' }} />}
+                {/* Bookmark Button */}
+                <button
+                  onClick={() => toggleMustTry(viewingSpot.id)}
+                  disabled={savingBookmark}
+                  style={{
+                    border: '1px solid ' + (viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fde68a' : '#e7e5e4'),
+                    background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#fafaf9',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e',
+                    padding: '5px 7px',
+                    display: 'flex',
+                    flexShrink: 0,
+                  }}
+                  title="Save to Must-Try"
+                >
+                  {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '14px', height: '14px' }} /> : <Bookmark style={{ width: '14px', height: '14px' }} />}
                 </button>
 
-                <button onClick={() => handleShareSpot(viewingSpot)} style={{ border: 'none', background: '#ecebe7', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} title="Share spot">
-                  <Share2 style={{ width: '15px', height: '15px' }} />
+                {/* Share Button */}
+                <button
+                  onClick={() => handleShareSpot(viewingSpot)}
+                  style={{
+                    border: '1px solid #e7e5e4',
+                    background: '#fafaf9',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    color: '#57534e',
+                    padding: '5px 7px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                  }}
+                  title="Share spot"
+                >
+                  <Share2 style={{ width: '14px', height: '14px' }} />
                 </button>
 
+                {/* Creator Edit/Delete Tools */}
                 {currentUser && viewingSpot.user_id === currentUser.id && (
                   <>
-                    <button onClick={(e) => handleOpenEditModal(viewingSpot, e)} style={{ border: 'none', background: '#ecebe7', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '6px', display: 'flex', flexShrink: 0 }} title="Edit Spot">
-                      <Pencil style={{ width: '14px', height: '14px' }} />
+                    <button
+                      onClick={(e) => handleOpenEditModal(viewingSpot, e)}
+                      style={{ border: '1px solid #e7e5e4', background: '#fafaf9', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '5px 7px', display: 'flex', flexShrink: 0 }}
+                      title="Edit Spot"
+                    >
+                      <Pencil style={{ width: '13px', height: '13px' }} />
                     </button>
-                    <button onClick={(e) => handleDeleteSpot(viewingSpot, e)} disabled={deleting} style={{ border: 'none', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '6px', display: 'flex', flexShrink: 0 }} title="Delete Spot">
-                      {deleting ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '14px', height: '14px' }} />}
+                    <button
+                      onClick={(e) => handleDeleteSpot(viewingSpot, e)}
+                      disabled={deleting}
+                      style={{ border: '1px solid #fecdd3', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '5px 7px', display: 'flex', flexShrink: 0 }}
+                      title="Delete Spot"
+                    >
+                      {deleting ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '13px', height: '13px' }} />}
                     </button>
                   </>
                 )}
-                <button onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <X style={{ width: '18px', height: '18px' }} />
+
+                {/* Close Button */}
+                <button
+                  onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })}
+                  style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '2px' }}
+                >
+                  <X style={{ width: '15px', height: '15px' }} />
                 </button>
               </div>
             </div>
@@ -4271,19 +4434,19 @@ const showToast = (msg: string) => {
               <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{viewingSpot.description}</p>
             )}
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(224, 90, 71, 0.28)' }}
               >
-                <Navigation2 style={{ width: '14px', height: '14px' }} /> Get Directions
+                <ExternalLink style={{ width: '15px', height: '15px' }} /> Open in Maps ↗
               </button>
 
               <button
                 onClick={() => handleCopyCoordinates(viewingSpot.latitude, viewingSpot.longitude)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '9px', backgroundColor: coordsCopied ? '#ecfdf5' : '#ecebe7', color: coordsCopied ? '#059669' : '#1c1917', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '12px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: coordsCopied ? '#ecfdf5' : '#f5f5f4', color: coordsCopied ? '#059669' : '#57534e', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
-                {coordsCopied ? <Check style={{ width: '13px', height: '13px' }} /> : <Copy style={{ width: '13px', height: '13px' }} />}
+                {coordsCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
                 {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
               </button>
             </div>
@@ -4623,113 +4786,69 @@ const showToast = (msg: string) => {
                 </div>
               </div>
 
-              {/* Scrollable Passport Stamps */}
-              <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Compass style={{ width: '15px', height: '15px', color: '#0284c7' }} /> Passport Stamps
-                  </span>
-                  <span style={{
-                    backgroundColor: publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? '#fef3c7' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? '#f1f5f9' : '#e0f2fe',
-                    color: publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? '#d97706' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? '#64748b' : '#0284c7',
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '6px'
-                  }}>{publicPassportStamps.length} Countries{publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'gold') ? ' Â· Gold' : publicPassportStamps.some((s) => getStampTier(s.spotCount) === 'silver') ? ' Â· Silver' : ''}</span>
-                </div>
-
-                {publicPassportStamps.length === 0 ? (
-                  <p style={{ margin: '4px 0', fontSize: '11.5px', color: '#a8a29e', fontStyle: 'italic' }}>No country passport stamps collected yet.</p>
-                ) : (
-                  <div 
-                    ref={publicStampScrollRef}
-                    onMouseDown={(e) => handleStampMouseDown(e, publicStampScrollRef)}
-                    onMouseLeave={handleStampMouseUpOrLeave}
-                    onMouseUp={handleStampMouseUpOrLeave}
-                    onMouseMove={(e) => handleStampMouseMove(e, publicStampScrollRef)}
-                    onWheel={(e) => handleStampWheel(e, publicStampScrollRef)}
-                    style={{
-                      display: 'flex',
-                      gap: '12px',
-                      overflowX: 'auto',
-                      paddingBottom: '12px',
-                      paddingTop: '6px',
-                      scrollbarWidth: 'none',
-                      cursor: isStampDragging ? 'grabbing' : 'grab',
-                      WebkitOverflowScrolling: 'touch',
-                      transform: 'translateZ(0)',
-                    }}
-                  >
-                    {publicPassportStamps.map((st, idx) => {
-                      const d = new Date(st.firstVisit || Date.now());
-                      const day = d.toLocaleDateString('en-US', { day: '2-digit' });
-                      const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-                      const year = d.getFullYear();
-
-                      return (
-                        <div
-                          key={idx}
-                          className={`passport-stamp-card ${getStampTier(st.spotCount) === 'gold' ? 'stamp-tier-gold' : getStampTier(st.spotCount) === 'silver' ? 'stamp-tier-silver' : ''}`}
-                          onClick={() => {
-                            triggerHaptic(12);
-                            setSelectedCountryFilter(st.country);
-                            const matchingSpots = viewingProfileSpots.filter(
-                              (s) => (s.country || '').toLowerCase() === st.country.toLowerCase()
-                            );
-                            dismissModalWithHistory(() => setViewingProfile(null));
-                            setTimeout(() => focusMapOnCountry(map.current, matchingSpots), 300);
-                          }}
-                          style={{
-                            backgroundColor: '#fffdfa',
-                            border: `3px solid ${st.color}`,
-                            borderRadius: '50%',
-                            width: '96px',
-                            height: '96px',
-                            flexShrink: 0,
-                            boxShadow: '0 3px 10px rgba(28, 25, 23, 0.05)',
-                            position: 'relative',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '8px 8px',
-                            boxSizing: 'border-box',
-                            textAlign: 'center',
-                            outline: `1.5px dashed ${st.color}55`,
-                            outlineOffset: '-4px',
-                            transform: `rotate(${((idx % 5) - 2) * 1.5}deg)`,
-                          }}
-                        >
-                          <div style={{ fontSize: '7px', fontWeight: 800, color: st.color, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
-                            ENTRY Â· IMMIGRATION
-                          </div>
-                          
-                          <div style={{
-                            fontSize: st.country.length > 13 ? '8.5px' : '9.5px',
-                            fontWeight: 900,
-                            color: st.color,
-                            lineHeight: 1.15,
-                            letterSpacing: '0.04em',
-                            textTransform: 'uppercase',
-                            width: '100%',
-                            wordBreak: 'normal',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}>
-                            {st.country}
-                          </div>
-
-                          <div style={{ fontSize: '8px', color: st.color, fontWeight: 800, letterSpacing: '0.06em', fontFamily: 'monospace' }}>
-                            {day} {month} {year}
-                          </div>
-                        </div>
-                      );
-                    })}
+              {/* Passport Entry Card */}
+              <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px' }}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    triggerHaptic(8);
+                    setViewingPassportSpots(viewingProfileSpots);
+                    setViewingPassportProfile(viewingProfile);
+                    setPassportBookPage(0);
+                    dismissModalWithHistory(() => setViewingProfile(null));
+                    setTimeout(() => {
+                      setIsPassportBookOpen(true);
+                      pushModalHistoryState('passportBook');
+                    }, 260);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      triggerHaptic(8);
+                      setViewingPassportSpots(viewingProfileSpots);
+                      setViewingPassportProfile(viewingProfile);
+                      setPassportBookPage(0);
+                      dismissModalWithHistory(() => setViewingProfile(null));
+                      setTimeout(() => {
+                        setIsPassportBookOpen(true);
+                        pushModalHistoryState('passportBook');
+                      }, 260);
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    borderRadius: '14px',
+                    padding: '8px',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f4')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Compass style={{ width: '24px', height: '24px', color: '#e05a47' }} />
                   </div>
-                )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Passport</div>
+                    <div style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
+                      {publicPassportStamps.length} {publicPassportStamps.length === 1 ? 'country' : 'countries'} collected
+                    </div>
+                    {publicPassportStamps.length > 0 && (
+                      <div style={{ marginTop: '6px', display: 'flex', gap: '5px', alignItems: 'center' }}>
+                        {publicPassportStamps.slice(0, 8).map((st, idx) => (
+                          <div key={idx} style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: st.color, border: '1.5px solid #ffffff', boxShadow: '0 0 0 1px #e7e5e4', flexShrink: 0 }} />
+                        ))}
+                        {publicPassportStamps.length > 8 && (
+                          <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#a8a29e' }}>+{publicPassportStamps.length - 8}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <ArrowRight style={{ width: '15px', height: '15px', color: '#a8a29e', flexShrink: 0 }} />
+                </div>
               </div>
 
               {uniqueCities.length > 1 && (
@@ -4983,84 +5102,71 @@ const showToast = (msg: string) => {
               </button>
             </div>
 
-            <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', flexShrink: 0, animationDelay: '0.08s' }}>
-              {/* Main Tabs */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '14px', padding: '3px', width: '100%' }}>
-                <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
-                <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
-                <button onClick={() => setDrawerTab('essentials')} style={{ border: 'none', padding: '7px 2px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
+            <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px', flexShrink: 0, animationDelay: '0.08s' }}>
+              {/* Primary Category Switcher */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '14px', padding: '3px', width: '100%', border: '1px solid #e7e5e4' }}>
+                <button onClick={() => setDrawerTab('fieldNotes')} style={{ border: 'none', padding: '7px 4px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'fieldNotes' ? '#ffffff' : 'transparent', color: drawerTab === 'fieldNotes' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'fieldNotes' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Notes</button>
+                <button onClick={() => { if (!currentUserRef.current) { setIsAuthModalOpen(true); pushModalHistoryState('auth'); return; } setDrawerTab('mustTry'); }} style={{ border: 'none', padding: '7px 4px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'mustTry' ? '#ffffff' : 'transparent', color: drawerTab === 'mustTry' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'mustTry' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Must-Try</button>
+                <button onClick={() => setDrawerTab('essentials')} style={{ border: 'none', padding: '7px 4px', borderRadius: '11px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: drawerTab === 'essentials' ? '#ffffff' : 'transparent', color: drawerTab === 'essentials' ? '#1c1917' : '#78716c', boxShadow: drawerTab === 'essentials' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none', whiteSpace: 'nowrap' }}>Essentials</button>
               </div>
 
-              {/* Field Notes Sub-View Toggle (Only visible when on Field Notes tab) */}
+              {/* Sub-Filter & Sort Controls Combined */}
               {drawerTab === 'fieldNotes' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f5f5f4', borderRadius: '12px', padding: '2px', width: '100%', border: '1px solid #e7e5e4' }}>
-                  <button
-                    onClick={() => {
-                      triggerHaptic(4);
-                      setNotesViewMode('mine');
-                      if (!currentUser) {
-                        // If not signed in, maybe toast them or just switch to explore? 
-                        // Let's switch to explore if they try to click Mine without login
-                        setIsAuthModalOpen(true);
-                        pushModalHistoryState('auth');
-                      }
-                    }}
-                    style={{
-                      border: 'none',
-                      padding: '5px 2px',
-                      borderRadius: '9px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      backgroundColor: notesViewMode === 'mine' ? '#ffffff' : 'transparent',
-                      color: notesViewMode === 'mine' ? '#e05a47' : '#78716c',
-                      boxShadow: notesViewMode === 'mine' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <User style={{ width: '10px', height: '10px' }} /> My Notes
-                  </button>
-                  <button
-                    onClick={() => {
-                      triggerHaptic(4);
-                      setNotesViewMode('explore');
-                    }}
-                    style={{
-                      border: 'none',
-                      padding: '5px 2px',
-                      borderRadius: '9px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      backgroundColor: notesViewMode === 'explore' ? '#ffffff' : 'transparent',
-                      color: notesViewMode === 'explore' ? '#e05a47' : '#78716c',
-                      boxShadow: notesViewMode === 'explore' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <Compass style={{ width: '10px', height: '10px' }} /> Explore
-                  </button>
-                </div>
-              )}
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  {/* Mine vs Explore Pills */}
+                  <div style={{ display: 'inline-flex', backgroundColor: '#ecebe7', borderRadius: '10px', padding: '2px', border: '1px solid #e7e5e4' }}>
+                    <button
+                      onClick={() => {
+                        triggerHaptic(4);
+                        if (!currentUser) {
+                          setIsAuthModalOpen(true);
+                          pushModalHistoryState('auth');
+                          return;
+                        }
+                        setNotesViewMode('mine');
+                      }}
+                      style={{
+                        border: 'none',
+                        padding: '4px 8px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backgroundColor: notesViewMode === 'mine' ? '#ffffff' : 'transparent',
+                        color: notesViewMode === 'mine' ? '#e05a47' : '#78716c',
+                        boxShadow: notesViewMode === 'mine' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                      }}
+                    >
+                      My Pins
+                    </button>
+                    <button
+                      onClick={() => {
+                        triggerHaptic(4);
+                        setNotesViewMode('explore');
+                      }}
+                      style={{
+                        border: 'none',
+                        padding: '4px 8px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backgroundColor: notesViewMode === 'explore' ? '#ffffff' : 'transparent',
+                        color: notesViewMode === 'explore' ? '#e05a47' : '#78716c',
+                        boxShadow: notesViewMode === 'explore' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                      }}
+                    >
+                      Explore
+                    </button>
+                  </div>
 
-            {drawerTab === 'fieldNotes' && (
-              <div className="animate-slide-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '6px 10px', flexShrink: 0, animationDelay: '0.12s' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#57534e' }}>
-                  <SlidersHorizontal style={{ width: '13px', height: '13px', color: '#e05a47' }} />
-                  <span>Sort Order:</span>
-                </div>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                  {/* Compact Sort Toggle */}
                   <button
                     onClick={() => {
-                      setDrawerSortMode('nearest');
-                      if (!userCoords && typeof navigator !== 'undefined' && navigator.geolocation) {
+                      triggerHaptic(4);
+                      const nextMode = drawerSortMode === 'nearest' ? 'recent' : 'nearest';
+                      setDrawerSortMode(nextMode);
+                      if (nextMode === 'nearest' && !userCoords && typeof navigator !== 'undefined' && navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
                           (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
                           () => {},
@@ -5069,36 +5175,25 @@ const showToast = (msg: string) => {
                       }
                     }}
                     style={{
-                      backgroundColor: drawerSortMode === 'nearest' ? '#1c1917' : '#ecebe7',
-                      color: drawerSortMode === 'nearest' ? '#fafaf9' : '#78716c',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '4px 10px',
+                      border: '1px solid #e7e5e4',
+                      backgroundColor: '#f5f5f4',
+                      borderRadius: '10px',
+                      padding: '4px 8px',
                       fontSize: '11px',
                       fontWeight: 600,
+                      color: '#57534e',
                       cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
                     }}
                   >
-                    Nearest
-                  </button>
-                  <button
-                    onClick={() => setDrawerSortMode('recent')}
-                    style={{
-                      backgroundColor: drawerSortMode === 'recent' ? '#1c1917' : '#ecebe7',
-                      color: drawerSortMode === 'recent' ? '#fafaf9' : '#78716c',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '4px 10px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Newest
+                    <SlidersHorizontal style={{ width: '12px', height: '12px', color: '#e05a47' }} />
+                    <span>{drawerSortMode === 'nearest' ? 'Nearest' : 'Newest'}</span>
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="animate-slide-up" style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px', animationDelay: '0.16s' }}>
               {drawerTab === 'essentials' ? (
@@ -5110,7 +5205,7 @@ const showToast = (msg: string) => {
                   <a href="https://aviasales.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <Plane style={{ width: '16px', height: '16px', color: '#e05a47' }} />
+                        <Plane style={{ width: '18px', height: '18px', color: '#e05a47' }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                         <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Aviasales</span>
@@ -5120,10 +5215,10 @@ const showToast = (msg: string) => {
                     <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                   </a>
 
-                  <a href="https://saily.tpk.lv/W8d7Lkw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
+                  <a href="https://saily.tpk.lv/DWenwZYZ" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <Globe style={{ width: '16px', height: '16px', color: '#0284c7' }} />
+                        <img src="/saily.svg" alt="Saily" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                         <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Saily eSIM</span>
@@ -5133,14 +5228,14 @@ const showToast = (msg: string) => {
                     <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
                   </a>
 
-                  <a href="https://kiwi.tpk.lv/Y7mdLlKw" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
+                  <a href="https://klook.tpk.lv/sZHsJIxR" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '14px', color: '#1c1917', textDecoration: 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e7e5e4', flexShrink: 0 }}>
-                        <Compass style={{ width: '16px', height: '16px', color: '#059669' }} />
+                        <img src="/klook.svg" alt="Klook" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Kiwi.com</span>
-                        <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>Low cost multi-city travel booking</span>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>Klook Experiences</span>
+                        <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>Attraction passes, transit tickets & tours</span>
                       </div>
                     </div>
                     <ArrowRight style={{ width: '14px', height: '14px', color: '#a8a29e', flexShrink: 0 }} />
@@ -5178,8 +5273,50 @@ const showToast = (msg: string) => {
                     );
                   }
 
+                  const showAdCard = !isPlusSubscriber && idx === 3;
+                  const adCard = showAdCard ? (
+                    <a
+                      key="infeed-ad-saily"
+                      href="https://saily.tpk.lv/DWenwZYZ"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="spot-card-hover"
+                      style={{
+                        padding: '12px 13px',
+                        borderRadius: '14px',
+                        border: '1px dashed #bae6fd',
+                        backgroundColor: '#f0f9ff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        textDecoration: 'none',
+                        color: 'inherit',
+                      }}
+                    >
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #bae6fd', flexShrink: 0 }}>
+                        <img src="/saily.svg" alt="Saily" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0369a1' }}>
+                            Saily Travel eSIM
+                          </h4>
+                          <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '1px 6px', borderRadius: '6px' }}>
+                            Sponsored
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#0284c7', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Instant mobile data anywhere you wander ↗
+                        </p>
+                      </div>
+                    </a>
+                  ) : null;
+
                   return [
                     ...(header ? [header] : []),
+                    ...(adCard ? [adCard] : []),
                     (
                     <div
                       key={spot.id || spot.name}
@@ -5197,13 +5334,13 @@ const showToast = (msg: string) => {
                         padding: '12px 13px',
                         borderRadius: '14px',
                         border: '1px solid #e7e5e4',
-                        borderLeft: `4px solid ${color}`,
                         backgroundColor: '#ffffff',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px',
                         cursor: 'pointer',
                         flexShrink: 0,
+                        boxShadow: '0 1px 3px rgba(28, 25, 23, 0.03)',
                       }}
                     >
                       {spot.image_url && (
@@ -5540,23 +5677,23 @@ const showToast = (msg: string) => {
               )}
             </div>
 
-            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px', backgroundColor: onlyMySpots ? '#fff1ee' : '#ffffff', border: onlyMySpots ? '1px solid #fecdd3' : '1px solid #e7e5e4', borderRadius: '14px', cursor: 'pointer', marginBottom: '10px' }}>
+            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#fff7ed' : '#ffffff', border: onlyMySpots ? '1px solid #fdba74' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#e05a47' : '#78716c'} />
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#e05a47' : '#44403c' }}>Filter map to my pins only</span>
+                <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#ea580c' : '#78716c'} />
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#c2410c' : '#44403c' }}>Filter map to my pins only</span>
               </div>
-              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#e05a47' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
+              {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#ea580c' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
 
             <button
               onClick={handleShareFieldJournal}
               style={{
                 width: '100%',
-                backgroundColor: '#ecebe7',
-                color: '#1c1917',
-                border: '1px solid #e7e5e4',
+                backgroundColor: 'transparent',
+                color: '#44403c',
+                border: '1px solid #d6d3d1',
                 padding: '11px',
-                borderRadius: '14px',
+                borderRadius: '16px',
                 fontSize: '12.5px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -5570,7 +5707,7 @@ const showToast = (msg: string) => {
               <Share2 style={{ width: '14px', height: '14px' }} /> Share Field Journal
             </button>
 
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#fff1ee', color: '#e05a47', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '14px', border: '1px solid #fed7aa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#f5f5f4', color: '#78716c', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '16px', border: '1px solid #e7e5e4', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
             </button>
 
@@ -5802,7 +5939,7 @@ const showToast = (msg: string) => {
         </div>
       )}
 
-      {/* Bywayr Plus Upgrade Modal */}
+     {/* Bywayr Plus Upgrade Modal */}
       {isPlusModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
           <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -5833,14 +5970,12 @@ const showToast = (msg: string) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '10px 0 20px 0' }}>
-
-
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
                   <Download style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> â€” Download a portable copy of your entire field journal, any time.
+                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
                 </div>
               </div>
 
@@ -5849,7 +5984,7 @@ const showToast = (msg: string) => {
                   <ShieldCheck style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> â€” Browse the entire map with zero banner ads, forever.
+                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero banner ads, forever.
                 </div>
               </div>
 
@@ -5858,7 +5993,7 @@ const showToast = (msg: string) => {
                   <Sparkle style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> â€” No monthly subscriptions or recurring fees.
+                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
                 </div>
               </div>
             </div>
@@ -5882,7 +6017,7 @@ const showToast = (msg: string) => {
                       letterSpacing: '0.01em',
                     }}
                   >
-                    One-time Payment â€” $19.99
+                    One-time Payment — $19.99
                   </button>
 
                   <button
@@ -5910,29 +6045,25 @@ const showToast = (msg: string) => {
         </div>
       )}
 
-responsive booklet with custom image artwork, pagination & drag/swipe */}
+      {/* Scrollable Passport Booklet — Clean Organic Spread */}
       {(isPassportBookOpen || isBookClosing) && (() => {
-        const stampsPerPage = isDesktopViewport ? 8 : 4;
-        const totalPages = Math.max(1, Math.ceil(myPassportStamps.length / stampsPerPage));
-        const pageStamps = myPassportStamps.slice(
-          passportBookPage * stampsPerPage,
-          (passportBookPage + 1) * stampsPerPage
-        );
-        const unclaimedCount = Math.max(0, stampsPerPage - pageStamps.length);
+        // Book can render YOUR passport or a viewed public profile's (read-only)
+        const isViewingOther = !!viewingPassportProfile;
+        const bookStamps = isViewingOther ? extractPassportStamps(viewingPassportSpots) : myPassportStamps;
+        const bookProfile = viewingPassportProfile || userProfile;
+        const bookUsername = bookProfile?.username || 'wanderer';
+        const bookCountry = bookProfile?.country || 'Wanderer';
+        const bookUserId = isViewingOther ? viewingPassportProfile!.id : currentUser?.id;
+        const bookStats = isViewingOther
+          ? { countries: bookStamps.length, pins: viewingPassportSpots.length, cities: new Set(viewingPassportSpots.map((s) => s.city.trim())).size }
+          : { countries: myCountriesCount, pins: mySpotsCount, cities: myCitiesCount };
+        const activeStampItems = [
+          ...bookStamps.map((st, idx) => renderStampCard(st, idx, 0)),
+          ...(!isPlusSubscriber && !isViewingOther ? [renderSponsoredPassportStamp(99)] : []),
+        ];
 
-        const handlePrevPage = () => {
-          if (passportBookPage > 0) {
-            triggerHaptic(6);
-            setPassportBookPage((p) => p - 1);
-          }
-        };
-
-        const handleNextPage = () => {
-          if (passportBookPage < totalPages - 1) {
-            triggerHaptic(6);
-            setPassportBookPage((p) => p + 1);
-          }
-        };
+        const leftPageStamps = isDesktopViewport ? activeStampItems.filter((_, i) => i % 2 === 0) : activeStampItems;
+        const rightPageStamps = isDesktopViewport ? activeStampItems.filter((_, i) => i % 2 !== 0) : [];
 
         return (
           <div
@@ -5953,328 +6084,485 @@ responsive booklet with custom image artwork, pagination & drag/swipe */}
               boxSizing: 'border-box',
               fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             }}
-            onTouchStart={(e) => {
-              passportBookTouchStartRef.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={(e) => {
-              if (passportBookTouchStartRef.current === null) return;
-              const dx = e.changedTouches[0].clientX - passportBookTouchStartRef.current;
-              passportBookTouchStartRef.current = null;
-              if (dx > 45) handlePrevPage();
-              if (dx < -45) handleNextPage();
-            }}
-            onMouseDown={(e) => {
-              if (isDesktopViewport && e.button === 0) {
-                passportDesktopDragStartRef.current = e.clientX;
-              }
-            }}
-            onMouseUp={(e) => {
-              if (isDesktopViewport && passportDesktopDragStartRef.current !== null) {
-                const dx = e.clientX - passportDesktopDragStartRef.current;
-                passportDesktopDragStartRef.current = null;
-                if (dx > 50) handlePrevPage();
-                if (dx < -50) handleNextPage();
-              }
-            }}
             onClick={(e) => {
               if (e.target === e.currentTarget) handleClosePassportBook();
             }}
           >
-            {/* Top Bar Header */}
+            {/* Passport Book Container */}
             <div
+              className={`animate-scale-up ${isBookClosing ? 'paper-exit' : ''}`}
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
                 width: '100%',
-                maxWidth: isDesktopViewport ? '720px' : '360px',
-                marginBottom: '10px',
-                padding: '0 4px',
+                maxWidth: isDesktopViewport ? '780px' : '390px',
+                height: isDesktopViewport ? 'min(86vh, 560px)' : 'min(84vh, 600px)',
+                maxHeight: '680px',
+                backgroundColor: '#fdfbf7',
+                borderRadius: '24px',
+                boxShadow: '0 30px 70px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(180, 165, 140, 0.25)',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
-                  <Compass style={{ width: '15px', height: '15px' }} />
-                </div>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#fafaf9', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                  Passport
-                </span>
-              </div>
-
-              <button
-                onClick={handleClosePassportBook}
-                type="button"
-                aria-label="Close Passport"
+              {/* Header Top Bar */}
+              <div
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                  border: '1px solid #e7e5e4',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  cursor: 'pointer',
-                  color: '#1c1917',
                   display: 'flex',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  padding: '12px 18px',
+                  borderBottom: '1px solid rgba(220, 210, 195, 0.6)',
+                  backgroundColor: 'rgba(253, 251, 247, 0.95)',
+                  backdropFilter: 'blur(8px)',
+                  zIndex: 10,
+                  flexShrink: 0,
                 }}
               >
-                <X style={{ width: '16px', height: '16px' }} />
-              </button>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47' }}>
+                    <Compass style={{ width: '15px', height: '15px' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      Passport
+                    </div>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#e05a47', fontFamily: 'monospace' }}>
+                      {bookStamps.length} {bookStamps.length === 1 ? 'COUNTRY' : 'COUNTRIES'} LOGGED
+                    </div>
+                  </div>
+                </div>
 
-            {/* Passport Container with Desktop Arrow Overlays */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: isDesktopViewport ? '720px' : '360px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {isDesktopViewport && (
                 <button
+                  onClick={handleClosePassportBook}
                   type="button"
-                  onClick={handlePrevPage}
-                  disabled={passportBookPage === 0}
+                  aria-label="Close Passport"
                   style={{
-                    position: 'absolute',
-                    left: '-22px',
-                    zIndex: 10,
-                    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                    backgroundColor: '#ffffff',
                     border: '1px solid #e7e5e4',
                     borderRadius: '50%',
-                    width: '36px',
-                    height: '36px',
+                    width: '30px',
+                    height: '30px',
+                    cursor: 'pointer',
+                    color: '#1c1917',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: passportBookPage === 0 ? 'default' : 'pointer',
-                    opacity: passportBookPage === 0 ? 0.3 : 1,
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
-                    color: '#1c1917',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
                   }}
-                  title="Previous Spread"
                 >
-                  <ChevronLeft style={{ width: '18px', height: '18px' }} />
+                  <X style={{ width: '15px', height: '15px' }} />
                 </button>
-              )}
+              </div>
 
-              {/* Responsive Passport Canvas */}
+              {/* Full-Bleed Authentic Security Banknote Page Canvas */}
               <div
-                key={passportBookPage}
-                className={`book-page-turn ${isBookClosing ? 'paper-exit' : ''}`}
+                className="smooth-bounce-scroll"
                 style={{
-                  width: '100%',
-                  aspectRatio: '1.45 / 1',
-                  maxHeight: 'min(64vh, 500px)',
+                  flex: 1,
+                  backgroundColor: '#fbf8f2',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflowY: 'auto',
                   position: 'relative',
-                  borderRadius: '18px',
-                  overflow: 'hidden',
-                  boxShadow: '0 28px 60px -15px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.15)',
-                  userSelect: 'none',
-                  cursor: isDesktopViewport ? 'grab' : 'default',
+                  scrollbarWidth: 'thin',
                 }}
               >
-                {/* Background Passport Graphic */}
-                <img
-                  src="/passport.png"
-                  alt="Passport"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    pointerEvents: 'none',
-                  }}
-                />
-
-                {/* Content & Stamp Layer */}
+                {/* Full-Bleed Organic Guilloché Mesh — Terracotta page / Teal page */}
                 <div
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: isDesktopViewport ? '16px 28px 12px 28px' : '14px 14px 10px 14px',
-                    boxSizing: 'border-box',
-                    zIndex: 2,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    overflow: 'hidden',
+                    opacity: 0.85,
                   }}
                 >
-                  {/* Top Visa Page Labels */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0 8px 4px 8px',
-                      borderBottom: '1px dashed rgba(184, 170, 141, 0.5)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <span style={{ fontSize: '8px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace' }}>
-                      {isDesktopViewport ? `VISAS Â· PAGE ${passportBookPage * 2 + 1}` : `VISAS Â· PAGE ${passportBookPage + 1}`}
-                    </span>
+                  <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+                    <defs>
+                      <pattern id="guilloche-mesh-warm" width="58" height="62" patternUnits="userSpaceOnUse">
+                        <path d="M 0 31 Q 14 2, 29 31 T 58 31" fill="none" stroke="#dda397" strokeWidth="0.55" strokeOpacity="0.4" />
+                        <path d="M 0 31 Q 14 60, 29 31 T 58 31" fill="none" stroke="#dda397" strokeWidth="0.55" strokeOpacity="0.4" />
+                        <circle cx="29" cy="31" r="13" fill="none" stroke="#e8c4b4" strokeWidth="0.5" strokeDasharray="2 3" strokeOpacity="0.5" />
+                        <circle cx="58" cy="0" r="5" fill="none" stroke="#dda397" strokeWidth="0.4" strokeOpacity="0.28" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#guilloche-mesh-warm)" />
+                  </svg>
+
+                  {/* Rosettes — organic terracotta left, teal right, intentionally imperfect */}
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: isDesktopViewport ? 'space-around' : 'center', alignItems: 'center' }}>
+                    {/* Left Page Rosette (Terracotta) */}
+                    <svg viewBox="0 0 500 500" style={{ width: isDesktopViewport ? '430px' : '340px', height: isDesktopViewport ? '430px' : '340px', flexShrink: 0 }}>
+                      <g transform="translate(250, 250)" fill="none">
+                        {Array.from({ length: 28 }).map((_, i) => (
+                          <ellipse
+                            key={`rosette-l-${i}`}
+                            cx="0" cy="0"
+                            rx={186 + (i % 3) * 7}
+                            ry={58 + (i % 4) * 4}
+                            transform={`rotate(${i * 5.625 + (i % 5) * 0.7})`}
+                            stroke="#e05a47" strokeWidth="0.7"
+                            strokeOpacity={0.22 + (i % 4) * 0.05}
+                          />
+                        ))}
+                        {Array.from({ length: 14 }).map((_, i) => (
+                          <circle
+                            key={`circle-l-${i}`}
+                            cx="0" cy="0" r={28 + i * 13}
+                            stroke="#c2503f" strokeWidth="0.6"
+                            strokeDasharray={i % 3 === 0 ? '4 3' : i % 3 === 1 ? '1 4' : 'none'}
+                            strokeOpacity={Math.max(0.08, 0.3 - i * 0.012)}
+                          />
+                        ))}
+                        <circle cx="0" cy="0" r="26" fill="#e05a47" fillOpacity="0.05" stroke="#e05a47" strokeWidth="0.9" strokeOpacity="0.6" />
+                      </g>
+                    </svg>
+
+                    {/* Right Page Rosette (Teal, desktop only) */}
                     {isDesktopViewport && (
-                      <span style={{ fontSize: '8px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace' }}>
-                        VISAS Â· PAGE {passportBookPage * 2 + 2}
-                      </span>
+                      <svg viewBox="0 0 500 500" style={{ width: '430px', height: '430px', flexShrink: 0 }}>
+                        <g transform="translate(250, 250)" fill="none">
+                          {Array.from({ length: 26 }).map((_, i) => (
+                            <ellipse
+                              key={`rosette-r-${i}`}
+                              cx="0" cy="0"
+                              rx={188 + (i % 4) * 6}
+                              ry={56 + (i % 3) * 5}
+                              transform={`rotate(${i * 6.2 + (i % 3) * 1.1})`}
+                              stroke="#0d9488" strokeWidth="0.7"
+                              strokeOpacity={0.2 + (i % 4) * 0.045}
+                            />
+                          ))}
+                          {Array.from({ length: 13 }).map((_, i) => (
+                            <circle
+                              key={`circle-r-${i}`}
+                              cx="0" cy="0" r={30 + i * 12}
+                              stroke="#0f766e" strokeWidth="0.6"
+                              strokeDasharray={i % 3 === 0 ? '3 4' : i % 3 === 1 ? '5 2' : 'none'}
+                              strokeOpacity={Math.max(0.07, 0.28 - i * 0.013)}
+                            />
+                          ))}
+                          <circle cx="0" cy="0" r="24" fill="#0d9488" fillOpacity="0.05" stroke="#0d9488" strokeWidth="0.9" strokeOpacity="0.55" />
+                        </g>
+                      </svg>
                     )}
                   </div>
+                </div>
 
-                  {/* Stamp Slots Grid */}
+                {/* Laser-Perforated Document Serial Numbers at Top */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: 0,
+                    right: 0,
+                    display: 'flex',
+                    justifyContent: isDesktopViewport ? 'space-around' : 'center',
+                    pointerEvents: 'none',
+                    zIndex: 2,
+                    padding: '0 24px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
+                    BW · {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
+                  </span>
+                  {isDesktopViewport && (
+                    <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
+                      P &lt; {(userProfile?.country || 'WANDERER').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 15) || 'WANDERER'} &lt; BYWAYR &lt;&lt; {myPassportStamps.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Bottom Official Page Number Badges — tracks real spread */}
+                {activeStampItems.length > 0 && (() => {
+                  const STAMPS_PER_SPREAD = 4;
+                  const totalSpreads = Math.max(1, Math.ceil(activeStampItems.length / STAMPS_PER_SPREAD));
+                  const page = Math.min(passportBookPage, totalSpreads - 1);
+                  // Passport-style numbering: identity page is odd, stamp pages pair after it
+                  const leftNum = isDesktopViewport ? page * 2 + 3 : page * 2 + 4;
+                  const rightNum = leftNum + 1;
+
+                  return (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        left: '24px',
+                        right: '24px',
+                        display: 'flex',
+                        justifyContent: isDesktopViewport ? 'space-between' : 'flex-end',
+                        alignItems: 'center',
+                        pointerEvents: 'none',
+                        zIndex: 2,
+                      }}
+                    >
+                      {/* Left Page Number Seal (Desktop identity pag                  // Real-booklet numbering: spreads 3/4, 5/6, 7/8... (identity page owns 1/2)
+                  const leftNum = page * 2 + 3;
+                  const rightNum = leftNum + 1;e) */}
+                      {isDesktopViewport && (
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid rgba(2, 132, 199, 0.35)', backgroundColor: 'rgba(255, 255, 255, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0369a1', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', boxShadow: '0 1px 4px rgba(2, 132, 199, 0.08)' }}>
+                          {leftNum}
+                        </div>
+                      )}
+
+                      {/* Right Page Number Seal */}
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid rgba(2, 132, 199, 0.35)', backgroundColor: 'rgba(255, 255, 255, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0369a1', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', boxShadow: '0 1px 4px rgba(2, 132, 199, 0.08)' }}>
+                        {rightNum}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Book Center Binding Spine Crease on Desktop */}
+                {isDesktopViewport && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: '50%',
+                      width: '32px',
+                      transform: 'translateX(-50%)',
+                      background: 'linear-gradient(to right, rgba(2,132,199,0) 0%, rgba(14,116,144,0.12) 50%, rgba(2,132,199,0) 100%)',
+                      borderLeft: '1px dashed rgba(2, 132, 199, 0.3)',
+                      pointerEvents: 'none',
+                      zIndex: 3,
+                    }}
+                  />
+                )}
+
+                {activeStampItems.length === 0 ? (
                   <div
                     style={{
                       flex: 1,
-                      display: 'grid',
-                      gridTemplateColumns: isDesktopViewport ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)',
-                      gridAutoRows: '1fr',
-                      gap: isDesktopViewport ? '10px 14px' : '8px 10px',
+                      display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyItems: 'center',
-                      padding: '8px 0',
+                      justifyContent: 'center',
+                      padding: '40px 20px',
+                      textAlign: 'center',
+                      gap: '8px',
                     }}
                   >
-                    {pageStamps.map((st, idx) => renderStampCard(st, idx, passportBookPage))}
-                    {Array.from({ length: unclaimedCount }).map((_, idx) => renderUnclaimedSlot(idx, passportBookPage))}
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px dashed #d6cebf', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a89f91' }}>
+                      <Compass style={{ width: '22px', height: '22px' }} />
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#57534e' }}>
+                      No Passport Stamps Yet
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#8c8273', maxWidth: '240px', lineHeight: 1.4 }}>
+                      Pin spots in new cities and countries to collect official entry stamps.
+                    </div>
                   </div>
+                ) : isDesktopViewport ? (
+                  /* Desktop True Dual-Page Spread: Identity Left / Paginated Stamps Right */
+                  (() => {
+                    const STAMPS_PER_SPREAD = 4;
+                    const totalSpreads = Math.max(1, Math.ceil(activeStampItems.length / STAMPS_PER_SPREAD));
+                    const page = Math.min(passportBookPage, totalSpreads - 1);
+                    const spreadStamps = activeStampItems.slice(page * STAMPS_PER_SPREAD, page * STAMPS_PER_SPREAD + STAMPS_PER_SPREAD);
+                    const unclaimedSlots = Array.from(
+                      { length: Math.max(0, STAMPS_PER_SPREAD - spreadStamps.length) },
+                      (_, i) => renderUnclaimedSlot(i, page)
+                    );
 
-                  {/* Official Travel Log Footer */}
+                    const issueDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+                    const mrzCountry = ((bookCountry === 'Wanderer' ? 'WANDERER' : bookCountry).replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 15) || 'WANDERER').padEnd(15, '<');
+                    const mrzHandle = ((bookUsername || 'WANDERER').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 12)).padEnd(12, '<');
+
+                    return (
+                      <div
+                        style={{
+                          flex: 1,
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          padding: '26px 30px',
+                          boxSizing: 'border-box',
+                          alignItems: 'stretch',
+                          position: 'relative',
+                          zIndex: 1,
+                        }}
+                      >
+                        {/* LEFT PAGE — Identity */}
+                        <div
+                          className="book-page-turn"
+                          key={`identity-page-${page}`}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            gap: '14px',
+                            paddingRight: '44px',
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '46px', height: '46px', borderRadius: '12px', backgroundColor: '#fff1ee', border: '1.5px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                              <Compass style={{ width: '23px', height: '23px' }} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '22px', fontWeight: 900, color: '#1c1917', letterSpacing: '0.06em', lineHeight: 1.1 }}>
+                                PASSPORT
+                              </div>
+                              <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#e05a47', letterSpacing: '0.28em', marginTop: '3px' }}>
+                                FIELD JOURNAL DIVISION
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ height: '1px', backgroundColor: 'rgba(180, 165, 140, 0.35)' }} />
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                            <div>
+                              <div style={{ fontSize: '8.5px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.2em' }}>BEARER</div>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#1c1917', letterSpacing: '0.02em' }}>
+                                @{bookUsername}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '26px' }}>
+                              <div>
+                                <div style={{ fontSize: '8.5px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.2em' }}>NATIONALITY</div>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>
+                                  {bookCountry}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '8.5px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.2em' }}>ISSUED</div>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', fontFamily: 'monospace' }}>
+                                  {issueDate}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', backgroundColor: 'rgba(255, 253, 250, 0.8)', border: '1px solid rgba(220, 208, 185, 0.5)', borderRadius: '14px', padding: '10px 8px', textAlign: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: '16px', fontWeight: 800, color: '#1c1917' }}>{bookStats.countries}</div>
+                              <div style={{ fontSize: '8.5px', color: '#8c8273', fontWeight: 700, letterSpacing: '0.08em' }}>COUNTRIES</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '16px', fontWeight: 800, color: '#1c1917' }}>{bookStats.pins}</div>
+                              <div style={{ fontSize: '8.5px', color: '#8c8273', fontWeight: 700, letterSpacing: '0.08em' }}>PINS</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '16px', fontWeight: 800, color: '#1c1917' }}>{bookStats.cities}</div>
+                              <div style={{ fontSize: '8.5px', color: '#8c8273', fontWeight: 700, letterSpacing: '0.08em' }}>CITIES</div>
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: '4px',
+                              padding: '9px 10px',
+                              backgroundColor: 'rgba(255, 253, 250, 0.85)',
+                              border: '1px solid rgba(180, 165, 140, 0.4)',
+                              borderRadius: '8px',
+                              fontFamily: 'monospace',
+                              fontSize: '10.5px',
+                              fontWeight: 700,
+                              letterSpacing: '0.12em',
+                              color: '#57534e',
+                              lineHeight: 1.7,
+                              whiteSpace: 'pre',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <div>P&lt;BWRBYWAYR&lt;&lt;{mrzCountry}</div>
+                            <div>BWR{mrzHandle}&lt;&lt;{String(bookStamps.length).padStart(4, '0')}&lt;&lt;&lt;&lt;&lt;</div>
+                          </div>
+                        </div>
+
+                        {/* RIGHT PAGE — Paginated Stamp Spread */}
+                        <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '36px', minWidth: 0 }}>
+                          <div
+                            className="book-page-turn"
+                            key={`stamp-spread-${page}`}
+                            style={{
+                              flex: 1,
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(2, 1fr)',
+                              gap: '22px 16px',
+                              alignItems: 'center',
+                              alignContent: 'center',
+                              justifyItems: 'center',
+                            }}
+                          >
+                            {spreadStamps}
+                            {unclaimedSlots}
+                          </div>
+
+                          {/* Spread Navigation */}
+                          {totalSpreads > 1 && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', padding: '8px 0 2px 0' }}>
+                              <button
+                                type="button"
+                                disabled={page === 0}
+                                onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.max(0, p - 1)); }}
+                                style={{
+                                  width: '30px', height: '30px', borderRadius: '50%',
+                                  border: '1px solid rgba(180, 165, 140, 0.5)',
+                                  backgroundColor: page === 0 ? 'transparent' : '#ffffff',
+                                  color: page === 0 ? '#d6cebf' : '#1c1917',
+                                  cursor: page === 0 ? 'default' : 'pointer',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                }}
+                                aria-label="Previous spread"
+                              >
+                                <ChevronLeft style={{ width: '15px', height: '15px' }} />
+                              </button>
+                              <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#8c8273', letterSpacing: '0.25em', fontFamily: 'monospace' }}>
+                                SPREAD {page + 1} / {totalSpreads}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={page >= totalSpreads - 1}
+                                onClick={() => { triggerHaptic(6); setPassportBookPage((p) => Math.min(totalSpreads - 1, p + 1)); }}
+                                style={{
+                                  width: '30px', height: '30px', borderRadius: '50%',
+                                  border: '1px solid rgba(180, 165, 140, 0.5)',
+                                  backgroundColor: page >= totalSpreads - 1 ? 'transparent' : '#ffffff',
+                                  color: page >= totalSpreads - 1 ? '#d6cebf' : '#1c1917',
+                                  cursor: page >= totalSpreads - 1 ? 'default' : 'pointer',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                }}
+                                aria-label="Next spread"
+                              >
+                                <ChevronRight style={{ width: '15px', height: '15px' }} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  /* Mobile Organic Grid */
                   <div
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
+                      flex: 1,
+                      padding: '24px 18px',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '20px 14px',
                       alignItems: 'center',
-                      paddingTop: '3px',
-                      borderTop: '1px dashed rgba(184, 170, 141, 0.45)',
-                      fontSize: '7.5px',
-                      fontWeight: 700,
-                      color: '#9ca3af',
-                      letterSpacing: '0.12em',
-                      fontFamily: 'monospace',
-                      textTransform: 'uppercase',
-                      flexShrink: 0,
+                      justifyItems: 'center',
+                      boxSizing: 'border-box',
                     }}
                   >
-                    <span>OFFICIAL TRAVEL LOG</span>
-                    <span>BYWAYR FIELD JOURNAL</span>
+                    {activeStampItems}
                   </div>
-                </div>
+                )}
               </div>
-
-              {isDesktopViewport && (
-                <button
-                  type="button"
-                  onClick={handleNextPage}
-                  disabled={passportBookPage >= totalPages - 1}
-                  style={{
-                    position: 'absolute',
-                    right: '-22px',
-                    zIndex: 10,
-                    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                    border: '1px solid #e7e5e4',
-                    borderRadius: '50%',
-                    width: '36px',
-                    height: '36px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: passportBookPage >= totalPages - 1 ? 'default' : 'pointer',
-                    opacity: passportBookPage >= totalPages - 1 ? 0.3 : 1,
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
-                    color: '#1c1917',
-                  }}
-                  title="Next Spread"
-                >
-                  <ChevronRight style={{ width: '18px', height: '18px' }} />
-                </button>
-              )}
-            </div>
-
-            {/* Floating Pagination Pill */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                maxWidth: isDesktopViewport ? '720px' : '360px',
-                marginTop: '12px',
-                padding: '4px 6px',
-                backgroundColor: '#ecebe7',
-                borderRadius: '18px',
-                border: '1px solid #e7e5e4',
-                boxShadow: '0 12px 30px -8px rgba(28, 25, 23, 0.18)',
-                boxSizing: 'border-box',
-              }}
-            >
-              <button
-                onClick={handlePrevPage}
-                disabled={passportBookPage === 0}
-                style={{
-                  backgroundColor: passportBookPage === 0 ? 'transparent' : '#ffffff',
-                  border: '1px solid ' + (passportBookPage === 0 ? 'transparent' : '#e7e5e4'),
-                  color: passportBookPage === 0 ? '#a8a29e' : '#1c1917',
-                  borderRadius: '14px',
-                  padding: '7px 14px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: passportBookPage === 0 ? 'default' : 'pointer',
-                  opacity: passportBookPage === 0 ? 0.35 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                â† Prev
-              </button>
-
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
-                <span
-                  style={{
-                    fontSize: '11.5px',
-                    fontWeight: 800,
-                    color: '#1c1917',
-                    letterSpacing: '0.06em',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {isDesktopViewport ? `SPREAD ${passportBookPage + 1} OF ${totalPages}` : `PAGE ${passportBookPage + 1} OF ${totalPages}`}
-                </span>
-                <span
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    color: '#e05a47',
-                    letterSpacing: '0.02em',
-                  }}
-                >
-                  {myPassportStamps.length} stamps collected
-                </span>
-              </div>
-
-              <button
-                onClick={handleNextPage}
-                disabled={passportBookPage >= totalPages - 1}
-                style={{
-                  backgroundColor: passportBookPage >= totalPages - 1 ? 'transparent' : '#e05a47',
-                  border: passportBookPage >= totalPages - 1 ? '1px solid transparent' : 'none',
-                  color: passportBookPage >= totalPages - 1 ? '#a8a29e' : '#ffffff',
-                  borderRadius: '14px',
-                  padding: '7px 16px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: passportBookPage >= totalPages - 1 ? 'default' : 'pointer',
-                  opacity: passportBookPage >= totalPages - 1 ? 0.35 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  boxShadow: passportBookPage >= totalPages - 1 ? 'none' : '0 4px 12px rgba(224, 90, 71, 0.3)',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                Next â†’
-              </button>
             </div>
           </div>
         );
-      })()}
-        
+      })()}        
       {/* Welcome / Onboarding Carousel â€” full screen */}
       {showWelcome && (() => {
         const ONBOARDING_STEPS = [
