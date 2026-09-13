@@ -4001,9 +4001,21 @@ const showToast = (msg: string) => {
         {/* Separator */}
         <div style={{ height: '1px', backgroundColor: isDarkMode ? '#44403c' : '#e7e5e4', margin: '1px 3px' }} />
 
-        {/* Dark Mode Toggle */}
+        {/* Locate Me Button */}
         <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
+          onClick={handleLocateMe}
+          style={{ width: '36px', height: '36px', backgroundColor: 'transparent', border: 'none', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDarkMode ? '#e05a47' : '#57534e' }}
+          title="Center on My Location"
+        >
+          {isLocating ? (
+            <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <Crosshair style={{ width: '16px', height: '16px' }} />
+          )}
+        </button>
+
+        {/* Separator */}
+        <div s
           style={{ width: '36px', height: '36px', borderRadius: '14px', border: 'none', backgroundColor: 'transparent', color: isDarkMode ? '#e05a47' : '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
         >
