@@ -2586,11 +2586,34 @@ const showToast = (msg: string) => {
           productType: PURCHASE_TYPE.INAPP,
         });
 
-        if (purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_lifetime' || purchaseResult?.transaction) {
-          setIsPlusSubscriber(true);
-          localStorage.setItem('bywayr_is_plus', 'true');
-          setIsPlusModalOpen(false);
-          showToast('Thank you for upgrading to Bywayr Plus! 👑');
+        const tx = purchaseResult?.transaction;
+        const purchaseToken = tx?.purchaseToken || tx?.token || null;
+
+        // Server-side verification: Google Play confirms the receipt before Plus unlocks
+        let serverVerified = false;
+        if (purchaseToken) {
+          try {
+            const verifyRes = await fetch('https://bywayr.com/api/play-verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ purchaseToken }),
+            });
+            const verifyJson = await verifyRes.json();
+            serverVerified = verifyJson?.verified === true;
+          } catch (verifyErr) {
+            console.warn('Server verification unreachable:', verifyErr);
+          }
+        }
+
+        if ((purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_lifetime') || tx) {
+          if (serverVerified) {
+            setIsPlusSubscriber(true);
+            localStorage.setItem('bywayr_is_plus', 'true');
+            setIsPlusModalOpen(false);
+            showToast('Thank you for upgrading to Bywayr Plus! 👑');
+          } else {
+            showToast('Verifying purchase… please try Restore in a moment');
+          }
         }
       } else {
         showToast('Purchases are available in the Android app');
@@ -3844,17 +3867,21 @@ const showToast = (msg: string) => {
           {/* Plus Custom Category Button */}
           <button
             onClick={() => {
+              console.log('+ Category clicked', { currentUser, isPlusSubscriber });
               triggerHaptic(8);
               if (!currentUser) {
+                console.log('No user - opening auth');
                 setIsAuthModalOpen(true);
                 pushModalHistoryState('auth');
                 return;
               }
               if (!isPlusSubscriber) {
+                console.log('Not Plus - opening modal');
                 setIsPlusModalOpen(true);
                 pushModalHistoryState('plusModal');
                 return;
               }
+              console.log('Opening create category modal');
               setIsCreateCategoryOpen(true);
             }}
             style={{

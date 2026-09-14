@@ -18,6 +18,8 @@
     "@capgo/native-purchases": "^8.7.0",
     "@erikmichelson/open-location-code-ts": "^1.20250411.0",
     "@supabase/supabase-js": "^2.112.4",
+    "google-auth-library": "^11.0.2",
+    "googleapis": "^180.0.0",
     "lucide-react": "^1.39.0",
     "maplibre-gl": "^6.6.0",
     "next": "16.3.4",
