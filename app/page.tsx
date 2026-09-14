@@ -47,6 +47,7 @@ import {
   Trees,
   Home as HomeIcon,
   ThumbsUp,
+  ThumbsDown,
   MessageCircle,
   Send,
   Copy,
@@ -722,9 +723,9 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [shareDialogCopied, setShareDialogCopied] = useState(false);
   const [coordsCopied, setCoordsCopied] = useState(false);
 
-  const [vouchedSpotIds, setVouchedSpotIds] = useState<string[]>([]);
-  const [vouchCounts, setVouchCounts] = useState<Record<string, number>>({});
-  const [savingVouch, setSavingVouch] = useState(false);
+  const [myVotes, setMyVotes] = useState<Record<string, 'up' | 'down'>>({});
+  const [voteCounts, setVoteCounts] = useState<Record<string, { up: number; down: number }>>({});
+  const [savingVote, setSavingVote] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -1285,7 +1286,7 @@ const showToast = (msg: string) => {
     setSavingBookmark(false);
   };
 
-  const toggleVouch = async (spotId?: string) => {
+  const toggleVote = async (spotId: string | undefined, voteType: 'up' | 'down') => {
     if (!spotId) return;
     const activeUser = currentUserRef.current;
     if (!activeUser) {
@@ -1295,29 +1296,52 @@ const showToast = (msg: string) => {
     }
 
     triggerHaptic(12);
-    setSavingVouch(true);
-    const isVouched = vouchedSpotIds.includes(spotId);
+    setSavingVote(true);
+    const current = myVotes[spotId];
 
-    if (isVouched) {
-      const { error } = await supabase.from('vouches').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
-      if (!error) {
-        setVouchedSpotIds((prev) => prev.filter((id) => id !== spotId));
-        setVouchCounts((prev) => ({
-          ...prev,
-          [spotId]: Math.max(0, (prev[spotId] || 1) - 1),
-        }));
+    try {
+      if (current === voteType) {
+        // Same vote tapped — remove it
+        const { error } = await supabase.from('spot_votes').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
+        if (!error) {
+          setMyVotes((prev) => {
+            const next = { ...prev };
+            delete next[spotId];
+            return next;
+          });
+          setVoteCounts((prev) => ({
+            ...prev,
+            [spotId]: {
+              up: Math.max(0, (prev[spotId]?.up || 1) - (voteType === 'up' ? 1 : 0)),
+              down: Math.max(0, (prev[spotId]?.down || 1) - (voteType === 'down' ? 1 : 0)),
+            },
+          }));
+        }
+      } else {
+        // Insert or flip the vote (upsert handles switching up <-> down)
+        const { error } = await supabase
+          .from('spot_votes')
+          .upsert(
+            [{ user_id: activeUser.id, spot_id: spotId, vote_type: voteType }],
+            { onConflict: 'user_id,spot_id' }
+          );
+        if (!error) {
+          setMyVotes((prev) => ({ ...prev, [spotId]: voteType }));
+          setVoteCounts((prev) => {
+            const old = prev[spotId] || { up: 0, down: 0 };
+            const next = { up: old.up, down: old.down };
+            if (current === 'up') next.up = Math.max(0, next.up - 1);
+            if (current === 'down') next.down = Math.max(0, next.down - 1);
+            if (voteType === 'up') next.up += 1;
+            if (voteType === 'down') next.down += 1;
+            return { ...prev, [spotId]: next };
+          });
+        }
       }
-    } else {
-      const { error } = await supabase.from('vouches').insert([{ user_id: activeUser.id, spot_id: spotId }]);
-      if (!error) {
-        setVouchedSpotIds((prev) => [...prev, spotId]);
-        setVouchCounts((prev) => ({
-          ...prev,
-          [spotId]: (prev[spotId] || 0) + 1,
-        }));
-      }
+    } catch (err) {
+      console.error('Vote toggle failed:', err);
     }
-    setSavingVouch(false);
+    setSavingVote(false);
   };
 
   const handleOpenPublicProfile = (userId: string) => {
@@ -1955,23 +1979,25 @@ const showToast = (msg: string) => {
     }
   };
 
-  const fetchVouches = async (userId?: string) => {
+  const fetchVotes = async (userId?: string) => {
     try {
-      const { data: allVouches, error } = await supabase.from('vouches').select('spot_id, user_id');
-      if (!error && allVouches) {
-        const counts: Record<string, number> = {};
-        const myVouches: string[] = [];
-        allVouches.forEach((v: { spot_id: string; user_id: string }) => {
-          counts[v.spot_id] = (counts[v.spot_id] || 0) + 1;
+      const { data: allVotes, error } = await supabase.from('spot_votes').select('spot_id, user_id, vote_type');
+      if (!error && allVotes) {
+        const counts: Record<string, { up: number; down: number }> = {};
+        const mine: Record<string, 'up' | 'down'> = {};
+        allVotes.forEach((v: { spot_id: string; user_id: string; vote_type: 'up' | 'down' }) => {
+          if (!counts[v.spot_id]) counts[v.spot_id] = { up: 0, down: 0 };
+          if (v.vote_type === 'down') counts[v.spot_id].down += 1;
+          else counts[v.spot_id].up += 1;
           if (userId && v.user_id === userId) {
-            myVouches.push(v.spot_id);
+            mine[v.spot_id] = v.vote_type;
           }
         });
-        setVouchCounts(counts);
-        setVouchedSpotIds(myVouches);
+        setVoteCounts(counts);
+        setMyVotes(mine);
       }
     } catch (err) {
-      console.error('Failed to load vouches:', err);
+      console.error('Failed to load votes:', err);
     }
   };
 
@@ -1987,19 +2013,16 @@ const showToast = (msg: string) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null;
-      setCurrentUser(user);
-      currentUserRef.current = user;
-      if (user) {
-        setIsAuthModalOpen(false);
-        fetchUserUpvotes(user.id);
-        if (session?.provider_token) {
-          localStorage.setItem('bywayr_gdrive_token', session.provider_token);
-          localStorage.setItem('bywayr_gdrive_token_time', Date.now().toString());
-        }
-      } else {
+      if (event === 'SIGNED_IN' && user) {
+        setCurrentUser(user);
+        currentUserRef.current = user;
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        currentUserRef.current = null;
         localStorage.removeItem('bywayr_gdrive_token');
         localStorage.removeItem('bywayr_gdrive_token_time');
         setUserProfile(null);
+        setMyVotes({});
         setUpvotedCommentIds([]);
         localStorage.removeItem('bywayr_user_profile');
       }
@@ -2011,7 +2034,7 @@ const showToast = (msg: string) => {
   useEffect(() => {
     fetchSpots();
     fetchProfiles();
-    fetchVouches(currentUser?.id);
+    fetchVotes(currentUser?.id);
     if (currentUser?.id) {
       fetchMustTryBookmarks(currentUser.id);
       fetchUserProfile(currentUser.id);
@@ -2021,7 +2044,7 @@ const showToast = (msg: string) => {
         .catch((err) => console.error('Failed to fetch custom categories:', err));
     } else {
       setMustTrySpotIds([]);
-      setVouchedSpotIds([]);
+      setMyVotes({});
       setUpvotedCommentIds([]);
       setUserProfile(null);
       setCustomCategories([]);
@@ -2559,7 +2582,7 @@ const showToast = (msg: string) => {
     setCurrentUser(null);
     currentUserRef.current = null;
     setMustTrySpotIds([]);
-    setVouchedSpotIds([]);
+    setMyVotes({});
     setUpvotedCommentIds([]);
     setOnlyMySpots(false);
     setSelectedCountryFilter(null);
@@ -2812,7 +2835,7 @@ const showToast = (msg: string) => {
     setIsDeletingAccount(true);
     try {
       await supabase.from('bookmarks').delete().eq('user_id', activeUser.id);
-      await supabase.from('vouches').delete().eq('user_id', activeUser.id);
+      await supabase.from('spot_votes').delete().eq('user_id', activeUser.id);
       await supabase.rpc('delete_user');
     } catch (err) {
       console.error('Account deletion cleanup error:', err);
@@ -2822,7 +2845,7 @@ const showToast = (msg: string) => {
       currentUserRef.current = null;
       setUserProfile(null);
       setMustTrySpotIds([]);
-      setVouchedSpotIds([]);
+      setMyVotes({});
       setUpvotedCommentIds([]);
       localStorage.removeItem('bywayr_user_profile');
       setIsDeleteAccountModalOpen(false);
@@ -4673,29 +4696,50 @@ const showToast = (msg: string) => {
               </span>
               
               <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
-                {/* Vouch Button */}
-                <button
-                  onClick={() => toggleVouch(viewingSpot.id)}
-                  disabled={savingVouch}
-                  style={{
-                    border: '1px solid ' + (viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#a7f3d0' : '#e7e5e4'),
-                    background: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#ecfdf5' : '#fafaf9',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    color: viewingSpot.id && vouchedSpotIds.includes(viewingSpot.id) ? '#059669' : '#57534e',
-                    padding: '5px 8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '11.5px',
-                    fontWeight: 600,
-                    flexShrink: 0,
-                  }}
-                  title="Vouch for this spot"
-                >
-                  <ThumbsUp style={{ width: '13px', height: '13px' }} />
-                  <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
-                </button>
+                {/* Vote Up / Down Buttons */}
+                <div style={{ display: 'flex', flexShrink: 0, border: '1px solid #e7e5e4', borderRadius: '10px', overflow: 'hidden', background: '#fafaf9' }}>
+                  <button
+                    onClick={() => toggleVote(viewingSpot.id, 'up')}
+                    disabled={savingVote}
+                    style={{
+                      border: 'none',
+                      borderRight: '1px solid #e7e5e4',
+                      background: viewingSpot.id && myVotes[viewingSpot.id] === 'up' ? '#ecfdf5' : 'transparent',
+                      cursor: 'pointer',
+                      color: viewingSpot.id && myVotes[viewingSpot.id] === 'up' ? '#059669' : '#57534e',
+                      padding: '5px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                    }}
+                    title="Upvote"
+                  >
+                    <ThumbsUp style={{ width: '13px', height: '13px' }} />
+                    <span>{viewingSpot.id ? voteCounts[viewingSpot.id]?.up || 0 : 0}</span>
+                  </button>
+                  <button
+                    onClick={() => toggleVote(viewingSpot.id, 'down')}
+                    disabled={savingVote}
+                    style={{
+                      border: 'none',
+                      background: viewingSpot.id && myVotes[viewingSpot.id] === 'down' ? '#fff1ee' : 'transparent',
+                      cursor: 'pointer',
+                      color: viewingSpot.id && myVotes[viewingSpot.id] === 'down' ? '#e05a47' : '#57534e',
+                      padding: '5px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                    }}
+                    title="Downvote"
+                  >
+                    <ThumbsDown style={{ width: '13px', height: '13px' }} />
+                    <span>{viewingSpot.id ? voteCounts[viewingSpot.id]?.down || 0 : 0}</span>
+                  </button>
+                </div>
 
                 {/* Tag Spot with Custom Categories (Plus Feature) */}
                 <button
@@ -5999,7 +6043,7 @@ const showToast = (msg: string) => {
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: '24px' }}>🛂</span>
+                  <Compass style={{ width: '24px', height: '24px', color: '#e05a47' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Passport</div>
