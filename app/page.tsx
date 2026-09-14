@@ -8,8 +8,13 @@ const BYWAYR_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888'; // Pr
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
+import CreateCategoryModal from '@/components/CreateCategoryModal';
+import SpotTagModal from '@/components/SpotTagModal';
+import ManageCategoriesModal from '@/components/ManageCategoriesModal';
+import { getUserCustomCategories, deleteCustomCategory, CustomCategory } from '@/lib/categories';
 
 import {
+  Tag,
   MapPin,
   Loader2,
   X,
@@ -141,6 +146,57 @@ const getCategoryColor = (cat: string) => {
   return match ? match.color : '#57534e';
 };
 
+// Generate a contextual discovery hint based on time, weather, and map view
+const getDiscoveryHint = (spots: Spot[], mapCenter: { lat: number; lng: number }, weather: any | null) => {
+  const hour = new Date().getHours();
+  
+  // Filter spots within 5km
+  const nearbySpots = spots
+    .filter(s => s.latitude && s.longitude)
+    .map(s => ({
+      ...s,
+      distance: getDistanceFromLatLonInKm(mapCenter.lat, mapCenter.lng, s.latitude, s.longitude),
+    }))
+    .filter(s => s.distance <= 5)
+    .sort((a, b) => a.distance - b.distance);
+
+  if (nearbySpots.length === 0) return null;
+
+  // Time-based category preference
+  let preferredCategory = 'Hidden Gems';
+  if (hour >= 6 && hour < 10) preferredCategory = 'Cafes & Workspaces';
+  else if (hour >= 11 && hour < 14) preferredCategory = 'Street Food & Stalls';
+  else if (hour >= 17 && hour < 19) preferredCategory = 'Hidden Gems'; // Sunset
+  else if (hour >= 20) preferredCategory = 'Bars & Nightlife';
+
+  // Weather adjustment (rain -> indoor)
+  if (weather && weather.weatherCode >= 51) {
+    preferredCategory = 'Cafes & Workspaces';
+  }
+
+  // Find best match
+  const bestMatch = nearbySpots.find(s => 
+    s.category?.toLowerCase() === preferredCategory.toLowerCase()
+  ) || nearbySpots[0];
+
+  // Build hint text
+  const distStr = bestMatch.distance < 1 
+    ? `${Math.round(bestMatch.distance * 1000)}m` 
+    : `${bestMatch.distance.toFixed(1)}km`;
+  
+  let hint = `${bestMatch.name} · ${distStr} away`;
+  
+  if (hour >= 17 && hour < 19 && weather?.temp && weather.temp > 15) {
+    hint += ` · Great sunset spot!`;
+  } else if (weather && weather.weatherCode >= 51) {
+    hint += ` · Perfect rainy-day hideout`;
+  } else if (hour >= 6 && hour < 10) {
+    hint += ` · Morning coffee vibe`;
+  }
+
+  return { spot: bestMatch, hint };
+};
+
 const triggerHaptic = (duration = 10) => {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
@@ -179,6 +235,24 @@ const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+};
+
+// Fetch local weather via Open-Meteo (no API key required)
+const fetchLocalWeather = async (lat: number, lon: number) => {
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+    );
+    const data = await res.json();
+    return {
+      temp: data.current_weather?.temperature,
+      windSpeed: data.current_weather?.windspeed,
+      weatherCode: data.current_weather?.weathercode, // 0=clear, >50=rain
+    };
+  } catch (err) {
+    console.error('Weather fetch failed:', err);
+    return null;
+  }
 };
 
 const formatWalkDistanceAndTime = (distKm: number) => {
@@ -614,6 +688,18 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [profilesMap, setProfilesMap] = useState<Record<string, UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+
+  const resolveCategoryColor = useCallback((catName?: string) => {
+    if (!catName) return '#57534e';
+    const customMatch = customCategories.find((c) => c.name.toLowerCase() === catName.toLowerCase());
+    if (customMatch?.color) return customMatch.color;
+    const stdMatch = CATEGORIES.find((c) => c.label.toLowerCase() === catName.toLowerCase());
+    return stdMatch ? stdMatch.color : '#57534e';
+  }, [customCategories]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
@@ -679,6 +765,11 @@ const showToast = (msg: string) => {
 
   const [bannerHeight, setBannerHeight] = useState(0);
   const [adReady, setAdReady] = useState(false);
+  
+  // Discovery Hint State
+  const [discoveryHint, setDiscoveryHint] = useState<{ spot: Spot; hint: string } | null>(null);
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const hintDismissedRef = useRef<boolean>(false);
 
   const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1673,7 +1764,7 @@ const showToast = (msg: string) => {
       previewMarkerRef.current = null;
     }
 
-    const pinColor = getCategoryColor(spot.category || 'Hidden Gems');
+    const pinColor = resolveCategoryColor(spot.category || 'Hidden Gems');
     const pinEl = document.createElement('div');
     pinEl.style.width = '26px';
     pinEl.style.height = '26px';
@@ -1925,11 +2016,15 @@ const showToast = (msg: string) => {
       fetchMustTryBookmarks(currentUser.id);
       fetchUserProfile(currentUser.id);
       fetchUserUpvotes(currentUser.id);
+      getUserCustomCategories()
+        .then((cats) => setCustomCategories(cats))
+        .catch((err) => console.error('Failed to fetch custom categories:', err));
     } else {
       setMustTrySpotIds([]);
       setVouchedSpotIds([]);
       setUpvotedCommentIds([]);
       setUserProfile(null);
+      setCustomCategories([]);
     }
   }, [currentUser]);
 
@@ -2218,7 +2313,7 @@ const showToast = (msg: string) => {
     });
 
     validSpots.forEach((spot: Spot) => {
-      const pinColor = getCategoryColor(spot.category || 'Hidden Gems');
+      const pinColor = resolveCategoryColor(spot.category || 'Hidden Gems');
       const pinEl = document.createElement('div');
       pinEl.className = 'bywayr-map-pin';
       pinEl.style.cursor = 'pointer';
@@ -2268,7 +2363,7 @@ const showToast = (msg: string) => {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, spots, mapReady]);
+  }, [filteredSpots, spots, mapReady, customCategories, resolveCategoryColor]);
   // Apply map tile filter to canvas only, so markers keep true brand colors
     // Load Native Ad when component mounts and user is not Plus
   useEffect(() => {
@@ -2884,7 +2979,47 @@ const showToast = (msg: string) => {
       map.current = null;
     };
   }, []);
-  // Nearby hidden-gem notifications (foreground, native Android only)
+  // Discovery Hint: Fetch weather & generate contextual suggestion
+  useEffect(() => {
+    if (!map.current || !userCoords) return;
+    if (hintDismissedRef.current) return; // Don't show if dismissed
+
+    let hintTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const fetchAndGenerate = async () => {
+      // Use map center (fresh on pan/zoom) instead of stale userCoords
+      const center = map.current ? map.current.getCenter() : userCoords;
+
+      // Fetch weather
+      const weather = await fetchLocalWeather(center.lat, center.lng);
+      setWeatherData(weather);
+
+      // Generate hint
+      const hint = getDiscoveryHint(spots, { lat: center.lat, lng: center.lng }, weather);
+      if (hint) {
+        setDiscoveryHint(hint);
+
+        // Auto-dismiss after 10s (with cancellable timer)
+        if (hintTimer) clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => {
+          setDiscoveryHint(null);
+        }, 10000);
+      }
+    };
+
+    fetchAndGenerate();
+
+    // Refresh hint when the user pans or zooms the map
+    const mapInstance = map.current;
+    const onMoveEnd = () => fetchAndGenerate();
+    mapInstance.on('moveend', onMoveEnd);
+
+    return () => {
+      if (hintTimer) clearTimeout(hintTimer);
+      mapInstance.off('moveend', onMoveEnd);
+    };
+  }, [spots, userCoords]); // map ref is stable; spots/coords drive re-runs
+// Nearby hidden-gem notifications (foreground, native Android only)
   useEffect(() => {
     if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
     if (!navigator.geolocation) return;
@@ -3319,7 +3454,7 @@ const showToast = (msg: string) => {
         zIndex: 99999, 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: '8px', 
+        gap: '6px', 
       }}>
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
@@ -3659,6 +3794,90 @@ const showToast = (msg: string) => {
               </button>
             );
           })}
+
+          {/* User's Custom Categories */}
+          {customCategories.map((cat) => {
+            const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+            const categoryCount = spots.filter((spot: Spot) => spot.category?.toLowerCase() === cat.name.toLowerCase()).length;
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(isSelected ? 'All' : cat.name)}
+                style={{
+                  backgroundColor: isSelected ? (cat.color || '#2563eb') : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  color: isSelected ? '#ffffff' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+                  border: isSelected ? `1px solid ${cat.color || '#2563eb'}` : `1px solid ${uiBorder}`,
+                  height: '34px',
+                  padding: '0 12px',
+                  borderRadius: '18px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: isSelected ? `0 6px 16px ${cat.color}40` : '0 10px 25px -5px rgba(28, 25, 23, 0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  flexShrink: 0,
+                  boxSizing: 'border-box'
+                }}
+              >
+                <span>{cat.icon || '📍'}</span>
+                <span>{cat.name}</span>
+                <span style={{
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.22)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'),
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  color: isSelected ? '#fafaf9' : (isDarkMode ? '#a8a29e' : '#78716c')
+                }}>
+                  {categoryCount}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Plus Custom Category Button */}
+          <button
+            onClick={() => {
+              triggerHaptic(8);
+              if (!currentUser) {
+                setIsAuthModalOpen(true);
+                pushModalHistoryState('auth');
+                return;
+              }
+              if (!isPlusSubscriber) {
+                setIsPlusModalOpen(true);
+                pushModalHistoryState('plusModal');
+                return;
+              }
+              setIsCreateCategoryOpen(true);
+            }}
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(43, 41, 38, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              border: '1px dashed #e05a47',
+              color: '#e05a47',
+              height: '34px',
+              padding: '0 12px',
+              borderRadius: '18px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              flexShrink: 0,
+              boxSizing: 'border-box'
+            }}
+          >
+            <Plus style={{ width: '13px', height: '13px' }} />
+            <span>Category</span>
+          </button>
         </div>
 
         {/* Category Description Banner */}
@@ -3816,7 +4035,59 @@ const showToast = (msg: string) => {
           </div>
         )}
       </div>
+      {/* Today's Discovery Hint Banner */}
+      {discoveryHint && (
+        <div className="animate-slide-up" style={{
+          position: 'fixed',
+          bottom: 'calc(90px + env(safe-area-inset-bottom, 0px))',
+          left: '16px',
+          right: '16px',
+          maxWidth: '420px',
+          margin: '0 auto',
+          backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderRadius: '20px',
+          padding: '10px 14px',
+          boxShadow: '0 12px 28px -6px rgba(28, 25, 23, 0.22)',
+          border: `1px solid ${uiBorder}`,
+          zIndex: 99996,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          cursor: 'pointer',
+          transition: 'opacity 0.2s ease',
+        }}
+        onClick={() => {
+          triggerHaptic(8);
+          flyToSpot(discoveryHint.spot);
+          setDiscoveryHint(null);
+          hintDismissedRef.current = true;
+        }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '8px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+              <Sparkles style={{ width: '14px', height: '14px' }} />
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: uiText }}>
+              {discoveryHint.hint}
+            </span>
+          </div>
+          <button
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setDiscoveryHint(null); 
+              hintDismissedRef.current = true;
+            }}
+            style={{ background: 'none', border: 'none', color: '#a8a29e', cursor: 'pointer', padding: '2px' }}
+          >
+            <X style={{ width: '14px', height: '14px' }} />
+          </button>
+        </div>
+      )}
 
+      {/* 3. Floating Bottom Navigation Dock */}
       {/* 3. Floating Bottom Navigation Dock */}
       <div
         style={{
@@ -4398,6 +4669,38 @@ const showToast = (msg: string) => {
                   <span>{viewingSpot.id ? vouchCounts[viewingSpot.id] || 0 : 0}</span>
                 </button>
 
+                {/* Tag Spot with Custom Categories (Plus Feature) */}
+                <button
+                  onClick={() => {
+                    triggerHaptic(8);
+                    if (!currentUserRef.current) {
+                      setIsAuthModalOpen(true);
+                      pushModalHistoryState('auth');
+                      return;
+                    }
+                    if (!isPlusSubscriber) {
+                      setIsPlusModalOpen(true);
+                      pushModalHistoryState('plusModal');
+                      return;
+                    }
+                    setIsTagModalOpen(true);
+                  }}
+                  style={{
+                    border: '1px solid #e7e5e4',
+                    background: '#fafaf9',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    color: '#57534e',
+                    padding: '5px 7px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                  }}
+                  title="Organize with custom category tags"
+                >
+                  <Tag style={{ width: '14px', height: '14px' }} />
+                </button>
+
                 {/* Bookmark Button */}
                 <button
                   onClick={() => toggleMustTry(viewingSpot.id)}
@@ -4505,7 +4808,7 @@ const showToast = (msg: string) => {
                 onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(224, 90, 71, 0.28)' }}
               >
-                <ExternalLink style={{ width: '15px', height: '15px' }} /> Open in Maps ?
+                <ExternalLink style={{ width: '15px', height: '15px' }} /> Open in Maps
               </button>
 
               <button
@@ -4695,9 +4998,18 @@ const showToast = (msg: string) => {
                   onChange={(e) => setNewSpot({ ...newSpot, category: e.target.value })}
                   style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', backgroundColor: '#ffffff', color: '#1c1917' }}
                 >
-                  {CATEGORIES.filter((c) => c.label !== 'All').map((cat) => (
-                    <option key={cat.label} value={cat.label}>{cat.label}</option>
-                  ))}
+                  <optgroup label="Standard Categories">
+                    {CATEGORIES.filter((c) => c.label !== 'All').map((cat) => (
+                      <option key={cat.label} value={cat.label}>{cat.label}</option>
+                    ))}
+                  </optgroup>
+                  {customCategories.length > 0 && (
+                    <optgroup label="My Custom Categories">
+                      {customCategories.map((cat) => (
+                        <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -6077,10 +6389,19 @@ const showToast = (msg: string) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '10px 0 20px 0' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
+                  <Tag style={{ width: '15px', height: '15px' }} />
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                  <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> — Create custom lists, accent colors, and tag any saved gem.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
                   <Download style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> � Download a portable copy of your entire field journal, any time.
+                  <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
                 </div>
               </div>
 
@@ -6089,7 +6410,7 @@ const showToast = (msg: string) => {
                   <ShieldCheck style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> � Browse the entire map with zero banner ads, forever.
+                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero banner ads, forever.
                 </div>
               </div>
 
@@ -6098,7 +6419,7 @@ const showToast = (msg: string) => {
                   <Sparkle style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> � No monthly subscriptions or recurring fees.
+                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
                 </div>
               </div>
             </div>
@@ -6122,7 +6443,7 @@ const showToast = (msg: string) => {
                       letterSpacing: '0.01em',
                     }}
                   >
-                    One-time Payment � $19.99
+                    One-time Payment — $19.99
                   </button>
 
                   <button
@@ -6149,7 +6470,6 @@ const showToast = (msg: string) => {
           </div>
         </div>
       )}
-
       {/* Scrollable Passport Booklet � Clean Organic Spread */}
       {(isPassportBookOpen || isBookClosing) && (() => {
         // Book can render YOUR passport or a viewed public profile's (read-only)
@@ -6667,7 +6987,44 @@ const showToast = (msg: string) => {
             </div>
           </div>
         );
-      })()}        
+      })()}  
+      {/* Create Custom Category Modal */}
+      <CreateCategoryModal
+        isOpen={isCreateCategoryOpen}
+        onClose={() => setIsCreateCategoryOpen(false)}
+        onCategoryCreated={(newCat) => {
+          setCustomCategories((prev) => [...prev, newCat]);
+          setSelectedCategory(newCat.name);
+          showToast(`Created category "${newCat.name}"!`);
+        }}
+      />
+
+      {/* Spot Tagging Modal */}
+      <SpotTagModal
+        isOpen={isTagModalOpen}
+        spotId={viewingSpot?.id}
+        spotName={viewingSpot?.name || 'Spot'}
+        categories={customCategories}
+        onClose={() => setIsTagModalOpen(false)}
+        onTagsUpdated={() => {
+          showToast('Tags updated successfully!');
+        }}
+      />
+
+      {/* Manage Custom Categories Modal */}
+      <ManageCategoriesModal
+        isOpen={isManageCategoriesOpen}
+        categories={customCategories}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        onCategoryDeleted={(deletedId) => {
+          const deleted = customCategories.find((c) => c.id === deletedId);
+          setCustomCategories((prev) => prev.filter((c) => c.id !== deletedId));
+          if (deleted && selectedCategory === deleted.name) {
+            setSelectedCategory('All');
+          }
+          showToast('Category deleted');
+        }}
+      />      
       {/* Welcome / Onboarding Carousel — full screen */}
       {showWelcome && (() => {
         const ONBOARDING_STEPS = [
