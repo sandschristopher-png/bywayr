@@ -2593,7 +2593,7 @@ const showToast = (msg: string) => {
         let serverVerified = false;
         if (purchaseToken) {
           try {
-            const verifyRes = await fetch('https://bywayr.com/api/play-verify', {
+            const verifyRes = await fetch('https://bywayr-api.vercel.app/api/play-verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ purchaseToken }),
