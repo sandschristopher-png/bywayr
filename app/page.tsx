@@ -206,6 +206,12 @@ const triggerHaptic = (duration = 10) => {
   }
 };
 
+const formatVoteCount = (n: number): string => {
+  if (n < 1000) return String(n);
+  if (n < 1000000) return `${(n / 1000).toFixed(n < 10000 ? 1 : 0)}K`;
+  return `${(n / 1000000).toFixed(1)}M`;
+};
+
 const formatRelativeTime = (dateStr?: string) => {
   if (!dateStr) return 'Recently';
   const now = new Date().getTime();
@@ -663,6 +669,26 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   const [isDiscussionModalOpen, setIsDiscussionModalOpen] = useState(false);
 
   const [mapReady, setMapReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const isCapacitor = Boolean((window as any)?.Capacitor?.isNativePlatform?.());
+      const isMobile = window.innerWidth < 768 || isCapacitor;
+      return isMobile;
+    }
+    return false;
+  });
+  const [splashFading, setSplashFading] = useState(false);
+
+  useEffect(() => {
+    if (mapReady && showSplash) {
+      setSplashFading(true);
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+        setSplashFading(false);
+      }, 320);
+      return () => clearTimeout(timer);
+    }
+  }, [mapReady, showSplash]);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('bywayr_dark_mode') === 'true';
@@ -1309,13 +1335,16 @@ const showToast = (msg: string) => {
             delete next[spotId];
             return next;
           });
-          setVoteCounts((prev) => ({
-            ...prev,
-            [spotId]: {
-              up: Math.max(0, (prev[spotId]?.up || 1) - (voteType === 'up' ? 1 : 0)),
-              down: Math.max(0, (prev[spotId]?.down || 1) - (voteType === 'down' ? 1 : 0)),
-            },
-          }));
+          setVoteCounts((prev) => {
+            const old = prev[spotId] || { up: 0, down: 0 };
+            return {
+              ...prev,
+              [spotId]: {
+                up: Math.max(0, (old.up ?? 0) - (voteType === 'up' ? 1 : 0)),
+                down: Math.max(0, (old.down ?? 0) - (voteType === 'down' ? 1 : 0)),
+              },
+            };
+          });
         }
       } else {
         // Insert or flip the vote (upsert handles switching up <-> down)
@@ -1329,7 +1358,7 @@ const showToast = (msg: string) => {
           setMyVotes((prev) => ({ ...prev, [spotId]: voteType }));
           setVoteCounts((prev) => {
             const old = prev[spotId] || { up: 0, down: 0 };
-            const next = { up: old.up, down: old.down };
+            const next = { up: old.up ?? 0, down: old.down ?? 0 };
             if (current === 'up') next.up = Math.max(0, next.up - 1);
             if (current === 'down') next.down = Math.max(0, next.down - 1);
             if (voteType === 'up') next.up += 1;
@@ -1763,7 +1792,7 @@ const showToast = (msg: string) => {
         if (isNewCountryUnlocked) {
           setTimeout(() => {
             triggerHaptic(30);
-            showToast(`?? New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
+            showToast(`✨ New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
           }, 600);
         }
       }
@@ -1825,10 +1854,14 @@ const showToast = (msg: string) => {
       const { data, error } = await supabase
         .from('spot_comments')
         .select('*')
-        .eq('spot_id', spotId)
-        .order('created_at', { ascending: true });
+        .eq('spot_id', spotId);
       if (!error && data) {
-        setSpotComments(data);
+        const sorted = (data as SpotComment[]).sort((a, b) => {
+          const diff = (b.upvotes || 0) - (a.upvotes || 0);
+          if (diff !== 0) return diff;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        setSpotComments(sorted);
       }
     } catch (err) {
       console.error('Failed to load spot comments:', err);
@@ -1869,7 +1902,14 @@ const showToast = (msg: string) => {
       .select();
 
     if (!error && data && data.length > 0) {
-      setSpotComments((prev) => [...prev, data[0] as SpotComment]);
+      setSpotComments((prev) => {
+        const next = [...prev, data[0] as SpotComment];
+        return next.sort((a, b) => {
+          const diff = (b.upvotes || 0) - (a.upvotes || 0);
+          if (diff !== 0) return diff;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      });
       setNewCommentText('');
     } else {
       const fallbackComment: SpotComment = {
@@ -3223,36 +3263,73 @@ const showToast = (msg: string) => {
           }
         }
         @keyframes slideUp {
-          from { transform: translateY(18px) translateZ(0); opacity: 0; }
-          to { transform: translateY(0) translateZ(0); opacity: 1; }
+          from { transform: translate3d(0, 32px, 0); opacity: 0; }
+          to { transform: translate3d(0, 0, 0); opacity: 1; }
+        }
+        @keyframes slideDownOut {
+          from { transform: translate3d(0, 0, 0); opacity: 1; }
+          to { transform: translate3d(0, 32px, 0); opacity: 0; }
         }
         @keyframes drawerInLeft {
-          from { transform: translateX(-100%) translateZ(0); opacity: 0.7; }
-          to { transform: translateX(0) translateZ(0); opacity: 1; }
+          from { transform: translate3d(-100%, 0, 0); }
+          to { transform: translate3d(0, 0, 0); }
         }
         @keyframes drawerOutLeft {
-          from { transform: translateX(0) translateZ(0); opacity: 1; }
-          to { transform: translateX(-100%) translateZ(0); opacity: 0; }
+          from { transform: translate3d(0, 0, 0); }
+          to { transform: translate3d(-100%, 0, 0); }
         }
         @keyframes drawerInRight {
-          from { transform: translateX(100%) translateZ(0); opacity: 0.7; }
-          to { transform: translateX(0) translateZ(0); opacity: 1; }
+          from { transform: translate3d(100%, 0, 0); }
+          to { transform: translate3d(0, 0, 0); }
         }
         @keyframes drawerOutRight {
-          from { transform: translateX(0) translateZ(0); opacity: 1; }
-          to { transform: translateX(100%) translateZ(0); opacity: 0; }
+          from { transform: translate3d(0, 0, 0); }
+          to { transform: translate3d(100%, 0, 0); }
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateZ(0); }
-          to { opacity: 1; transform: translateZ(0); }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @keyframes fadeOut {
-          from { opacity: 1; transform: translateZ(0); }
-          to { opacity: 0; transform: translateZ(0); }
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
         @keyframes scaleUp {
-          0% { transform: scale(0.92) translateZ(0); opacity: 0; }
-          100% { transform: scale(1) translateZ(0); opacity: 1; }
+          0% { transform: scale3d(0.94, 0.94, 1); opacity: 0; }
+          100% { transform: scale3d(1, 1, 1); opacity: 1; }
+        }
+        @keyframes scaleDownOut {
+          0% { transform: scale3d(1, 1, 1); opacity: 1; }
+          100% { transform: scale3d(0.94, 0.94, 1); opacity: 0; }
+        }
+
+        .drawer-left-enter {
+          animation: drawerInLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+        .drawer-left-exit {
+          animation: drawerOutLeft 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+        .drawer-right-enter {
+          animation: drawerInRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+        .drawer-right-exit {
+          animation: drawerOutRight 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+          will-change: transform;
+          backface-visibility: hidden;
+        }
+        .backdrop-enter {
+          animation: fadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: opacity;
+        }
+        .backdrop-exit {
+          animation: fadeOut 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+          will-change: opacity;
         }
         @keyframes gpsRadarPulse {
           0% {
@@ -3358,6 +3435,50 @@ const showToast = (msg: string) => {
           transform: scale(0.96);
         }
       `}</style>
+
+      {/* Mobile-Only Splash Screen */}
+      {showSplash && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100050,
+            backgroundColor: isDarkMode ? '#121110' : '#fbf8f2',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: splashFading ? 0 : 1,
+            transition: 'opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1)',
+            pointerEvents: splashFading ? 'none' : 'auto',
+          }}
+        >
+          <div style={{ width: '92px', height: '92px', animation: 'scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+            <svg width="100%" height="100%" viewBox="0 0 512 512" fill="none">
+              <defs>
+                <linearGradient id="pinBase" x1="256" y1="64" x2="256" y2="448" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#ea5e4b" />
+                  <stop offset="100%" stopColor="#c94432" />
+                </linearGradient>
+                <linearGradient id="softGloss" x1="210" y1="70" x2="256" y2="240" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.38" />
+                  <stop offset="60%" stopColor="#ffffff" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                </linearGradient>
+                <radialGradient id="dropShadow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(28, 25, 23, 0.22)" />
+                  <stop offset="100%" stopColor="rgba(28, 25, 23, 0)" />
+                </radialGradient>
+              </defs>
+              <ellipse cx="256" cy="460" rx="44" ry="10" fill="url(#dropShadow)" />
+              <path d="M256 64C170.95 64 102 132.95 102 218C102 316.5 256 448 256 448C256 448 410 316.5 410 218C410 132.95 341.05 64 256 64Z" fill="url(#pinBase)" />
+              <path d="M256 68C174.5 68 108 134.5 108 216C108 265 142 322 188 370C158 310 148 245 158 185C168 125 208 80 256 68Z" fill="url(#softGloss)" />
+              <circle cx="256" cy="208" r="62" fill="#ffffff" />
+              <circle cx="256" cy="208" r="20" fill="#e05a47" />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* 1. Map Canvas */}
       <div 
@@ -4688,135 +4809,19 @@ const showToast = (msg: string) => {
       {viewingSpot && (
         <div className="animate-fade-in" onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px))' }}>
           <div className="animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '410px', maxHeight: '82vh', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', border: '1px solid #e7e5e4', padding: '18px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Header Row */}
+            {/* Header Row: Category Badge (left) | Creator tools + Close (right) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#f5f5f4', color: '#44403c', border: '1px solid #e7e5e4', fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '8px', letterSpacing: '0.01em' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: getCategoryColor(viewingSpot.category) }} />
                 {viewingSpot.category}
               </span>
-              
+
               <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
-                {/* Vote Up / Down Buttons */}
-                <div style={{ display: 'flex', flexShrink: 0, border: '1px solid #e7e5e4', borderRadius: '10px', overflow: 'hidden', background: '#fafaf9' }}>
-                  <button
-                    onClick={() => toggleVote(viewingSpot.id, 'up')}
-                    disabled={savingVote}
-                    style={{
-                      border: 'none',
-                      borderRight: '1px solid #e7e5e4',
-                      background: viewingSpot.id && myVotes[viewingSpot.id] === 'up' ? '#ecfdf5' : 'transparent',
-                      cursor: 'pointer',
-                      color: viewingSpot.id && myVotes[viewingSpot.id] === 'up' ? '#059669' : '#57534e',
-                      padding: '5px 8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '11.5px',
-                      fontWeight: 600,
-                    }}
-                    title="Upvote"
-                  >
-                    <ThumbsUp style={{ width: '13px', height: '13px' }} />
-                    <span>{viewingSpot.id ? voteCounts[viewingSpot.id]?.up || 0 : 0}</span>
-                  </button>
-                  <button
-                    onClick={() => toggleVote(viewingSpot.id, 'down')}
-                    disabled={savingVote}
-                    style={{
-                      border: 'none',
-                      background: viewingSpot.id && myVotes[viewingSpot.id] === 'down' ? '#fff1ee' : 'transparent',
-                      cursor: 'pointer',
-                      color: viewingSpot.id && myVotes[viewingSpot.id] === 'down' ? '#e05a47' : '#57534e',
-                      padding: '5px 8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '11.5px',
-                      fontWeight: 600,
-                    }}
-                    title="Downvote"
-                  >
-                    <ThumbsDown style={{ width: '13px', height: '13px' }} />
-                    <span>{viewingSpot.id ? voteCounts[viewingSpot.id]?.down || 0 : 0}</span>
-                  </button>
-                </div>
-
-                {/* Tag Spot with Custom Categories (Plus Feature) */}
-                <button
-                  onClick={() => {
-                    triggerHaptic(8);
-                    if (!currentUserRef.current) {
-                      setIsAuthModalOpen(true);
-                      pushModalHistoryState('auth');
-                      return;
-                    }
-                    if (!isPlusSubscriber) {
-                      setIsPlusModalOpen(true);
-                      pushModalHistoryState('plusModal');
-                      return;
-                    }
-                    setIsTagModalOpen(true);
-                  }}
-                  style={{
-                    border: '1px solid #e7e5e4',
-                    background: '#fafaf9',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    color: '#57534e',
-                    padding: '5px 7px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}
-                  title="Organize with custom category tags"
-                >
-                  <Tag style={{ width: '14px', height: '14px' }} />
-                </button>
-
-                {/* Bookmark Button */}
-                <button
-                  onClick={() => toggleMustTry(viewingSpot.id)}
-                  disabled={savingBookmark}
-                  style={{
-                    border: '1px solid ' + (viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fde68a' : '#e7e5e4'),
-                    background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#fafaf9',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e',
-                    padding: '5px 7px',
-                    display: 'flex',
-                    flexShrink: 0,
-                  }}
-                  title="Save to Must-Try"
-                >
-                  {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '14px', height: '14px' }} /> : <Bookmark style={{ width: '14px', height: '14px' }} />}
-                </button>
-
-                {/* Share Button */}
-                <button
-                  onClick={() => handleShareSpot(viewingSpot)}
-                  style={{
-                    border: '1px solid #e7e5e4',
-                    background: '#fafaf9',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    color: '#57534e',
-                    padding: '5px 7px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}
-                  title="Share spot"
-                >
-                  <Share2 style={{ width: '14px', height: '14px' }} />
-                </button>
-
-                {/* Creator Edit/Delete Tools */}
                 {currentUser && viewingSpot.user_id === currentUser.id && (
                   <>
                     <button
-                      onClick={(e) => handleOpenEditModal(viewingSpot, e)}
-                      style={{ border: '1px solid #e7e5e4', background: '#fafaf9', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '5px 7px', display: 'flex', flexShrink: 0 }}
+                      onClick={(e) => { e.stopPropagation(); handleOpenEditModal(viewingSpot, e); }}
+                      style={{ border: '1px solid #e7e5e4', background: '#fafaf9', borderRadius: '10px', cursor: 'pointer', color: '#57534e', padding: '5px 7px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                       title="Edit Spot"
                     >
                       <Pencil style={{ width: '13px', height: '13px' }} />
@@ -4824,7 +4829,7 @@ const showToast = (msg: string) => {
                     <button
                       onClick={(e) => handleDeleteSpot(viewingSpot, e)}
                       disabled={deleting}
-                      style={{ border: '1px solid #fecdd3', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '5px 7px', display: 'flex', flexShrink: 0 }}
+                      style={{ border: '1px solid #fecdd3', background: '#fff1ee', borderRadius: '10px', cursor: 'pointer', color: '#e05a47', padding: '5px 7px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                       title="Delete Spot"
                     >
                       {deleting ? <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} /> : <Trash2 style={{ width: '13px', height: '13px' }} />}
@@ -4863,6 +4868,51 @@ const showToast = (msg: string) => {
                   </>
                 ) : ''}
               </p>
+
+              {/* Vote Pill */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', marginTop: '6px', border: '1px solid #e7e5e4', borderRadius: '10px', overflow: 'hidden', background: '#fafaf9', alignSelf: 'flex-start' }}>
+                <button
+                  onClick={() => toggleVote(viewingSpot.id, 'up')}
+                  disabled={savingVote}
+                  style={{
+                    border: 'none',
+                    borderRight: '1px solid #e7e5e4',
+                    background: viewingSpot.id && myVotes[viewingSpot.id] === 'up' ? '#ecfdf5' : 'transparent',
+                    cursor: 'pointer',
+                    color: viewingSpot.id && myVotes[viewingSpot.id] === 'up' ? '#059669' : '#57534e',
+                    padding: '6px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                  }}
+                  title="Upvote"
+                >
+                  <ThumbsUp style={{ width: '13px', height: '13px' }} />
+                  <span>{viewingSpot.id ? formatVoteCount(voteCounts[viewingSpot.id]?.up || 0) : '0'}</span>
+                </button>
+                <button
+                  onClick={() => toggleVote(viewingSpot.id, 'down')}
+                  disabled={savingVote}
+                  style={{
+                    border: 'none',
+                    background: viewingSpot.id && myVotes[viewingSpot.id] === 'down' ? '#fff1ee' : 'transparent',
+                    cursor: 'pointer',
+                    color: viewingSpot.id && myVotes[viewingSpot.id] === 'down' ? '#e05a47' : '#57534e',
+                    padding: '6px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                  }}
+                  title="Downvote"
+                >
+                  <ThumbsDown style={{ width: '13px', height: '13px' }} />
+                  <span>{viewingSpot.id ? formatVoteCount(voteCounts[viewingSpot.id]?.down || 0) : '0'}</span>
+                </button>
+              </div>
             </div>
 
             {viewingSpot.image_url && (
@@ -4875,6 +4925,90 @@ const showToast = (msg: string) => {
               <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{viewingSpot.description}</p>
             )}
             
+            {/* Quick Action Icons */}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button
+                onClick={() => toggleMustTry(viewingSpot.id)}
+                disabled={savingBookmark}
+                style={{
+                  flex: 1,
+                  border: '1px solid ' + (viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fde68a' : '#e7e5e4'),
+                  background: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#fef3c7' : '#fafaf9',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  color: viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? '#d97706' : '#57534e',
+                  padding: '9px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                }}
+                title="Save to Must-Try"
+              >
+                {viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? <BookmarkCheck style={{ width: '15px', height: '15px' }} /> : <Bookmark style={{ width: '15px', height: '15px' }} />}
+                <span>{viewingSpot.id && mustTrySpotIds.includes(viewingSpot.id) ? 'Saved' : 'Must-Try'}</span>
+              </button>
+              <button
+                onClick={() => handleShareSpot(viewingSpot)}
+                style={{
+                  flex: 1,
+                  border: '1px solid #e7e5e4',
+                  background: '#fafaf9',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  color: '#57534e',
+                  padding: '9px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                }}
+                title="Share spot"
+              >
+                <Share2 style={{ width: '15px', height: '15px' }} />
+                <span>Share</span>
+              </button>
+              <button
+                onClick={() => {
+                  triggerHaptic(8);
+                  if (!currentUserRef.current) {
+                    setIsAuthModalOpen(true);
+                    pushModalHistoryState('auth');
+                    return;
+                  }
+                  if (!isPlusSubscriber) {
+                    setIsPlusModalOpen(true);
+                    pushModalHistoryState('plusModal');
+                    return;
+                  }
+                  setIsTagModalOpen(true);
+                }}
+                style={{
+                  flex: 1,
+                  border: '1px solid #e7e5e4',
+                  background: '#fafaf9',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  color: '#57534e',
+                  padding: '9px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                }}
+                title="Organize with custom category tags"
+              >
+                <Tag style={{ width: '15px', height: '15px' }} />
+                <span>Tag</span>
+              </button>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 onClick={() => openNativeWalkNavigation(viewingSpot.latitude, viewingSpot.longitude, viewingSpot.name)}
@@ -4888,7 +5022,7 @@ const showToast = (msg: string) => {
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', boxSizing: 'border-box', padding: '10px', backgroundColor: coordsCopied ? '#ecfdf5' : '#f5f5f4', color: coordsCopied ? '#059669' : '#57534e', border: coordsCopied ? '1px solid #a7f3d0' : '1px solid #e7e5e4', borderRadius: '14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
                 {coordsCopied ? <Check style={{ width: '14px', height: '14px' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
-                {coordsCopied ? 'Coordinates Copied!' : `Copy Coordinates (${viewingSpot.latitude.toFixed(4)}, ${viewingSpot.longitude.toFixed(4)})`}
+                {coordsCopied ? 'Coordinates Copied!' : 'Copy Coordinates'}
               </button>
             </div>
 
@@ -4950,18 +5084,48 @@ const showToast = (msg: string) => {
                 spotComments.map((c) => {
                   const authorProfile = profilesMap[c.user_id];
                   const isUpvoted = upvotedCommentIds.includes(c.id);
+                  const isSpotCreator = viewingSpot?.user_id && viewingSpot.user_id === c.user_id;
+                  const authorSpots = spots.filter((s) => s.user_id === c.user_id);
+                  const authorTier = getStampTier(authorSpots.length);
                   const tagColor = c.tag === '[Status: Closed]' ? '#e05a47' : c.tag === '[Menu / Price]' ? '#d97706' : c.tag === '[Work / Wi-Fi]' ? '#2563eb' : '#059669';
 
                   return (
-                    <div key={c.id} style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '12px', padding: '10px 12px', fontSize: '12.5px' }}>
+                    <div
+                      key={c.id}
+                      style={{
+                        backgroundColor: isSpotCreator ? '#fffbfb' : '#fafaf9',
+                        border: isSpotCreator ? '1px solid #fecdd3' : '1px solid #e7e5e4',
+                        borderRadius: '12px',
+                        padding: '10px 12px',
+                        fontSize: '12.5px',
+                      }}
+                    >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 700, color: '#1c1917' }}>@{authorProfile?.username || 'wanderer'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span
+                            onClick={() => handleOpenPublicProfile(c.user_id)}
+                            style={{ fontWeight: 700, color: '#1c1917', cursor: 'pointer' }}
+                          >
+                            @{authorProfile?.username || 'wanderer'}
+                          </span>
+
+                          {isSpotCreator && (
+                            <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#e05a47', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', padding: '1px 5px', borderRadius: '4px', letterSpacing: '0.04em' }}>
+                              CREATOR
+                            </span>
+                          )}
+
+                          {authorSpots.length > 0 && (
+                            <span style={{ fontSize: '9.5px', fontWeight: 700, color: authorTier === 'gold' ? '#b45309' : authorTier === 'silver' ? '#475569' : '#78716c', backgroundColor: authorTier === 'gold' ? '#fef3c7' : '#ecebe7', padding: '1px 5px', borderRadius: '4px' }}>
+                              {authorTier === 'gold' ? '★ Gold' : authorTier === 'silver' ? '★ Silver' : `${authorSpots.length} pins`}
+                            </span>
+                          )}
+
                           <span style={{ fontSize: '10px', fontWeight: 700, color: tagColor, backgroundColor: `${tagColor}15`, padding: '1px 6px', borderRadius: '4px' }}>
                             {c.tag || '[Tip]'}
                           </span>
                         </div>
-                        <span style={{ fontSize: '10.5px', color: '#a8a29e' }}>{formatRelativeTime(c.created_at)}</span>
+                        <span style={{ fontSize: '10.5px', color: '#a8a29e', flexShrink: 0 }}>{formatRelativeTime(c.created_at)}</span>
                       </div>
                       <p style={{ margin: '0 0 8px 0', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.content}</p>
                       
@@ -5513,19 +5677,20 @@ const showToast = (msg: string) => {
       {/* Slide-Out Drawer (Notes, Must-Try & Essentials) */}
       {(isDrawerOpen || isDrawerClosing) && (
         <div 
+          className={isDrawerClosing ? 'backdrop-exit' : 'backdrop-enter'}
           style={{ 
             position: 'fixed', 
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
-            backdropFilter: 'blur(4px)', 
-            WebkitBackdropFilter: 'blur(4px)', 
+            backdropFilter: 'blur(6px)', 
+            WebkitBackdropFilter: 'blur(6px)', 
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-start', 
-            animation: isDrawerClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
+            className={isDrawerClosing ? 'drawer-left-exit' : 'drawer-left-enter'}
             style={{ 
               width: '100%', 
               maxWidth: '370px', 
@@ -5538,7 +5703,6 @@ const showToast = (msg: string) => {
               padding: 'clamp(14px, 4vw, 20px)', 
               boxSizing: 'border-box', 
               overflow: 'hidden', 
-              animation: isDrawerClosing ? 'drawerOutLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
             <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
@@ -5887,19 +6051,20 @@ const showToast = (msg: string) => {
       {/* Slide-Out Profile Drawer */}
       {(isProfileModalOpen || isProfileClosing) && currentUser && (
         <div 
+          className={isProfileClosing ? 'backdrop-exit' : 'backdrop-enter'}
           style={{ 
             position: 'fixed', 
             inset: 0, 
             backgroundColor: 'rgba(28, 25, 23, 0.45)', 
-            backdropFilter: 'blur(4px)', 
-            WebkitBackdropFilter: 'blur(4px)', 
+            backdropFilter: 'blur(6px)', 
+            WebkitBackdropFilter: 'blur(6px)', 
             zIndex: 100000, 
             display: 'flex', 
             justifyContent: 'flex-end', 
-            animation: isProfileClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
           }}
         >
           <div 
+            className={isProfileClosing ? 'drawer-right-exit' : 'drawer-right-enter'}
             style={{ 
               width: '100%', 
               maxWidth: '380px', 
@@ -5912,7 +6077,6 @@ const showToast = (msg: string) => {
               gap: '14px', 
               boxSizing: 'border-box', 
               overflowY: 'auto', 
-              animation: isProfileClosing ? 'drawerOutRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
