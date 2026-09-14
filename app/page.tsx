@@ -5838,6 +5838,7 @@ const showToast = (msg: string) => {
               display: 'flex', 
               flexDirection: 'column', 
               padding: '24px', 
+              gap: '14px', 
               boxSizing: 'border-box', 
               overflowY: 'auto', 
               animation: isProfileClosing ? 'drawerOutRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'drawerInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' 
@@ -5850,7 +5851,7 @@ const showToast = (msg: string) => {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '0' }}>
               <label style={{ width: '88px', height: '88px', borderRadius: '50%', backgroundColor: '#ecebe7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '2.5px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 24px rgba(28, 25, 23, 0.1)' }} title="Click to upload profile photo">
                 {uploadingAvatar ? (
                   <Loader2 style={{ width: '26px', height: '26px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
@@ -5921,7 +5922,7 @@ const showToast = (msg: string) => {
               </p>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '14px', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '0', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
@@ -5937,7 +5938,7 @@ const showToast = (msg: string) => {
             </div>
 
             {/* Passport Entry Card */}
-            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '14px' }}>
+            <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '0' }}>
               <div
                 role="button"
                 tabIndex={0}
@@ -5979,12 +5980,26 @@ const showToast = (msg: string) => {
                     {myCountriesCount} {myCountriesCount === 1 ? 'country' : 'countries'} collected
                   </div>
                   {myPassportStamps.length > 0 && (
-                    <div style={{ marginTop: '6px', display: 'flex', gap: '5px', alignItems: 'center' }}>
+                    <div style={{ marginTop: '6px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                       {myPassportStamps.slice(0, 8).map((st, idx) => (
-                        <div key={idx} style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: st.color, border: '1.5px solid #ffffff', boxShadow: '0 0 0 1px #e7e5e4', flexShrink: 0 }} />
+                        <div 
+                          key={idx} 
+                          style={{ 
+                            width: '14px', 
+                            height: '14px', 
+                            borderRadius: '50%', 
+                            border: `2px dashed ${st.color}`, 
+                            backgroundColor: `${st.color}15`,
+                            boxShadow: '0 0 0 1px rgba(231, 229, 228, 0.6)',
+                            flexShrink: 0,
+                            position: 'relative',
+                            transform: `rotate(${Math.sin(idx) * 10}deg)`,
+                          }} 
+                          title={st.country}
+                        />
                       ))}
                       {myPassportStamps.length > 8 && (
-                        <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#a8a29e' }}>+{myPassportStamps.length - 8}</span>
+                        <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#a8a29e', marginLeft: '2px' }}>+{myPassportStamps.length - 8}</span>
                       )}
                     </div>
                   )}
@@ -5993,7 +6008,7 @@ const showToast = (msg: string) => {
               </div>
             </div>
             {/* Bywayr Plus Membership Card */}
-            <div style={{ backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', border: isPlusSubscriber ? '1.5px solid #bbf7d0' : '1.5px solid #fed7aa', borderRadius: '20px', padding: '16px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isPlusSubscriber ? '0 4px 16px rgba(5, 150, 105, 0.08)' : '0 4px 16px rgba(224, 90, 71, 0.08)' }}>
+            <div style={{ backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', border: isPlusSubscriber ? '2px solid #bbf7d0' : '2px solid #fed7aa', borderRadius: '20px', padding: '16px', marginBottom: '0', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isPlusSubscriber ? '0 10px 28px rgba(5, 150, 105, 0.16)' : '0 10px 28px rgba(224, 90, 71, 0.16)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Crown style={{ width: '16px', height: '16px', color: isPlusSubscriber ? '#059669' : '#e05a47' }} /> 
@@ -6095,39 +6110,13 @@ const showToast = (msg: string) => {
               )}
             </div>
 
-            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#fff7ed' : '#ffffff', border: onlyMySpots ? '1px solid #fdba74' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '10px' }}>
+            <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#fff7ed' : '#ffffff', border: onlyMySpots ? '1px solid #fdba74' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#ea580c' : '#78716c'} />
                 <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#c2410c' : '#44403c' }}>Filter map to my pins only</span>
               </div>
               {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#ea580c' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
             </div>
-
-            <button
-              onClick={handleShareFieldJournal}
-              style={{
-                width: '100%',
-                backgroundColor: 'transparent',
-                color: '#44403c',
-                border: '1px solid #d6d3d1',
-                padding: '11px',
-                borderRadius: '16px',
-                fontSize: '12.5px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                marginBottom: '10px',
-              }}
-            >
-              <Share2 style={{ width: '14px', height: '14px' }} /> Share Field Journal
-            </button>
-
-            <button onClick={handleSignOut} style={{ width: '100%', backgroundColor: '#f5f5f4', color: '#78716c', fontWeight: 600, fontSize: '12.5px', padding: '11px', borderRadius: '16px', border: '1px solid #e7e5e4', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <LogOut style={{ width: '14px', height: '14px' }} /> Sign Out
-            </button>
 
             <button
               onClick={() => {
@@ -6137,23 +6126,26 @@ const showToast = (msg: string) => {
                 pushModalHistoryState('deleteAccount');
               }}
               style={{
-                marginTop: '12px',
+                marginTop: '0',
                 background: 'none',
                 border: 'none',
-                color: '#a8a29e',
+                color: '#e05a47',
                 fontSize: '11px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 textAlign: 'center',
                 width: '100%',
                 padding: '4px',
-                transition: 'color 0.15s ease',
+                opacity: 0.85,
+                transition: 'opacity 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#e05a47')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#a8a29e')}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.85')}
             >
               Delete Account
             </button>
+
+
           </div>
         </div>
       )}
@@ -6379,8 +6371,9 @@ const showToast = (msg: string) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '18px 0 14px 0' }}>
-              <div style={{ width: '84px', height: '84px', borderRadius: '28px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', boxShadow: '0 12px 28px -6px rgba(224, 90, 71, 0.28)', marginBottom: '8px', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
-                <Crown style={{ width: '42px', height: '42px' }} />
+              <div style={{ width: '84px', height: '84px', borderRadius: '28px', overflow: 'hidden', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 28px -6px rgba(224, 90, 71, 0.28)', marginBottom: '8px', border: '2px solid rgba(224, 90, 71, 0.2)' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 Lifetime Curator Pass
@@ -6726,9 +6719,7 @@ const showToast = (msg: string) => {
                         zIndex: 2,
                       }}
                     >
-                      {/* Left Page Number Seal (Desktop identity pag                  // Real-booklet numbering: spreads 3/4, 5/6, 7/8... (identity page owns 1/2)
-                  const leftNum = page * 2 + 3;
-                  const rightNum = leftNum + 1;e) */}
+                      {/* Left Page Number Seal (desktop identity page) */}
                       {isDesktopViewport && (
                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1.5px solid rgba(2, 132, 199, 0.35)', backgroundColor: 'rgba(255, 255, 255, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0369a1', fontSize: '11px', fontWeight: 800, fontFamily: 'monospace', boxShadow: '0 1px 4px rgba(2, 132, 199, 0.08)' }}>
                           {leftNum}
