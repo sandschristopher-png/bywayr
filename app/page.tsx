@@ -3455,7 +3455,7 @@ const showToast = (msg: string) => {
         display: 'flex', 
         flexDirection: 'column', 
         gap: '6px', 
-      }}>
+      }}> 
         <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
           <div style={{
             backgroundColor: uiGlass,
@@ -4042,6 +4042,7 @@ const showToast = (msg: string) => {
           bottom: 'calc(90px + env(safe-area-inset-bottom, 0px))',
           left: '16px',
           right: '16px',
+          paddingRight: '64px',
           maxWidth: '420px',
           margin: '0 auto',
           backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.94)' : 'rgba(255, 255, 255, 0.94)',
