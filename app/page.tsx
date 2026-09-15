@@ -2652,22 +2652,23 @@ const showToast = (msg: string) => {
 
   const handleStripeCheckout = async () => {
     try {
-      const res = await fetch('https://bywayr-api.vercel.app/api/create-checkout-session', {
+      const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: currentUser.id,
-          email: currentUser.email,
-          returnUrl: window.location.href,
+          userId: currentUser?.id,
+          email: currentUser?.email,
+          returnUrl: window.location.origin,
         }),
       });
       const data = await res.json();
       if (data?.url) {
         window.location.href = data.url;
       } else {
-        showToast('Could not initialize web checkout.');
+        showToast(data?.error || 'Could not initialize web checkout.');
       }
     } catch (err) {
+      console.error('Checkout error:', err);
       showToast('Failed to start checkout. Please try again.');
     }
   };
