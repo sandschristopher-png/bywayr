@@ -1087,7 +1087,7 @@ const showToast = (msg: string) => {
     activeOverlayRef.current = isAnyOverlayActive;
   }, [isAnyOverlayActive]);
 
-  // Banner pause/resume hook removed � live map is completely ad-free
+  // Banner pause/resume hook removed live map is completely ad-free
 
   const pushModalHistoryState = useCallback((sheetKey: string) => {
     if (typeof window !== 'undefined') {
@@ -7117,7 +7117,7 @@ ${wptXml}
                     <rect width="100%" height="100%" fill="url(#guilloche-mesh-warm)" />
                   </svg>
 
-                  {/* Rosettes � organic terracotta left, teal right, intentionally imperfect */}
+                  {/* Rosettes organic terracotta left, teal right, intentionally imperfect */}
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: isDesktopViewport ? 'space-around' : 'center', alignItems: 'center' }}>
                     {/* Left Page Rosette (Terracotta) */}
                     <svg viewBox="0 0 500 500" style={{ width: isDesktopViewport ? '430px' : '340px', height: isDesktopViewport ? '430px' : '340px', flexShrink: 0 }}>
