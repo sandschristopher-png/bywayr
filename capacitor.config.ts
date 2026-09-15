@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.bywayr.app',
   appName: 'Bywayr',
   webDir: 'out',
+  server: {
+    hostname: 'bywayr.com',
+    androidScheme: 'https',
+  },
   android: {
     allowMixedContent: true,
   },
