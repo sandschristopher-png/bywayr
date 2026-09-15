@@ -574,7 +574,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   }, []);
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('bywayr_is_plus') === 'true';
+      return localStorage.getItem('bywayr_is_plus') === 'false';
     }
     return false;
   });
@@ -1978,6 +1978,13 @@ const showToast = (msg: string) => {
       if (!error && data) {
         setUserProfile(data);
         localStorage.setItem('bywayr_user_profile', JSON.stringify(data));
+        const hasPlus = Boolean(data.is_plus_member || data.plus_enabled);
+        setIsPlusSubscriber(hasPlus);
+        if (hasPlus) {
+          localStorage.setItem('bywayr_is_plus', 'true');
+        } else {
+          localStorage.removeItem('bywayr_is_plus');
+        }np
         if (!data.username) {
           setIsClaimUsernameModalOpen(true);
           pushModalHistoryState('claimUsername');
@@ -6418,6 +6425,30 @@ const showToast = (msg: string) => {
             </div>
 
             <button
+              type="button"
+              onClick={handleSignOut}
+              style={{
+                marginTop: '4px',
+                width: '100%',
+                backgroundColor: '#f5f5f4',
+                color: '#1c1917',
+                border: '1px solid #e7e5e4',
+                borderRadius: '12px',
+                padding: '10px',
+                fontSize: '12.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+            >
+              <LogOut style={{ width: '14px', height: '14px', color: '#78716c' }} />
+              Sign Out
+            </button>
+
+            <button
               onClick={() => {
                 triggerHaptic(8);
                 setDeleteConfirmText('');
@@ -6425,7 +6456,7 @@ const showToast = (msg: string) => {
                 pushModalHistoryState('deleteAccount');
               }}
               style={{
-                marginTop: '0',
+                marginTop: '2px',
                 background: 'none',
                 border: 'none',
                 color: '#e05a47',
