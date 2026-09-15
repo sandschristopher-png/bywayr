@@ -2,14 +2,28 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16' as any,
-});
+let _stripe: Stripe | null = null;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getStripe = (): Stripe => {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2023-10-16' as any,
+    });
+  }
+  return _stripe;
+};
+
+let _supabase: ReturnType<typeof createClient> | null = null;
+
+const getSupabase = () => {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.SUPABASE_URL || 'https://placeholder.supabase.co',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    );
+  }
+  return _supabase;
+};
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -18,7 +32,7 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -29,6 +43,8 @@ export async function POST(req: Request) {
   }
 
   try {
+    const supabase = getSupabase();
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
