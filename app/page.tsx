@@ -3331,6 +3331,10 @@ const showToast = (msg: string) => {
           animation: fadeOut 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
           will-change: opacity;
         }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
         @keyframes gpsRadarPulse {
           0% {
             box-shadow: 0 0 0 0 rgba(224, 90, 71, 0.75);
@@ -7321,12 +7325,6 @@ onKeyDown={(e) => {
   if (e.key === 'ArrowRight') goToNext();
   if (e.key === 'ArrowLeft') goToPrev();
 }}
-            onTouchEnd={(e) => {
-              const startX = touchStartXRef.current;
-              const dx = e.changedTouches[0].clientX - startX;
-              touchStartXRef.current = 0;
-              if (Math.abs(dx) > 50 && startX !== 0) { if (dx < 0) goToNext(); else goToPrev(); }
-            }}
             style={{ position: 'fixed', inset: 0, zIndex: 100030, padding: '16px', boxSizing: 'border-box', backgroundColor: 'rgba(28, 25, 23, 0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
           >
             <div className="onboarding-shell">
