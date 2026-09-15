@@ -1,9 +1,16 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16' as any,
-});
+let _stripe: Stripe | null = null;
+
+const getStripe = (): Stripe => {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2023-10-16' as any,
+    });
+  }
+  return _stripe;
+};
 
 const ALLOWED_ORIGINS = [
   'https://bywayr.com',
@@ -38,7 +45,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
       customer_email: email || undefined,
