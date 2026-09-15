@@ -1984,7 +1984,7 @@ const showToast = (msg: string) => {
           localStorage.setItem('bywayr_is_plus', 'true');
         } else {
           localStorage.removeItem('bywayr_is_plus');
-        }np
+        }
         if (!data.username) {
           setIsClaimUsernameModalOpen(true);
           pushModalHistoryState('claimUsername');
@@ -6293,15 +6293,17 @@ const showToast = (msg: string) => {
             <div 
               onClick={!isPlusSubscriber ? handleStripeCheckout : undefined}
               style={{ 
-                backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', 
-                border: isPlusSubscriber ? '2px solid #bbf7d0' : '2px solid #fed7aa', 
+                backgroundColor: isPlusSubscriber ? '#f8fbf9' : '#fffbfb', 
+                border: isPlusSubscriber ? '1.5px solid #86efac' : '1.5px solid #fed7aa', 
                 borderRadius: '20px', 
                 padding: '16px', 
                 marginBottom: '0', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 gap: '12px', 
-                boxShadow: isPlusSubscriber ? '0 10px 28px rgba(5, 150, 105, 0.16)' : '0 10px 28px rgba(224, 90, 71, 0.16)',
+                boxShadow: isPlusSubscriber 
+                  ? '0 6px 20px -4px rgba(22, 163, 74, 0.1), 0 1px 3px rgba(0, 0, 0, 0.03)' 
+                  : '0 6px 20px -4px rgba(224, 90, 71, 0.12), 0 1px 3px rgba(0, 0, 0, 0.03)',
                 cursor: isPlusSubscriber ? 'default' : 'pointer'
               }}
             >
