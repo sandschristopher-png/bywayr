@@ -3289,7 +3289,7 @@ const showToast = (msg: string) => {
         }
         .onboarding-shell {
           width: 100%;
-          max-width: 460px;
+          max-width: 100%;
           background-color: #ffffff;
           display: flex;
           flex-direction: column;
@@ -3300,6 +3300,7 @@ const showToast = (msg: string) => {
         }
         @media (min-width: 520px) {
           .onboarding-shell {
+            max-width: 460px;
             height: min(84vh, 760px);
             border-radius: 28px;
             box-shadow: 0 30px 70px -20px rgba(28, 25, 23, 0.45);
@@ -7413,7 +7414,7 @@ onKeyDown={(e) => {
   if (e.key === 'ArrowRight') goToNext();
   if (e.key === 'ArrowLeft') goToPrev();
 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 100030, padding: '16px', boxSizing: 'border-box', backgroundColor: 'rgba(28, 25, 23, 0.35)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 100030, padding: '0', boxSizing: 'border-box', backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
           >
             <div className="onboarding-shell">
             <div
