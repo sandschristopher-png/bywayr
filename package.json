@@ -17,7 +17,7 @@
     "@capacitor/status-bar": "^8.0.3",
     "@capgo/native-purchases": "^8.7.0",
     "@erikmichelson/open-location-code-ts": "^1.20250411.0",
-    "@supabase/supabase-js": "^2.112.4",
+    "@supabase/supabase-js": "^2.116.0",
     "google-auth-library": "^11.0.2",
     "googleapis": "^180.0.0",
     "lucide-react": "^1.39.0",
@@ -25,7 +25,8 @@
     "next": "16.3.4",
     "open-location-code": "^1.0.3",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

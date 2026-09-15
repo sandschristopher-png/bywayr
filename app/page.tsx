@@ -2652,7 +2652,7 @@ const showToast = (msg: string) => {
 
   const handleStripeCheckout = async () => {
     try {
-      const res = await fetch('/api/create-checkout-session', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
