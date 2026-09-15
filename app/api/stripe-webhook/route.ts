@@ -53,8 +53,8 @@ export async function POST(req: Request) {
         if (userId) {
           const expiresAt = new Date();
           expiresAt.setDate(expiresAt.getDate() + 3 + 30); // 3-day trial + 30 days
-          const { error: updateError } = await supabase
-            .from('profiles')
+          const { error: updateError } = await (supabase
+            .from('profiles') as any)
             .update({
               is_plus_member: true,
               plus_expires_at: expiresAt.toISOString(),
@@ -70,8 +70,8 @@ export async function POST(req: Request) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        const { error: cancelError } = await supabase
-          .from('profiles')
+        const { error: cancelError } = await (supabase
+          .from('profiles') as any)
           .update({
             is_plus_member: false,
           })
