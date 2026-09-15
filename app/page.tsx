@@ -574,7 +574,7 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   }, []);
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('bywayr_is_plus') === 'false';
+      return localStorage.getItem('bywayr_is_plus') === 'true';
     }
     return false;
   });
@@ -809,16 +809,6 @@ const showToast = (msg: string) => {
   const [weatherData, setWeatherData] = useState<any>(null);
   const hintDismissedRef = useRef<boolean>(false);
 
-  const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const t = localStorage.getItem('bywayr_gdrive_token');
-      const ts = localStorage.getItem('bywayr_gdrive_token_time');
-      return !!t && !!ts && Date.now() - parseInt(ts) < 55 * 60 * 1000;
-    }
-    return false;
-  });
-
-  const [isBackingUpDrive, setIsBackingUpDrive] = useState(false);
   const [isRestoringDrive, setIsRestoringDrive] = useState(false);
   const [driveStatusMessage, setDriveStatusMessage] = useState<string | null>(null);
 
@@ -2077,9 +2067,10 @@ const showToast = (msg: string) => {
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
         currentUserRef.current = null;
-        localStorage.removeItem('bywayr_gdrive_token');
-        localStorage.removeItem('bywayr_gdrive_token_time');
-        setUserProfile(null);
+    setUserProfile(null);
+    localStorage.removeItem('bywayr_user_profile');
+    localStorage.removeItem('bywayr_is_plus');
+    setIsProfileModalOpen(false);
         setMyVotes({});
         setUpvotedCommentIds([]);
         localStorage.removeItem('bywayr_user_profile');
@@ -2764,88 +2755,36 @@ const showToast = (msg: string) => {
     }
   };
 
-  const getDriveToken = (): string | null => {
-    const t = localStorage.getItem('bywayr_gdrive_token');
-    const ts = localStorage.getItem('bywayr_gdrive_token_time');
-    if (!t || !ts) return null;
-    if (Date.now() - parseInt(ts) > 55 * 60 * 1000) {
-      localStorage.removeItem('bywayr_gdrive_token');
-      return null;
-    }
-    return t;
-  };
-
-  const handleGoogleDriveBackup = async () => {
+  const handleExportJournal = () => {
     const activeUser = currentUserRef.current;
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      pushModalHistoryState('auth');
-      return;
-    }
+    if (!activeUser) return;
 
     triggerHaptic(12);
-    setIsBackingUpDrive(true);
-    setDriveStatusMessage('Preparing backup data...');
-
-    try {
-      const backupPayload = {
-        version: '1.0',
-        timestamp: new Date().toISOString(),
-        user_id: activeUser.id,
-        spots: myUserSpots,
-        mustTryIds: mustTrySpotIds,
-        profile: userProfile,
-      };
-      const fileContent = JSON.stringify(backupPayload, null, 2);
-      const accessToken = getDriveToken();
-
-      if (!accessToken) {
-        const blob = new Blob([fileContent], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `bywayr_gdrive_backup_${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        setDriveStatusMessage('Not connected to Drive — backup downloaded instead');
-      } else {
-        const fileMetadata = {
-          name: `bywayr_backup_${activeUser.id}_${Date.now()}.json`,
-          mimeType: 'application/json',
-        };
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
-        form.append('file', new Blob([JSON.stringify(backupPayload)], { type: 'application/json' }));
-
-        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: new Headers({ Authorization: `Bearer ${accessToken}` }),
-          body: form,
-        });
-
-        if (!res.ok) throw new Error('Failed to upload to Google Drive. Try signing in again.');
-        setIsDriveConnected(true);
-        setDriveStatusMessage('Successfully backed up to Google Drive!');
-      }
-
-      setTimeout(() => setDriveStatusMessage(null), 4000);
-    } catch (err: any) {
-      console.error('Google Drive backup error:', err);
-      setDriveStatusMessage(`Backup failed: ${err.message || 'Please reconnect Google Drive'}`);
-      setTimeout(() => setDriveStatusMessage(null), 6000);
-    } finally {
-      setIsBackingUpDrive(false);
-    }
+    const exportPayload = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      user_id: activeUser.id,
+      spots: myUserSpots,
+      mustTryIds: mustTrySpotIds,
+      profile: userProfile,
+    };
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bywayr_backup_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Journal exported to your device ✅');
   };
 
-  const handleGoogleDriveRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportJournal = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     triggerHaptic(12);
-    setIsRestoringDrive(true);
     setDriveStatusMessage('Restoring backup from file...');
 
     const reader = new FileReader();
@@ -2894,22 +2833,56 @@ const showToast = (msg: string) => {
         }
 
         await fetchSpots();
-        setIsDriveConnected(true);
         setDriveStatusMessage(`Restored ${restoredCount} spots (${parsed.spots.length - restoredCount} already existed)`);
         setTimeout(() => setDriveStatusMessage(null), 4000);
       } catch (err: any) {
         setDriveStatusMessage(`Restore failed: ${err.message || 'Corrupted backup file'}`);
         setTimeout(() => setDriveStatusMessage(null), 6000);
       } finally {
-        setIsRestoringDrive(false);
         e.target.value = '';
       }
     };
     reader.onerror = () => {
-      setIsRestoringDrive(false);
       setDriveStatusMessage(null);
     };
     reader.readAsText(file);
+  };
+
+  const handleExportGpx = () => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser || myUserSpots.length === 0) {
+      showToast('No pins to export yet');
+      return;
+    }
+
+    triggerHaptic(12);
+    const wptXml = myUserSpots.map((s) => {
+      const cdata = (v?: string) => `<![CDATA[${(v || '').replace(/]]>/g, ']]&gt;')}]]>`;
+      return `  <wpt lat="${s.latitude}" lon="${s.longitude}">
+    <name>${s.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</name>
+    <desc>${cdata(`${s.category} · ${s.city}${s.description ? ' — ' + s.description : ''}`)}</desc>
+  </wpt>`;
+    }).join('\n');
+
+    const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Bywayr" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Bywayr Field Journal</name>
+    <desc>Exported from Bywayr — your data, your device.</desc>
+  </metadata>
+${wptXml}
+</gpx>`;
+
+    const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bywayr_pins_${Date.now()}.gpx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Pins exported as GPX 🗺️');
   };
 
   const handleDeleteAccount = async () => {
@@ -3620,19 +3593,39 @@ const showToast = (msg: string) => {
 {uiToast && (
   <div className="animate-slide-up" style={{
     position: 'fixed',
-    top: 'calc(70px + env(safe-area-inset-top, 0px))',
-    left: '16px', right: '16px', maxWidth: '420px', margin: '0 auto',
-    backgroundColor: '#1c1917', color: '#fafaf9', padding: '12px 16px',
-    borderRadius: '16px', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)',
-    zIndex: 100025, display: 'flex', alignItems: 'center', gap: '10px',
-    border: '1px solid #44403c', boxSizing: 'border-box',
-    fontSize: '13px', fontWeight: 600,
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: '#1c1917',
+    color: '#ffffff',
+    padding: '20px 26px',
+    borderRadius: '20px',
+    boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.55)',
+    border: '1px solid rgba(224, 90, 71, 0.45)',
+    zIndex: 100060,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    textAlign: 'center',
+    maxWidth: 'min(420px, calc(100vw - 40px))',
+    boxSizing: 'border-box',
+    pointerEvents: 'none',
   }}>
-    <AlertTriangle style={{ width: '15px', height: '15px', color: '#e05a47', flexShrink: 0 }} />
-    {uiToast}
+    <div style={{
+      width: '40px', height: '40px', borderRadius: '50%',
+      backgroundColor: 'rgba(224, 90, 71, 0.18)',
+      border: '1.5px solid rgba(224, 90, 71, 0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: '#e05a47',
+    }}>
+      <Sparkle style={{ width: '19px', height: '19px' }} />
+    </div>
+    <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.4 }}>
+      {uiToast}
+    </span>
   </div>
 )}
-
       {/* Offline Notification Banner */}
       {isOffline && (
         <div className="animate-fade-in" style={{
@@ -6293,7 +6286,7 @@ const showToast = (msg: string) => {
             </div>
             {/* Bywayr Plus Membership Card */}
             <div 
-              onClick={!isPlusSubscriber ? handleStripeCheckout : undefined}
+              onClick={undefined}
               style={{ 
                 backgroundColor: isPlusSubscriber ? '#f8fbf9' : '#fffbfb', 
                 border: isPlusSubscriber ? '1.5px solid #86efac' : '1.5px solid #fed7aa', 
@@ -6332,7 +6325,7 @@ const showToast = (msg: string) => {
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
                 {isPlusSubscriber
                   ? 'Your Bywayr Plus membership is active. Enjoy ad-free exploring and custom tagging.'
-                  : 'Unlock ad-free exploring, custom tags, and journal exports for $19.99/year.'}
+                  : 'Annual Curator Pass — includes custom categories, journal export, and ad-free exploring.'}
               </p>
 
               {driveStatusMessage && (
@@ -6344,8 +6337,7 @@ const showToast = (msg: string) => {
               {isPlusSubscriber ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
                   <button
-                    onClick={handleGoogleDriveBackup}
-                    disabled={isBackingUpDrive}
+                    onClick={handleExportJournal}
                     style={{
                       width: '100%',
                       backgroundColor: '#1c1917',
@@ -6355,15 +6347,15 @@ const showToast = (msg: string) => {
                       padding: '10px',
                       fontSize: '12px',
                       fontWeight: 600,
-                      cursor: isBackingUpDrive ? 'not-allowed' : 'pointer',
+                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '6px',
                     }}
                   >
-                    {isBackingUpDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudUpload style={{ width: '14px', height: '14px' }} />}
-                    {isBackingUpDrive ? 'Exporting...' : 'Export Journal Backup'}
+                    <CloudUpload style={{ width: '14px', height: '14px' }} />
+                    Export Journal Backup
                   </button>
 
                   <label
@@ -6387,8 +6379,29 @@ const showToast = (msg: string) => {
                   >
                     {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
                     <span>{isRestoringDrive ? 'Restoring...' : 'Restore Backup File'}</span>
-                    <input type="file" accept="application/json" onChange={handleGoogleDriveRestore} disabled={isRestoringDrive} style={{ display: 'none' }} />
+                    <input type="file" accept="application/json" onChange={handleImportJournal} disabled={isRestoringDrive} style={{ display: 'none' }} />
                   </label>
+
+                  <button
+                    onClick={handleExportGpx}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#ffffff',
+                      color: '#1c1917',
+                      border: '1px solid #d6d3d1',
+                      borderRadius: '12px',
+                      padding: '9px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Download style={{ width: '14px', height: '14px' }} /> Export Pins as GPX
+                  </button>
                 </div>
               ) : (
                 <button
@@ -6709,8 +6722,8 @@ const showToast = (msg: string) => {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                Annual Curator Pass
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.5 }}>
+                Annual Curator Pass — includes custom categories,<br />journal export, and ad-free exploring
               </div>
             </div>
 
@@ -6769,7 +6782,7 @@ const showToast = (msg: string) => {
                   letterSpacing: '0.01em',
                 }}
               >
-                Start 3-Day Free Trial — Then $19.99/yr
+                Annual Curator Pass — $19.99/yr
               </button>
 
               {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() && (
