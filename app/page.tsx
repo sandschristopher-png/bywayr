@@ -512,6 +512,17 @@ export default function Home() {
   const currentUserRef = useRef<any>(null);
 
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgrade') === 'success') {
+      setIsPlusSubscriber(true);
+      localStorage.setItem('bywayr_is_plus', 'true');
+      showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. 👑');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
   const [nativeAd, setNativeAd] = useState<any>(null);
   const [nativeAdLoaded, setNativeAdLoaded] = useState(false);
   const [nativeAdError, setNativeAdError] = useState<string | null>(null);
@@ -841,8 +852,8 @@ const showToast = (msg: string) => {
         const hasPlus =
           Object.keys(entitlements).length > 0 ||
           restored?.transactions?.some(
-            (tx: any) => tx.productId === 'bywayr_plus_lifetime' || tx.productIdentifier === 'bywayr_plus_lifetime'
-          );
+            (tx: any) => tx.productId === 'bywayr_plus_yearly' || tx.productIdentifier === 'bywayr_plus_yearly'
+          );  
 
         if (hasPlus) {
           localStorage.setItem('bywayr_is_plus', 'true');
@@ -2632,6 +2643,28 @@ const showToast = (msg: string) => {
     setIsClaimUsernameModalOpen(false);
   };
 
+  const handleStripeCheckout = async () => {
+    try {
+      const res = await fetch('https://bywayr-api.vercel.app/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          email: currentUser.email,
+          returnUrl: window.location.href,
+        }),
+      });
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        showToast('Could not initialize web checkout.');
+      }
+    } catch (err) {
+      showToast('Failed to start checkout. Please try again.');
+    }
+  };
+
   const handleGooglePlayCheckout = async () => {
     if (!currentUser) {
       setIsAuthModalOpen(true);
@@ -2645,21 +2678,24 @@ const showToast = (msg: string) => {
       if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
         const { NativePurchases: Purchases, PURCHASE_TYPE } = (await import('@capgo/native-purchases')) as any;
         const purchaseResult = await Purchases.purchaseProduct({
-          productIdentifier: 'bywayr_plus_lifetime',
-          productType: PURCHASE_TYPE.INAPP,
+          productIdentifier: 'bywayr_plus_yearly',
+          productType: PURCHASE_TYPE.SUBS,
         });
 
         const tx = purchaseResult?.transaction;
         const purchaseToken = tx?.purchaseToken || tx?.token || null;
 
-        // Server-side verification: Google Play confirms the receipt before Plus unlocks
         let serverVerified = false;
         if (purchaseToken) {
           try {
             const verifyRes = await fetch('https://bywayr-api.vercel.app/api/play-verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ purchaseToken }),
+              body: JSON.stringify({ 
+                purchaseToken,
+                userId: currentUser.id,
+                productId: 'bywayr_plus_yearly' 
+              }),
             });
             const verifyJson = await verifyRes.json();
             serverVerified = verifyJson?.verified === true;
@@ -2668,21 +2704,21 @@ const showToast = (msg: string) => {
           }
         }
 
-        if ((purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_lifetime') || tx) {
+        if ((purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_yearly') || tx) {
           if (serverVerified) {
             setIsPlusSubscriber(true);
             localStorage.setItem('bywayr_is_plus', 'true');
             setIsPlusModalOpen(false);
             showToast('Thank you for upgrading to Bywayr Plus! 👑');
           } else {
-            showToast('Verifying purchase… please try Restore in a moment');
+            showToast('Verifying subscription… please check Restore in a moment');
           }
         }
       } else {
-        showToast('Purchases are available in the Android app');
+        handleStripeCheckout();
       }
     } catch (err: any) {
-      console.error('Google Play purchase failed:', err);
+      console.error('Subscription purchase failed:', err);
       if (err.message && !err.message.includes('Canceled') && !err.message.includes('cancel')) {
         showToast(`Purchase error: ${err.message}`);
       }
@@ -2698,10 +2734,10 @@ const showToast = (msg: string) => {
         const restored = await Purchases.restorePurchases();
         const entitlements = restored?.customerInfo?.entitlements || {};
         const hasPlus =
-          'bywayr_plus_lifetime' in entitlements ||
+          'bywayr_plus_yearly' in entitlements ||
           Object.keys(entitlements).length > 0 ||
           restored?.transactions?.some(
-            (tx: any) => tx.productId === 'bywayr_plus_lifetime' || tx.productIdentifier === 'bywayr_plus_lifetime'
+            (tx: any) => tx.productId === 'bywayr_plus_yearly' || tx.productIdentifier === 'bywayr_plus_yearly'
           );
 
         if (hasPlus) {
@@ -6247,21 +6283,45 @@ const showToast = (msg: string) => {
               </div>
             </div>
             {/* Bywayr Plus Membership Card */}
-            <div style={{ backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', border: isPlusSubscriber ? '2px solid #bbf7d0' : '2px solid #fed7aa', borderRadius: '20px', padding: '16px', marginBottom: '0', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isPlusSubscriber ? '0 10px 28px rgba(5, 150, 105, 0.16)' : '0 10px 28px rgba(224, 90, 71, 0.16)' }}>
+            <div 
+              onClick={!isPlusSubscriber ? handleStripeCheckout : undefined}
+              style={{ 
+                backgroundColor: isPlusSubscriber ? '#f0fdf4' : '#fffbfb', 
+                border: isPlusSubscriber ? '2px solid #bbf7d0' : '2px solid #fed7aa', 
+                borderRadius: '20px', 
+                padding: '16px', 
+                marginBottom: '0', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '12px', 
+                boxShadow: isPlusSubscriber ? '0 10px 28px rgba(5, 150, 105, 0.16)' : '0 10px 28px rgba(224, 90, 71, 0.16)',
+                cursor: isPlusSubscriber ? 'default' : 'pointer'
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Crown style={{ width: '16px', height: '16px', color: isPlusSubscriber ? '#059669' : '#e05a47' }} /> 
-                  Bywayr Plus
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(224, 90, 71, 0.2)', border: '1px solid rgba(224, 90, 71, 0.15)', flexShrink: 0 }}>
+                    <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.01em', display: 'block', lineHeight: 1.2 }}>
+                      Bywayr Plus
+                    </span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                      Curator Pass
+                    </span>
+                  </div>
+                </div>
+
+                <span style={{ backgroundColor: isPlusSubscriber ? '#dcfce7' : '#fff1ee', color: isPlusSubscriber ? '#16a34a' : '#e05a47', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '8px', border: isPlusSubscriber ? '1px solid #86efac' : '1px solid #fecdd3', letterSpacing: '0.02em' }}>
+                  {isPlusSubscriber ? 'PLUS ACTIVE' : 'ANNUAL'}
                 </span>
-                <span style={{ backgroundColor: isPlusSubscriber ? '#dcfce7' : '#fff1ee', color: isPlusSubscriber ? '#16a34a' : '#e05a47', fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: isPlusSubscriber ? '1px solid #86efac' : '1px solid #fecdd3' }}>
-                  {isPlusSubscriber ? 'LIFETIME ACTIVE' : 'PREMIUM'}
-                </span>
-              </div>
+              </div>  
 
               <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
                 {isPlusSubscriber
-                  ? 'Your lifetime membership is active. Enjoy ad-free exploring and portable journal exports, forever.'
-                  : 'Unlock ad-free exploring and portable journal exports with a one-time payment, forever.'}
+                  ? 'Your Bywayr Plus membership is active. Enjoy ad-free exploring and custom tagging.'
+                  : 'Unlock ad-free exploring, custom tags, and journal exports for $19.99/year.'}
               </p>
 
               {driveStatusMessage && (
@@ -6615,7 +6675,7 @@ const showToast = (msg: string) => {
                 <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                Lifetime Curator Pass
+                Annual Curator Pass
               </div>
             </div>
 
@@ -6632,7 +6692,7 @@ const showToast = (msg: string) => {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
                   <Download style={{ width: '15px', height: '15px' }} />
-                </div>
+        </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
                   <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
                 </div>
@@ -6643,7 +6703,7 @@ const showToast = (msg: string) => {
                   <ShieldCheck style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero banner ads, forever.
+                  <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero ads.
                 </div>
               </div>
 
@@ -6652,52 +6712,46 @@ const showToast = (msg: string) => {
                   <Sparkle style={{ width: '15px', height: '15px' }} />
                 </div>
                 <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                  <strong style={{ color: '#1c1917' }}>Pay once, own forever</strong> — No monthly subscriptions or recurring fees.
+                  <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> — Cancel anytime with zero charge before trial ends.
                 </div>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-              {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() ? (
-                <>
-                  <button
-                    onClick={handleGooglePlayCheckout}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#44403c',
-                      color: '#fafaf9',
-                      border: 'none',
-                      borderRadius: '16px',
-                      padding: '14px',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      boxShadow: '0 8px 20px -4px rgba(68, 64, 60, 0.35)',
-                      letterSpacing: '0.01em',
-                    }}
-                  >
-                    One-time Payment — $19.99
-                  </button>
+              <button
+                onClick={handleGooglePlayCheckout}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#e05a47',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '14px',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px -4px rgba(224, 90, 71, 0.35)',
+                  letterSpacing: '0.01em',
+                }}
+              >
+                Start 3-Day Free Trial — Then $19.99/yr
+              </button>
 
-                  <button
-                    onClick={handleRestorePurchases}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#78716c',
-                      fontSize: '11.5px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: '6px',
-                    }}
-                  >
-                    Restore Purchase
-                  </button>
-                </>
-              ) : (
-                <div style={{ fontSize: '11.5px', color: '#a8a29e', fontWeight: 600, padding: '10px 6px' }}>
-                  Purchases are available in the Bywayr Android app on Google Play.
-                </div>
+              {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() && (
+                <button
+                  onClick={handleRestorePurchases}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#78716c',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '6px',
+                  }}
+                >
+                  Restore Purchase
+                </button>
               )}
             </div>
           </div>
