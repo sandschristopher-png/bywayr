@@ -74,6 +74,7 @@ import {
   HardDrive,
   Download,
   Sparkle,
+  Lock,
 ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Spot {
@@ -99,6 +100,7 @@ interface UserProfile {
   avatar_url?: string;
   bio?: string;
   country?: string;
+  is_private?: boolean;
 }
 
 interface SpotComment {
@@ -585,7 +587,10 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
 
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
   const [viewingProfileSpots, setViewingProfileSpots] = useState<Spot[]>([]);
+  const [viewingProfileComments, setViewingProfileComments] = useState<SpotComment[]>([]);
+  const [profileTab, setProfileTab] = useState<'pins' | 'comments'>('pins');
   const [profileCityFilter, setProfileCityFilter] = useState<string>('All');
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [viewingPassportProfile, setViewingPassportProfile] = useState<UserProfile | null>(null);
   const [viewingPassportSpots, setViewingPassportSpots] = useState<Spot[]>([]);
 
@@ -1374,15 +1379,54 @@ const showToast = (msg: string) => {
     setSavingVote(false);
   };
 
-  const handleOpenPublicProfile = (userId: string) => {
+  const handleOpenPublicProfile = async (userId: string) => {
     triggerHaptic(8);
-    const profile = profilesMap[userId] || { id: userId, username: 'wanderer' };
-    const userSpots = spots.filter((s) => s.user_id === userId);
+
+    // Always pull fresh profile + comments straight from Supabase (works on cold-load shares too)
+    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const profile: UserProfile = profileData || profilesMap[userId] || { id: userId, username: 'wanderer' };
+
     setViewingProfile(profile);
-    setViewingProfileSpots(userSpots);
+    setViewingProfileSpots(spots.filter((s) => s.user_id === userId));
+    setViewingProfileComments([]);
+    setProfileTab('pins');
     setProfileCityFilter('All');
     setViewingSpot(null);
     pushModalHistoryState('publicProfile');
+
+    if (!profile.is_private) {
+      const { data: commentData } = await supabase
+        .from('spot_comments')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (commentData) setViewingProfileComments(commentData as SpotComment[]);
+    }
+  };
+
+  const handleTogglePrivacy = async () => {
+    const activeUser = currentUserRef.current;
+    if (!activeUser) return;
+
+    triggerHaptic(8);
+    setSavingPrivacy(true);
+    const next = !userProfile?.is_private;
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: activeUser.id,
+      is_private: next,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (!error) {
+      const updated = { ...userProfile, id: activeUser.id, is_private: next };
+      setUserProfile(updated);
+      localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+      fetchProfiles();
+      showToast(next ? 'Your journal is now private' : 'Your journal is now public');
+    }
+    setSavingPrivacy(false);
   };
 
   const handleCategoryMouseDown = (e: React.MouseEvent) => {
@@ -2367,6 +2411,66 @@ const showToast = (msg: string) => {
       cancelled = true;
     };
   }, [spots]);
+
+  // Deep Link Auto-Focus: open ?curator=ID shared Field Journal links automatically
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const curatorId = params.get('curator');
+    if (!curatorId) return;
+    let cancelled = false;
+
+    const openCurator = async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), 500);
+      });
+      if (cancelled) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', curatorId)
+        .maybeSingle();
+      if (cancelled || !profileData) return;
+
+      const { data: spotData } = await supabase
+        .from('spots')
+        .select('*')
+        .eq('user_id', curatorId)
+        .order('id', { ascending: false });
+
+      const sanitized = (spotData || []).map((s: Spot) => {
+        const clean = sanitizeCountryAndCity(s.city, s.country || '');
+        return { ...s, city: clean.city, country: clean.country };
+      });
+
+      setViewingProfile(profileData as UserProfile);
+      setViewingProfileSpots(sanitized);
+      setProfileCityFilter('All');
+      setActiveSearchedSpot(null);
+      setViewingSpot(null);
+      pushModalHistoryState('publicProfile');
+
+      // Also center the map roughly on their territory so the backdrop isn't empty
+      if (sanitized.length > 0 && map.current) {
+        const bounds = sanitized.reduce(
+          (b, s) => b.extend([s.longitude, s.latitude]),
+          new maplibregl.LngLatBounds(
+            [sanitized[0].longitude, sanitized[0].latitude],
+            [sanitized[0].longitude, sanitized[0].latitude]
+          )
+        );
+        map.current.fitBounds(bounds, { padding: 80, maxZoom: 12, duration: 0 });
+      }
+    };
+
+    openCurator();
+    window.history.replaceState(null, '', window.location.pathname);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Render All Pinned Locations as DOM Markers
   useEffect(() => {
@@ -4895,7 +4999,7 @@ ${wptXml}
               </h3>
               <p style={{ margin: 0, fontSize: '12px', color: '#78716c', fontWeight: 500, width: '100%', wordBreak: 'break-word' }}>
                 {viewingSpot.city}{viewingSpot.country ? ` · ${viewingSpot.country}` : ''}
-                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username ? (
+                {viewingSpot.user_id && profilesMap[viewingSpot.user_id]?.username && !profilesMap[viewingSpot.user_id]?.is_private ? (
                   <>
                     {' · '}
                     <span
@@ -5144,12 +5248,16 @@ ${wptXml}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          <span
-                            onClick={() => handleOpenPublicProfile(c.user_id)}
-                            style={{ fontWeight: 700, color: '#1c1917', cursor: 'pointer' }}
-                          >
-                            @{authorProfile?.username || 'wanderer'}
-                          </span>
+                          {authorProfile?.is_private ? (
+                            <span style={{ fontWeight: 700, color: '#a8a29e' }}>[hidden curator]</span>
+                          ) : (
+                            <span
+                              onClick={() => handleOpenPublicProfile(c.user_id)}
+                              style={{ fontWeight: 700, color: '#1c1917', cursor: 'pointer' }}
+                            >
+                              @{authorProfile?.username || 'wanderer'}
+                            </span>
+                          )}
 
                           {isSpotCreator && (
                             <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#e05a47', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', padding: '1px 5px', borderRadius: '4px', letterSpacing: '0.04em' }}>
@@ -5553,10 +5661,53 @@ ${wptXml}
                 </div>
               )}
 
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#57534e', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Curated Field Notes
+              {viewingProfile.is_private ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '28px 16px', textAlign: 'center' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#ecebe7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#78716c' }}>
+                    <Lock style={{ width: '22px', height: '22px' }} />
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
+                    This curator keeps their journal private.
+                  </p>
+                </div>
+              ) : (
+                <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '12px', padding: '3px', border: '1px solid #e7e5e4', marginBottom: '10px' }}>
+                <button onClick={() => { triggerHaptic(4); setProfileTab('pins'); }} style={{ border: 'none', padding: '7px 4px', borderRadius: '9px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: profileTab === 'pins' ? '#ffffff' : 'transparent', color: profileTab === 'pins' ? '#e05a47' : '#78716c', boxShadow: profileTab === 'pins' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Pins ({viewingProfileSpots.length})</button>
+                <button onClick={() => { triggerHaptic(4); setProfileTab('comments'); }} style={{ border: 'none', padding: '7px 4px', borderRadius: '9px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: profileTab === 'comments' ? '#ffffff' : 'transparent', color: profileTab === 'comments' ? '#e05a47' : '#78716c', boxShadow: profileTab === 'comments' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>Comments ({viewingProfileComments.length})</button>
               </div>
 
+              {profileTab === 'comments' ? (
+                <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
+                  {viewingProfileComments.length === 0 ? (
+                    <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No comments yet.</p>
+                  ) : (
+                    viewingProfileComments.map((c) => {
+                      const parentSpot = spots.find((s) => s.id === c.spot_id);
+                      return (
+                        <div
+                          key={c.id}
+                          className="spot-card-hover"
+                          onClick={() => { if (parentSpot) { triggerHaptic(8); dismissModalWithHistory(() => setViewingProfile(null)); flyToSpot(parentSpot); } }}
+                          style={{ padding: '12px 14px', borderRadius: '16px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', cursor: parentSpot ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', gap: '6px' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ display: 'inline-block', backgroundColor: '#ecebe7', color: '#57534e', fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px' }}>
+                              {parentSpot ? parentSpot.name : 'Removed spot'}
+                            </span>
+                            <span style={{ fontSize: '10.5px', color: '#a8a29e', fontWeight: 500 }}>{formatRelativeTime(c.created_at)}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 6px', borderRadius: '4px' }}>{c.tag || '[Tip]'}</span>
+                            <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>▲ {c.upvotes || 0}</span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.content}</p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : (
               <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
                 {filteredProfileSpots.length === 0 ? (
                   <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No public pins found.</p>
@@ -5618,6 +5769,9 @@ ${wptXml}
                   ))
                 )}
               </div>
+              )}
+                </>
+              )}
             </div>
           </div>
         );
@@ -6433,6 +6587,17 @@ ${wptXml}
               )}
             </div>
 
+            <div onClick={handleTogglePrivacy} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: userProfile?.is_private ? '#f5f5f4' : '#ffffff', border: userProfile?.is_private ? '1px solid #d6d3d1' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {savingPrivacy ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite', color: '#a8a29e' }} /> : <Lock style={{ width: '16px', height: '16px' }} color={userProfile?.is_private ? '#57534e' : '#a8a29e'} />}
+                <span style={{ fontSize: '12.5px', fontWeight: 600, color: userProfile?.is_private ? '#44403c' : '#44403c' }}>
+                  {userProfile?.is_private ? 'Private journal — comments & profile hidden' : 'Make my profile & comments private'}
+                </span>
+              </div>
+              {userProfile?.is_private ? <CheckSquare style={{ width: '16px', height: '16px', color: '#57534e' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
+            </div>
+
+            
             <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#fff7ed' : '#ffffff', border: onlyMySpots ? '1px solid #fdba74' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#ea580c' : '#78716c'} />
@@ -7580,6 +7745,3 @@ onKeyDown={(e) => {
     </div>
   );
 }
-
-
-
