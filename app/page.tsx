@@ -6931,8 +6931,8 @@ const showToast = (msg: string) => {
                   )}
                 </div>
 
-                {/* Bottom Official Page Number Badges � tracks real spread */}
-                {activeStampItems.length > 0 && (() => {
+                               {/* Bottom Official Page Number Badges � desktop spreads only */}
+                {isDesktopViewport && activeStampItems.length > 0 && (() => {
                   const STAMPS_PER_SPREAD = 4;
                   const totalSpreads = Math.max(1, Math.ceil(activeStampItems.length / STAMPS_PER_SPREAD));
                   const page = Math.min(passportBookPage, totalSpreads - 1);
