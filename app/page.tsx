@@ -3323,6 +3323,10 @@ ${wptXml}
           touch-action: none !important;
           overscroll-behavior: none !important;
         }
+        .map-dark-tiles .maplibregl-canvas {
+          filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.65);
+          transition: filter 0.3s ease;
+        }
         input, textarea {
           user-select: text;
           touch-action: manipulation;
@@ -3609,6 +3613,7 @@ ${wptXml}
       {/* 1. Map Canvas */}
       <div 
         ref={mapContainer} 
+        className={isDarkMode ? 'map-dark-tiles' : undefined}
         style={{ 
           position: 'absolute', 
           top: 0, 
@@ -3616,7 +3621,7 @@ ${wptXml}
           right: 0, 
           bottom: 0, 
           zIndex: 0, 
-          backgroundColor: isDarkMode ? '#262421' : '#ecebe7', 
+          backgroundColor: isDarkMode ? '#17161a' : '#ecebe7', 
           transition: 'background-color 0.3s ease', 
           touchAction: 'pan-x pan-y', 
         }} 
@@ -3759,7 +3764,7 @@ ${wptXml}
       {/* 2. Unified Search & Actions Bar */}
       <div style={{ 
         position: 'absolute', 
-        top: isOffline ? 'calc(max(env(safe-area-inset-top, 0px), 28px) + 30px)' : 'max(env(safe-area-inset-top, 0px), 28px)', 
+        top: isOffline ? 'calc(max(min(env(safe-area-inset-top, 0px), 36px), 28px) + 30px)' : 'max(min(env(safe-area-inset-top, 0px), 36px), 28px)', 
         left: '16px', 
         right: '16px', 
         maxWidth: '460px', 
@@ -4986,9 +4991,9 @@ ${wptXml}
                 {/* Close Button */}
                 <button
                   onClick={() => dismissModalWithHistory(() => { setViewingSpot(null); if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname); })}
-                  style={{ border: 'none', background: '#f5f5f4', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '2px' }}
+                  style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '2px' }}
                 >
-                  <X style={{ width: '15px', height: '15px' }} />
+                  <X style={{ width: '18px', height: '18px' }} />
                 </button>
               </div>
             </div>
@@ -6876,9 +6881,9 @@ ${wptXml}
                     dismissModalWithHistory(() => { setIsPlusModalOpen(false); setIsPlusClosing(false); });
                   }, 240);
                 }}
-                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               >
-                <X style={{ width: '20px', height: '20px' }} />
+                <X style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
 
