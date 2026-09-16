@@ -52,11 +52,11 @@ export async function POST(req: Request) {
 
         if (userId) {
           const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 3 + 30); // 3-day trial + 30 days
+          expiresAt.setDate(expiresAt.getDate() + 3 + 365); // 3-day trial + 1 year (matches $19.99/yr pricing)
           const { error: updateError } = await (supabase
             .from('profiles') as any)
             .update({
-              is_plus_member: true,
+              plus_enabled: true,
               plus_expires_at: expiresAt.toISOString(),
               stripe_customer_id: session.customer as string,
             })
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         const { error: cancelError } = await (supabase
           .from('profiles') as any)
           .update({
-            is_plus_member: false,
+            plus_enabled: false,
           })
           .eq('stripe_customer_id', customerId);
         if (cancelError) throw cancelError;

@@ -3725,11 +3725,18 @@ ${wptXml}
         </div>
       )}
 {uiToast && (
-  <div className="animate-slide-up" style={{
+  <div style={{
     position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
+    inset: 0,
+    zIndex: 100060,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+    padding: '20px',
+    boxSizing: 'border-box',
+  }}>
+  <div className="animate-slide-up" style={{
     backgroundColor: '#1c1917',
     color: '#ffffff',
     padding: '20px 26px',
@@ -3758,6 +3765,7 @@ ${wptXml}
     <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.4 }}>
       {uiToast}
     </span>
+  </div>
   </div>
 )}
       {/* Offline Notification Banner */}
