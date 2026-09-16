@@ -101,6 +101,8 @@ interface UserProfile {
   bio?: string;
   country?: string;
   is_private?: boolean;
+  plus_enabled?: boolean;
+  plus_expires_at?: string;
 }
 
 interface SpotComment {
@@ -576,10 +578,12 @@ const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forwar
   }, []);
   const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
+      // Cache only honored as optimistic default; fetchUserProfile() re-validates from Supabase shortly after mount
       return localStorage.getItem('bywayr_is_plus') === 'true';
     }
     return false;
   });
+  const plusValidatedRef = useRef<boolean>(false);
 
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -1383,7 +1387,11 @@ const showToast = (msg: string) => {
     triggerHaptic(8);
 
     // Always pull fresh profile + comments straight from Supabase (works on cold-load shares too)
-    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const { data: profileData } = await supabase
+  .from('profiles')
+  .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at')
+  .eq('id', userId)
+  .maybeSingle();
     const profile: UserProfile = profileData || profilesMap[userId] || { id: userId, username: 'wanderer' };
 
     setViewingProfile(profile);
@@ -2008,14 +2016,28 @@ const showToast = (msg: string) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      const { data, error } = await supabase
+  .from('profiles')
+  .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at')
+  .eq('id', userId)
+  .maybeSingle();
       if (!error && data) {
         setUserProfile(data);
         localStorage.setItem('bywayr_user_profile', JSON.stringify(data));
-        const hasPlus = Boolean(data.is_plus_member || data.plus_enabled);
+
+        // Single source of truth: DB decides Plus. Expiry honored if set.
+        const notExpired = !data.plus_expires_at || new Date(data.plus_expires_at).getTime() > Date.now();
+        const hasPlus = Boolean(data.plus_enabled) && notExpired;
+
+        if (!hasPlus && localStorage.getItem('bywayr_is_plus') === 'true') {
+          // Server says no Plus but localStorage claims it — probable tampering, correct it
+          console.warn('Plus entitlement mismatch: local flag cleared');
+        }
+
         setIsPlusSubscriber(hasPlus);
         if (hasPlus) {
           localStorage.setItem('bywayr_is_plus', 'true');
+          plusValidatedRef.current = true;
         } else {
           localStorage.removeItem('bywayr_is_plus');
         }
@@ -2058,7 +2080,9 @@ const showToast = (msg: string) => {
 
   const fetchProfiles = async () => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*');
+      const { data, error } = await supabase
+  .from('profiles')
+  .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at');
       if (!error && data) {
         const map: Record<string, UserProfile> = {};
         data.forEach((p: UserProfile) => {
@@ -2114,6 +2138,7 @@ const showToast = (msg: string) => {
     setUserProfile(null);
     localStorage.removeItem('bywayr_user_profile');
     localStorage.removeItem('bywayr_is_plus');
+    setIsPlusSubscriber(false);
     setIsProfileModalOpen(false);
         setMyVotes({});
         setUpvotedCommentIds([]);
@@ -2428,7 +2453,7 @@ const showToast = (msg: string) => {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+                .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at')
         .eq('id', curatorId)
         .maybeSingle();
       if (cancelled || !profileData) return;
