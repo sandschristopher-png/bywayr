@@ -75,7 +75,9 @@
     Sparkle,
     Lock,
     Book,
-  ChevronLeft, ChevronRight } from 'lucide-react';
+  ChevronLeft, ChevronRight, Mountain,
+  ShoppingBag,
+} from 'lucide-react';
   import { AdMob } from '@capacitor-community/admob';
 
   const ADMOB_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888';
