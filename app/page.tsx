@@ -5788,6 +5788,7 @@
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
+                          flexShrink: 0,
                           boxShadow: isSelected ? '0 2px 6px rgba(28, 25, 23, 0.16)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
@@ -5996,12 +5997,12 @@
 
           return (
             <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-              <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
+              <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', height: 'min(680px, 86vh)', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
                 <button onClick={() => dismissModalWithHistory(() => setViewingProfile(null))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X style={{ width: '18px', height: '18px' }} />
                 </button>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingRight: '30px', flexShrink: 0 }}>
                   <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(224, 90, 71, 0.15)', border: '2px solid #e7e5e4' }}>
                     {viewingProfile.avatar_url ? (
                       <img src={viewingProfile.avatar_url} alt={viewingProfile.username || 'Curator'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -6117,7 +6118,7 @@
                 </div>
 
                 {uniqueCities.length > 1 && (
-                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none' }}>
+                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '14px', scrollbarWidth: 'none', flexShrink: 0, WebkitOverflowScrolling: 'touch' }}>
                     <button
                       onClick={() => {
                         triggerHaptic(6);
@@ -6131,11 +6132,7 @@
                         padding: '5px 10px',
                         fontSize: '11px',
                         fontWeight: 600,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      All Cities ({viewingProfileSpots.length})
+              <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', height: 'min(680px, 86vh)', display: 'flex', flexDirection: 'column', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
                     </button>
                     {uniqueCities.map((city) => (
                       <button
@@ -6154,6 +6151,7 @@
                           fontWeight: 600,
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
+                          flexShrink: 0,
                         }}
                       >
                         📍 {city}
@@ -6179,7 +6177,7 @@
                 </div>
 
                 {profileTab === 'comments' ? (
-                  <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
+                  <div style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '2px' }}>
                     {viewingProfileComments.length === 0 ? (
                       <p style={{ margin: '20px 0', fontSize: '13px', color: '#a8a29e', textAlign: 'center' }}>No comments yet.</p>
                     ) : (
