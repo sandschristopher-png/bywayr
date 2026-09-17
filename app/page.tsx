@@ -1878,7 +1878,7 @@ const showToast = (msg: string) => {
     pinEl.style.height = '26px';
     pinEl.style.cursor = 'pointer';
     pinEl.innerHTML = `
-      <svg viewBox="0 0 24 24" width="26" height="26" fill="${pinColor}" stroke="#ffffff" stroke-width="1.5" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="${pinColor}" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
         <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
       </svg>
@@ -2525,10 +2525,6 @@ const showToast = (msg: string) => {
       pinEl.style.flexDirection = 'column';
       pinEl.style.alignItems = 'center';
       pinEl.style.transform = 'translate3d(0,0,0)';
-      const pinStroke = isDarkMode ? 3.2 : 2.5;
-      const pinFill = isDarkMode
-        ? pinColor
-        : pinColor;
       pinEl.innerHTML = `
         <div style="
           width: 32px;
@@ -2537,11 +2533,11 @@ const showToast = (msg: string) => {
         ">
           <!-- Teardrop shape -->
           <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 4px rgba(0,0,0,0.55));">
-            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinFill}" stroke="white" stroke-width="${pinStroke}"/>
+            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
             <!-- Outer white ring -->
             <circle cx="16" cy="15" r="7" fill="white"/>
             <!-- Inner colored dot -->
-            <circle cx="16" cy="15" r="3.5" fill="${pinFill}"/>
+            <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
           </svg>
           <!-- Shadow -->
           <div style="
@@ -7689,14 +7685,14 @@ onKeyDown={(e) => {
             >
               <div
                 style={{
-                  width: '68%',
-                  maxWidth: '280px',
-                  maxHeight: 'min(230px, 32vh)',
+                  width: '60%',
+                  maxWidth: '230px',
+                  maxHeight: 'min(190px, 26vh)',
                   flexShrink: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  overflow: 'hidden',
+                  overflow: 'visible',
                   animation: 'onboardingImgFloat 4s ease-in-out infinite',
                 }}
               >
