@@ -2218,14 +2218,14 @@
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
           currentUserRef.current = null;
-      setUserProfile(null);
-      localStorage.removeItem('bywayr_user_profile');
-      localStorage.removeItem('bywayr_is_plus');
-      setIsPlusSubscriber(false);
-      setIsProfileModalOpen(false);
+          setUserProfile(null);
+          localStorage.removeItem('bywayr_user_profile');
+          localStorage.removeItem('bywayr_is_plus');
+          setIsPlusSubscriber(false);
+          setIsProfileModalOpen(false);
+          setViewingSpot(null);
           setMyVotes({});
           setUpvotedCommentIds([]);
-          localStorage.removeItem('bywayr_user_profile');
         }
       });
 
@@ -2863,7 +2863,8 @@
 
     const handleStripeCheckout = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/create-checkout-session`, {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || '';
+        const res = await fetch(`${apiBase}/api/create-checkout-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -3076,10 +3077,18 @@
       }
 
       triggerHaptic(12);
+      const escapeXml = (str: string = '') =>
+        str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+
       const wptXml = myUserSpots.map((s) => {
         const cdata = (v?: string) => `<![CDATA[${(v || '').replace(/]]>/g, ']]&gt;')}]]>`;
         return `  <wpt lat="${s.latitude}" lon="${s.longitude}">
-      <name>${s.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</name>
+      <name>${escapeXml(s.name)}</name>
       <desc>${cdata(`${s.category} · ${s.city}${s.description ? ' — ' + s.description : ''}`)}</desc>
     </wpt>`;
       }).join('\n');
@@ -3334,11 +3343,18 @@
 
       // Refresh hint when the user pans or zooms the map
       const mapInstance = map.current;
-      const onMoveEnd = () => fetchAndGenerate();
+      let debounceMoveTimer: ReturnType<typeof setTimeout> | null = null;
+      const onMoveEnd = () => {
+        if (debounceMoveTimer) clearTimeout(debounceMoveTimer);
+        debounceMoveTimer = setTimeout(() => {
+          fetchAndGenerate();
+        }, 500);
+      };
       mapInstance.on('moveend', onMoveEnd);
 
       return () => {
         if (hintTimer) clearTimeout(hintTimer);
+        if (debounceMoveTimer) clearTimeout(debounceMoveTimer);
         mapInstance.off('moveend', onMoveEnd);
       };
     }, [spots, userCoords]); // map ref is stable; spots/coords drive re-runs
