@@ -4642,14 +4642,13 @@
             <Plus style={{ width: '22px', height: '22px', strokeWidth: 2.5 }} />
           </button>
 
-          {/* Passport Booklet Trigger */}
+          {/* Journal Trigger */}
           <button
             type="button"
             onClick={() => {
               triggerHaptic(8);
-              setPassportBookPage(0);
-              setIsPassportBookOpen(true);
-              pushModalHistoryState('passportBook');
+              setIsDrawerOpen(true);
+              pushModalHistoryState('fieldJournal');
             }}
             style={{
               display: 'flex',
@@ -4661,11 +4660,11 @@
               cursor: 'pointer',
               padding: '6px 12px',
               borderRadius: '20px',
-              color: isPassportBookOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+              color: isDrawerOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
-            <Compass style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Passport</span>
+            <Bookmark style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Journal</span>
           </button>
         </div>
 
