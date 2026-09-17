@@ -2,9 +2,6 @@
 
   import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
-  // AdMob Configuration
-  const BYWAYR_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888'; // Production ID
-  // const BYWAYR_NATIVE_AD_UNIT_ID = 'ca-app-pub-3940256099942544/2247696110'; // Test ID (use while testing)
   import * as maplibregl from 'maplibre-gl';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { supabase } from '../lib/supabase';
@@ -78,6 +75,9 @@
     Sparkle,
     Lock,
   ChevronLeft, ChevronRight } from 'lucide-react';
+  import { AdMob } from '@capacitor-community/admob';
+
+  const ADMOB_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888';
 
   interface Spot {
     id?: string;
@@ -935,6 +935,26 @@
         }
       })();
     }, [isPlusSubscriber]);
+
+    // Load native ad on Android for free-tier users (runs after AdMob init completes)
+    useEffect(() => {
+      if (typeof window === 'undefined') return;
+      if (!adReady) return;
+
+      if (isPlusSubscriber) {
+        setNativeAd(null);
+        setNativeAdLoaded(false);
+        return;
+      }
+
+      // Native ads are not yet supported in @capacitor-community/admob v8.1.0.
+      // Re-enable the load call below when the plugin ships native ad support.
+      console.log('Native ads unsupported in current AdMob plugin version');
+      setNativeAd(null);
+      setNativeAdLoaded(false);
+
+      return () => {};
+    }, [adReady, isPlusSubscriber]);
 
     const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
     const myPassportStamps = extractPassportStamps(myUserSpots);
@@ -2619,34 +2639,7 @@
       });
     }, [filteredSpots, spots, mapReady, customCategories, resolveCategoryColor, isDarkMode]);
     // Apply map tile filter to canvas only, so markers keep true brand colors
-      // Load Native Ad when component mounts and user is not Plus
-    useEffect(() => {
-      if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
-      if (isPlusSubscriber) return;
 
-      const loadNativeAd = async () => {
-        try {
-          const { AdMob } = await import('@capacitor-community/admob');
-          const AdMobAny = AdMob as any;
-          
-          // Load the native ad (cast to any — API shape varies by plugin version)
-          const ad = await AdMobAny.loadNativeAd({
-            adUnitId: BYWAYR_NATIVE_AD_UNIT_ID,
-          });
-          
-          setNativeAd(ad);
-          setNativeAdLoaded(true);
-          setNativeAdError(null);
-        } catch (err: any) {
-          console.error('Failed to load native ad:', err);
-          setNativeAdError(err.message || 'Unknown error');
-          setNativeAdLoaded(false);
-        }
-        
-      };
-
-      loadNativeAd();
-    }, [isPlusSubscriber]);
     // Proximity Alert Watcher
     useEffect(() => {
       if (!navigator.geolocation || mustTrySpotIds.length === 0) return;
@@ -6553,10 +6546,11 @@
                           position: 'relative',
                         }}
                         onClick={() => {
-                          if (nativeAd) {
-                            import('@capacitor-community/admob').then(({ AdMob }) => {
-                              (AdMob as any).clickNativeAd({ adId: nativeAd.adId });
-                            });
+                          try {
+                            const adAny = nativeAd as any;
+                            if (adAny && typeof adAny.clicked === 'function') adAny.clicked();
+                          } catch (err) {
+                            console.warn('Native ad click failed:', err);
                           }
                         }}
                       >
@@ -6574,9 +6568,9 @@
                         </div>
 
                         {/* Media Image */}
-                        {nativeAd?.mediaImage && (
+                        {nativeAd?.icon?.url && (
                           <img
-                            src={nativeAd.mediaImage.url}
+                            src={nativeAd.icon.url}
                             alt="Ad"
                             style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
                           />
