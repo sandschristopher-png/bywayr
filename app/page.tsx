@@ -8,6 +8,8 @@ const BYWAYR_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888'; // Pr
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../lib/supabase';
+import { App as CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import CreateCategoryModal from '@/components/CreateCategoryModal';
 import SpotTagModal from '@/components/SpotTagModal';
 import ManageCategoriesModal from '@/components/ManageCategoriesModal';
@@ -2630,13 +2632,48 @@ const showToast = (msg: string) => {
     }
   }, [viewingSpot]);
 
+  // Native deep-link listener: parse tokens when Google redirects back via bywayr://auth-callback
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listenerPromise = CapApp.addListener('appUrlOpen', async ({ url }: { url: string }) => {
+      try {
+        if (!url.startsWith('bywayr://auth-callback')) return;
+        const hashPart = url.split('#')[1];
+        if (!hashPart) return;
+        const params = new URLSearchParams(hashPart);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        if (accessToken && refreshToken) {
+          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          showToast('Signed in successfully!');
+        } else if (params.get('error')) {
+          showToast(`Sign-in failed: ${params.get('error_description') || params.get('error')}`);
+        }
+      } catch (err) {
+        console.error('Deep link auth parse failed:', err);
+      }
+    });
+
+    return () => {
+      listenerPromise.then((listener) => listener?.remove()).catch(() => {});
+    };
+  }, []);
+
   const handleGoogleSignIn = async () => {
     triggerHaptic(10);
+    const isNative = Capacitor.isNativePlatform();
+    const redirectTo = isNative
+      ? 'bywayr://auth-callback'
+      : typeof window !== 'undefined'
+        ? window.location.origin
+        : undefined;
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-
+        redirectTo,
+        skipBrowserRedirect: false,
       },
     });
   };
