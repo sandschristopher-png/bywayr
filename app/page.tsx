@@ -142,7 +142,7 @@
   ];
 
   const STAMP_PALETTE = ['#0d9488', '#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#4f46e5'];
-  const COMMENT_TAGS = ['[Tip]', '[Menu / Price]', '[Work / Wi-Fi]', '[Vibe Check]', '[Status: Closed]'];
+  const COMMENT_TAGS = ['Tip', 'Vibe Check', 'Menu & Price', 'Work & Wi-Fi', 'Closed'];
   const getStampTier = (spotCount: number): 'entry' | 'silver' | 'gold' => {
     if (spotCount >= 30) return 'gold';
     if (spotCount >= 15) return 'silver';
@@ -771,7 +771,37 @@
 
     const [spotComments, setSpotComments] = useState<SpotComment[]>([]);
     const [newCommentText, setNewCommentText] = useState('');
-    const [commentTag, setCommentTag] = useState<string>('[Tip]');
+    const [commentTag, setCommentTag] = useState<string>('Tip');
+    const commentTagsScrollRef = useRef<HTMLDivElement>(null);
+    const [isTagDragging, setIsTagDragging] = useState(false);
+    const [tagStartX, setTagStartX] = useState(0);
+    const [tagScrollLeft, setTagScrollLeft] = useState(0);
+
+    const handleTagMouseDown = (e: React.MouseEvent) => {
+      if (!commentTagsScrollRef.current) return;
+      setIsTagDragging(true);
+      setTagStartX(e.pageX - commentTagsScrollRef.current.offsetLeft);
+      setTagScrollLeft(commentTagsScrollRef.current.scrollLeft);
+    };
+
+    const handleTagMouseMove = (e: React.MouseEvent) => {
+      if (!isTagDragging || !commentTagsScrollRef.current) return;
+      e.preventDefault();
+      const x = e.pageX - commentTagsScrollRef.current.offsetLeft;
+      const walk = (x - tagStartX) * 1.5;
+      commentTagsScrollRef.current.scrollLeft = tagScrollLeft - walk;
+    };
+
+    const handleTagMouseUpOrLeave = () => {
+      setIsTagDragging(false);
+    };
+
+    const handleTagWheel = (e: React.WheelEvent) => {
+      if (!commentTagsScrollRef.current) return;
+      if (e.deltaY !== 0) {
+        commentTagsScrollRef.current.scrollLeft += e.deltaY;
+      }
+    };
     const [upvotedCommentIds, setUpvotedCommentIds] = useState<string[]>([]);
     const [submittingComment, setSubmittingComment] = useState(false);
 
@@ -5559,13 +5589,16 @@
                       const isOwnComment = currentUser && c.user_id === currentUser.id;
                       const authorSpots = spots.filter((s) => s.user_id === c.user_id);
                       const authorTier = getStampTier(authorSpots.length);
+                      const tagClean = (c.tag || 'Tip').replace(/^\[|\]$/g, '').replace('Status: ', '');
                       const tagColor =
-                        c.tag === '[Status: Closed]'
+                        tagClean.includes('Closed')
                           ? '#e05a47'
-                          : c.tag === '[Menu / Price]'
+                          : tagClean.includes('Price') || tagClean.includes('Menu')
                           ? '#d97706'
-                          : c.tag === '[Work / Wi-Fi]'
+                          : tagClean.includes('Wi-Fi') || tagClean.includes('Work')
                           ? '#2563eb'
+                          : tagClean.includes('Vibe')
+                          ? '#7c3aed'
                           : '#059669';
 
                       return (
@@ -5626,12 +5659,14 @@
                                   fontSize: '10px',
                                   fontWeight: 700,
                                   color: tagColor,
-                                  backgroundColor: `${tagColor}15`,
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
+                                  backgroundColor: `${tagColor}14`,
+                                  border: `1px solid ${tagColor}30`,
+                                  padding: '2px 8px',
+                                  borderRadius: '9999px',
+                                  letterSpacing: '0.01em',
                                 }}
                               >
-                                {c.tag || '[Tip]'}
+                                {tagClean}
                               </span>
                             </div>
                             <span style={{ fontSize: '10.5px', color: '#a8a29e', flexShrink: 0 }}>
@@ -5712,38 +5747,54 @@
                 }}
               >
                 <div
+                  ref={commentTagsScrollRef}
+                  onMouseDown={handleTagMouseDown}
+                  onMouseMove={handleTagMouseMove}
+                  onMouseUp={handleTagMouseUpOrLeave}
+                  onMouseLeave={handleTagMouseUpOrLeave}
+                  onWheel={handleTagWheel}
                   style={{
                     display: 'flex',
-                    gap: '5px',
+                    gap: '6px',
                     overflowX: 'auto',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
+                    cursor: isTagDragging ? 'grabbing' : 'grab',
+                    userSelect: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                    paddingBottom: '2px',
                   }}
                 >
-                  {COMMENT_TAGS.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic(4);
-                        setCommentTag(t);
-                      }}
-                      style={{
-                        backgroundColor: commentTag === t ? '#1c1917' : '#ecebe7',
-                        color: commentTag === t ? '#fafaf9' : '#78716c',
-                        border: 'none',
-                        borderRadius: '8px',
-                        padding: '4px 10px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {COMMENT_TAGS.map((t) => {
+                    const isSelected = commentTag === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => {
+                          if (isTagDragging) return;
+                          triggerHaptic(4);
+                          setCommentTag(t);
+                        }}
+                        style={{
+                          backgroundColor: isSelected ? '#1c1917' : '#fafaf9',
+                          color: isSelected ? '#ffffff' : '#57534e',
+                          border: isSelected ? '1px solid #1c1917' : '1px solid #e7e5e4',
+                          borderRadius: '9999px',
+                          padding: '5px 12px',
+                          fontSize: '11.5px',
+                          fontWeight: isSelected ? 700 : 600,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          boxShadow: isSelected ? '0 2px 6px rgba(28, 25, 23, 0.16)' : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
                 </div>
                 <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '8px' }}>
                   <input
