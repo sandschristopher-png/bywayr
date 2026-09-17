@@ -3432,11 +3432,11 @@
           }
           .map-dark-tiles .maplibregl-canvas {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.65);
-  transition: filter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: filter 1.2s cubic-bezier(0.33, 1, 0.68, 1);
 }
           .map-light-tiles .maplibregl-canvas {
             filter: sepia(0.06) saturate(0.88) brightness(1.01) hue-rotate(2deg);
-            transition: filter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: filter 1.2s cubic-bezier(0.33, 1, 0.68, 1);
           }
           input, textarea {
             user-select: text;
@@ -3733,7 +3733,7 @@
             bottom: 0, 
             zIndex: 0, 
             backgroundColor: isDarkMode ? '#17161a' : '#ecebe7',
-            transition: 'background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'background-color 1.2s cubic-bezier(0.33, 1, 0.68, 1)',
             touchAction: 'pan-x pan-y', 
           }} 
         />
