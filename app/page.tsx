@@ -3385,7 +3385,7 @@
             touch-action: none !important;
             overscroll-behavior: none !important;
           }
-          map-dark-tiles .maplibregl-canvas {
+          .map-dark-tiles .maplibregl-canvas {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.65);
   transition: filter 0.5s ease;
 }
