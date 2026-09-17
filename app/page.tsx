@@ -3389,6 +3389,10 @@ ${wptXml}
           filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.65);
           transition: filter 0.3s ease;
         }
+        .map-light-tiles .maplibregl-canvas {
+          filter: sepia(0.32) saturate(0.85) brightness(0.94) hue-rotate(-8deg) contrast(0.96);
+          transition: filter 0.3s ease;
+        }
         input, textarea {
           user-select: text;
           touch-action: manipulation;
@@ -3675,7 +3679,7 @@ ${wptXml}
       {/* 1. Map Canvas */}
       <div 
         ref={mapContainer} 
-        className={isDarkMode ? 'map-dark-tiles' : undefined}
+        className={isDarkMode ? 'map-dark-tiles' : 'map-light-tiles'}
         style={{ 
           position: 'absolute', 
           top: 0, 
@@ -5610,7 +5614,7 @@ ${wptXml}
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px 10px', marginBottom: '14px', textAlign: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '4px 10px 14px 10px', marginBottom: '14px', textAlign: 'center', borderBottom: '1px solid #e7e5e4' }}>
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{viewingProfileSpots.length}</div>
                   <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Total Pins</div>
@@ -6345,7 +6349,7 @@ ${wptXml}
               display: 'flex', 
               flexDirection: 'column', 
               padding: '24px', 
-              gap: '14px', 
+              gap: '18px', 
               boxSizing: 'border-box', 
               overflowY: 'auto', 
             }}
@@ -6428,7 +6432,7 @@ ${wptXml}
               </p>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '16px', padding: '12px', marginBottom: '0', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '4px 10px 14px 10px', marginBottom: '0', textAlign: 'center', borderBottom: '1px solid #e7e5e4' }}>
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
                 <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
