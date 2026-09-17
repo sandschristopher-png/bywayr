@@ -75,6 +75,7 @@
     Sparkle,
     Lock,
     Book,
+    AlertCircle,
   ChevronLeft, ChevronRight, Mountain,
   ShoppingBag,
 } from 'lucide-react';
@@ -836,8 +837,10 @@
 
     const [showExitToast, setShowExitToast] = useState(false);
     const [uiToast, setUiToast] = useState<string | null>(null);
-  const showToast = (msg: string) => {
+    const [uiToastType, setUiToastType] = useState<'success' | 'error'>('success');
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setUiToast(msg);
+    setUiToastType(type);
     setTimeout(() => setUiToast(null), 3200);
   };
     const lastBackPressTime = useRef<number>(0);
@@ -1498,7 +1501,7 @@
         showToast(next ? 'Your journal is now private' : 'Your journal is now public');
       } else {
         console.error('Privacy toggle failed:', error);
-        showToast('Could not update privacy — please try again');
+        showToast('Could not update privacy — please try again', 'error');
       }
       setSavingPrivacy(false);
     };
@@ -2055,7 +2058,7 @@
       const { error } = await supabase.from('spot_comments').delete().eq('id', commentId);
       if (error) {
         setSpotComments(prevComments);
-        showToast('Could not delete that note. Try again.');
+        showToast('Could not delete that note. Try again.', 'error');
       }
       setDeletingCommentId(null);
     };
@@ -3829,17 +3832,17 @@
       boxSizing: 'border-box',
     }}>
     <div className="animate-slide-up" style={{
-      backgroundColor: '#1c1917',
-      color: '#ffffff',
-      padding: '20px 26px',
-      borderRadius: '20px',
-      boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.55)',
-      border: '1px solid rgba(224, 90, 71, 0.45)',
+      backgroundColor: uiToastType === 'success' ? '#fffdf9' : '#fff8f5',
+      color: uiToastType === 'success' ? '#57534e' : '#c2410c',
+      padding: '22px 28px',
+      borderRadius: '22px',
+      boxShadow: '0 20px 50px -12px rgba(87, 83, 78, 0.35)',
+      border: `1.5px solid ${uiToastType === 'success' ? '#e7e0d3' : '#fed7aa'}`,
       zIndex: 100060,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: '8px',
+      gap: '10px',
       textAlign: 'center',
       maxWidth: 'min(420px, calc(100vw - 40px))',
       boxSizing: 'border-box',
@@ -3847,12 +3850,17 @@
     }}>
       <div style={{
         width: '40px', height: '40px', borderRadius: '50%',
-        backgroundColor: 'rgba(224, 90, 71, 0.18)',
-        border: '1.5px solid rgba(224, 90, 71, 0.5)',
+        backgroundColor: uiToastType === 'success' ? '#e05a47' : '#ea580c',
+        border: 'none',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#e05a47',
+        color: '#ffffff',
+        boxShadow: '0 4px 12px rgba(224, 90, 71, 0.35)',
       }}>
-        <Sparkle style={{ width: '19px', height: '19px' }} />
+        {uiToastType === 'success' ? (
+          <Sparkle style={{ width: '19px', height: '19px' }} />
+        ) : (
+          <AlertCircle style={{ width: '19px', height: '19px' }} />
+        )}
       </div>
       <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.4 }}>
         {uiToast}
