@@ -754,7 +754,6 @@
     const [isDrawerClosing, setIsDrawerClosing] = useState(false);
 
     const [drawerTab, setDrawerTab] = useState<'fieldNotes' | 'mustTry' | 'essentials'>('fieldNotes');
-    const [notesViewMode, setNotesViewMode] = useState<'mine' | 'explore'>('mine');
     const [mustTrySpotIds, setMustTrySpotIds] = useState<string[]>([]);
     const [savingBookmark, setSavingBookmark] = useState(false);
 
@@ -951,21 +950,12 @@
     };
 
     const myNotesSpots = currentUser
-      ? spots.filter(
-          (s: Spot) =>
-            (s.user_id === currentUser.id) ||
-            (s.id && mustTrySpotIds.includes(s.id))
-        )
+      ? spots.filter((s: Spot) => s.user_id === currentUser.id)
       : [];
 
     // Single source of truth for the drawer list — always sorted
     const displayedDrawerSpots = (() => {
-      const source =
-        drawerTab === 'fieldNotes'
-          ? notesViewMode === 'mine'
-            ? myNotesSpots
-            : filteredSpots
-          : mustTryList;
+      const source = drawerTab === 'fieldNotes' ? myNotesSpots : mustTryList;
 
       if (drawerSortMode !== 'nearest') {
         return [...source].sort((a, b) => {
@@ -5983,7 +5973,7 @@
               <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0, animationDelay: '0.04s' }}>
                 <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                   {drawerTab === 'fieldNotes' 
-                    ? (notesViewMode === 'mine' ? 'My Field Notes' : 'Explore Field Notes') 
+                    ? 'Field Notes' 
                     : drawerTab === 'mustTry' ? 'Must-Try' : 'Travel Essentials'}
                 </h2>
                 <button onClick={handleCloseDrawer} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -6001,54 +5991,7 @@
 
                 {/* Sub-Filter & Sort Controls Combined */}
                 {drawerTab === 'fieldNotes' && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    {/* Mine vs Explore Pills */}
-                    <div style={{ display: 'inline-flex', backgroundColor: '#ecebe7', borderRadius: '10px', padding: '2px', border: '1px solid #e7e5e4' }}>
-                      <button
-                        onClick={() => {
-                          triggerHaptic(4);
-                          if (!currentUser) {
-                            setIsAuthModalOpen(true);
-                            pushModalHistoryState('auth');
-                            return;
-                          }
-                          setNotesViewMode('mine');
-                        }}
-                        style={{
-                          border: 'none',
-                          padding: '4px 8px',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          backgroundColor: notesViewMode === 'mine' ? '#ffffff' : 'transparent',
-                          color: notesViewMode === 'mine' ? '#e05a47' : '#78716c',
-                          boxShadow: notesViewMode === 'mine' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                        }}
-                      >
-                        My Pins
-                      </button>
-                      <button
-                        onClick={() => {
-                          triggerHaptic(4);
-                          setNotesViewMode('explore');
-                        }}
-                        style={{
-                          border: 'none',
-                          padding: '4px 8px',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          backgroundColor: notesViewMode === 'explore' ? '#ffffff' : 'transparent',
-                          color: notesViewMode === 'explore' ? '#e05a47' : '#78716c',
-                          boxShadow: notesViewMode === 'explore' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                        }}
-                      >
-                        Explore
-                      </button>
-                    </div>
-
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                     {/* Compact Sort Toggle */}
                     <button
                       onClick={() => {
