@@ -4013,7 +4013,7 @@
                       backgroundColor: '#1c1917',
                       border: 'none',
                       borderRadius: '16px',
-                      padding: '6px 12px',
+                      padding: '6px 8px',
                       color: '#fafaf9',
                       fontSize: '12px',
                       fontWeight: 600,
@@ -4575,7 +4575,7 @@
             }}
           >
             <List style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Notes</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Field Notes</span>
           </button>
 
           {/* Where to Walk Modal Trigger */}
@@ -4663,7 +4663,7 @@
             }}
           >
             <Book style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Journal</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Field Journal</span>
           </button>
         </div>
 
