@@ -7607,18 +7607,18 @@ ${wptXml}
         const ONBOARDING_STEPS = [
           {
             image: '/onboarding-1.png',
-            title: 'The map guidebooks forgot',
-            body: 'Bywayr is a pocket field guide for the places nobody bothers to map — pin your finds, discover other locals\' secrets, and keep the good spots alive.',
+            title: 'Skip the tourist traps',
+            body: 'Find the back-alley ramen bars, quiet rooftops, and hidden corners the big maps miss.',
           },
           {
             image: '/onboarding-2.png',
-            title: 'Pin what maps miss',
-            body: 'Backstreet food stalls, hidden viewpoints, quiet neighborhood corners — plot the spots you know and browse what others have curated near you.',
+            title: 'Pin what you uncover',
+            body: 'Map your favorite finds and share them with fellow wanderers.',
           },
           {
             image: '/onboarding-3.png',
-            title: 'Build your footprint',
-            body: 'Every spot you visit earns a passport stamp. Track your cities and countries as your collection of unmapped places grows.',
+            title: 'Fill your passport',
+            body: 'Every country you pin earns a stamp in your Passport.',
           },
         ];
 
@@ -7770,7 +7770,7 @@ onKeyDown={(e) => {
                   boxShadow: '0 6px 16px rgba(28, 25, 23, 0.22)',
                 }}
               >
-                {isLastStep ? 'Open the Field Guide' : 'Next'}
+                {isLastStep ? 'Open Your Field Guide' : 'Next'}
                 {!isLastStep && <ArrowRight style={{ width: '15px', height: '15px' }} />}
               </button>
 
