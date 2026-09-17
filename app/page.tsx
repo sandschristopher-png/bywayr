@@ -5127,7 +5127,7 @@
                     }
                   : {
                       maxWidth: '430px',
-                      height: isSheetExpanded ? '86vh' : '72vh',
+                      height: isSheetExpanded ? '90vh' : '82vh',
                       borderRadius: '28px',
                       border: '1px solid #e7e5e4',
                     }),
