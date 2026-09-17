@@ -1496,6 +1496,9 @@
         localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
         fetchProfiles();
         showToast(next ? 'Your journal is now private' : 'Your journal is now public');
+      } else {
+        console.error('Privacy toggle failed:', error);
+        showToast('Could not update privacy — please try again');
       }
       setSavingPrivacy(false);
     };
