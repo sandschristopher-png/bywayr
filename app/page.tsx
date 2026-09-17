@@ -128,18 +128,19 @@
 
   const CATEGORIES = [
     { label: 'All', desc: 'All unindexed local spots & expat field notes', color: '#57534e', icon: Sparkles },
-    { label: 'Hidden Gems', desc: 'Secret viewpoints & quiet local treasures', color: '#e05a47', icon: Gem },
+    { label: 'Hidden Gems', desc: 'Little-known local treasures & secrets', color: '#e05a47', icon: Gem },
+    { label: 'Viewpoints', desc: 'Scenic overlooks & panorama lookouts', color: '#ca8a04', icon: Mountain },
     { label: 'Street Food & Stalls', desc: 'Backstreet carts & unmapped night bites', color: '#ea580c', icon: Utensils },
-    { label: 'Local Eats', desc: 'Hole-in-the-wall diners & neighborhood spots', color: '#d97706', icon: Store },
+    { label: 'Local Eats', desc: 'Hole-in-the-wall kitchens & family-run joints', color: '#d97706', icon: Store },
     { label: 'Cafes & Workspaces', desc: 'Nomad-friendly spots with reliable Wi-Fi', color: '#2563eb', icon: Laptop },
     { label: 'Bars & Nightlife', desc: 'Local watering holes & concept pubs', color: '#db2777', icon: Beer },
     { label: 'Host & KTV Lounges', desc: 'Private karaoke rooms & companion spaces', color: '#7c3aed', icon: Mic2 },
     { label: 'Entertainment & Play', desc: 'Retro arcades, game lofts & amusement', color: '#6366f1', icon: Gamepad2 },
-    { label: 'Markets & Shops', desc: 'Produce alleys & independent thrift stalls', color: '#b45309', icon: Disc },
+    { label: 'Markets & Shops', desc: 'Produce alleys & independent thrift stalls', color: '#b45309', icon: ShoppingBag },
     { label: 'Nature & Trails', desc: 'Trailheads, hidden coves & green pockets', color: '#0d9488', icon: Trees },
     { label: 'Culture & Shrines', desc: 'Neighborhood temples & historical plaques', color: '#059669', icon: Landmark },
     { label: 'Stays & Hideaways', desc: 'Boutique guesthouses & quiet retreats', color: '#4f46e5', icon: HomeIcon },
-    { label: 'Practical Staples', desc: 'Essential local services, ATMs & transit nooks', color: '#0284c7', icon: Compass },
+    { label: 'Practical Staples', desc: 'ATMs, money changers, SIM shops, laundry & clinics', color: '#0284c7', icon: Compass },
   ];
 
   const STAMP_PALETTE = ['#0d9488', '#e05a47', '#0284c7', '#059669', '#7c3aed', '#d97706', '#db2777', '#4f46e5'];
