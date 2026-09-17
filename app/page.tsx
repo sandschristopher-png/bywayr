@@ -6528,7 +6528,9 @@
                       );
                     }
 
-                    const showNativeAd = !isPlusSubscriber && idx === 3 && nativeAdLoaded;
+                    // Native ads disabled: @capacitor-community/admob v8.1.0 does not support prepareNativeAd
+                    // Re-enable this block when the plugin ships native ad support
+                    const showNativeAd = false && !isPlusSubscriber && idx === 3 && nativeAdLoaded;
                     const adCard = showNativeAd ? (
                       <div
                         key="native-ad-slot"
