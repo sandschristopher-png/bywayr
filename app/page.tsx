@@ -3390,7 +3390,7 @@ ${wptXml}
           transition: filter 0.3s ease;
         }
         .map-light-tiles .maplibregl-canvas {
-          filter: sepia(0.2) saturate(1.1) brightness(0.95) hue-rotate(0deg) contrast(0.96);
+          filter: sepia(0.08) saturate(1.1) brightness(1.02) hue-rotate(-2deg) contrast(1.02);
           transition: filter 0.3s ease;
         }
         input, textarea {
