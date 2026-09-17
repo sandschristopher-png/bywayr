@@ -1,0 +1,61 @@
+[35mapp/page.tsx[m[36m:[m[32m7[m[36m:[m  import { [1;31msupabase[m } from '../lib/[1;31msupabase[m';
+[35mapp/page.tsx[m[36m:[m[32m1332[m[36m:[m        const { data, error } = await [1;31msupabase[m.from('spots').select('*').order('id', { ascending: false });
+[35mapp/page.tsx[m[36m:[m[32m1354[m[36m:[m        const { data, error } = await [1;31msupabase[m.from('bookmarks').select('spot_id').eq('user_id', userId);
+[35mapp/page.tsx[m[36m:[m[32m1375[m[36m:[m        const { error } = await [1;31msupabase[m.from('bookmarks').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
+[35mapp/page.tsx[m[36m:[m[32m1378[m[36m:[m        const { error } = await [1;31msupabase[m.from('bookmarks').insert([{ user_id: activeUser.id, spot_id: spotId }]);
+[35mapp/page.tsx[m[36m:[m[32m1400[m[36m:[m          const { error } = await [1;31msupabase[m.from('spot_votes').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
+[35mapp/page.tsx[m[36m:[m[32m1420[m[36m:[m          const { error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m1449[m[36m:[m      const { data: profileData } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m1465[m[36m:[m        const { data: commentData } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m1483[m[36m:[m      const { error } = await [1;31msupabase[m.from('profiles').upsert({
+[35mapp/page.tsx[m[36m:[m[32m1802[m[36m:[m      const { error } = await [1;31msupabase[m.from('spots').delete().eq('id', spot.id);
+[35mapp/page.tsx[m[36m:[m[32m1839[m[36m:[m        const { error: uploadError } = await [1;31msupabase[m.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
+[35mapp/page.tsx[m[36m:[m[32m1841[m[36m:[m          const { data: publicUrlData } = [1;31msupabase[m.storage.from('spot-images').getPublicUrl(filePath);
+[35mapp/page.tsx[m[36m:[m[32m1850[m[36m:[m        const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m1872[m[36m:[m        const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m1966[m[36m:[m        const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m1985[m[36m:[m        const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2005[m[36m:[m      const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2048[m[36m:[m      const { error } = await [1;31msupabase[m.from('spot_comments').delete().eq('id', commentId);
+[35mapp/page.tsx[m[36m:[m[32m2068[m[36m:[m        const { error } = await [1;31msupabase[m.from('comment_upvotes').delete().eq('user_id', activeUser.id).eq('comment_id', commentId);
+[35mapp/page.tsx[m[36m:[m[32m2074[m[36m:[m            await [1;31msupabase[m.from('spot_comments').update({ upvotes: Math.max(0, (target.upvotes || 1) - 1) }).eq('id', commentId);
+[35mapp/page.tsx[m[36m:[m[32m2078[m[36m:[m        const { error } = await [1;31msupabase[m.from('comment_upvotes').insert([{ user_id: activeUser.id, comment_id: commentId }]);
+[35mapp/page.tsx[m[36m:[m[32m2084[m[36m:[m            await [1;31msupabase[m.from('spot_comments').update({ upvotes: (target.upvotes || 0) + 1 }).eq('id', commentId);
+[35mapp/page.tsx[m[36m:[m[32m2092[m[36m:[m        const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2138[m[36m:[m      const { error } = await [1;31msupabase[m.from('profiles').upsert({
+[35mapp/page.tsx[m[36m:[m[32m2156[m[36m:[m        const { data, error } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2173[m[36m:[m        const { data: allVotes, error } = await [1;31msupabase[m.from('spot_votes').select('spot_id, user_id, vote_type');
+[35mapp/page.tsx[m[36m:[m[32m2194[m[36m:[m      [1;31msupabase[m.auth.getSession().then(({ data: { session } }) => {
+[35mapp/page.tsx[m[36m:[m[32m2203[m[36m:[m      const { data: { subscription } } = [1;31msupabase[m.auth.onAuthStateChange((event, session) => {
+[35mapp/page.tsx[m[36m:[m[32m2484[m[36m:[m        const { data } = await [1;31msupabase[m.from('spots').select('*').eq('id', spotId).maybeSingle();
+[35mapp/page.tsx[m[36m:[m[32m2527[m[36m:[m        const { data: profileData } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2534[m[36m:[m        const { data: spotData } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2692[m[36m:[m            await [1;31msupabase[m.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+[35mapp/page.tsx[m[36m:[m[32m2716[m[36m:[m      await [1;31msupabase[m.auth.signInWithOAuth({
+[35mapp/page.tsx[m[36m:[m[32m2731[m[36m:[m      const { error } = await [1;31msupabase[m.auth.signInWithOtp({
+[35mapp/page.tsx[m[36m:[m[32m2760[m[36m:[m      const { data: existing } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2772[m[36m:[m      const { error } = await [1;31msupabase[m.from('profiles').upsert({
+[35mapp/page.tsx[m[36m:[m[32m2807[m[36m:[m        const { error: uploadError } = await [1;31msupabase[m.storage
+[35mapp/page.tsx[m[36m:[m[32m2813[m[36m:[m        const { data: publicUrlData } = [1;31msupabase[m.storage.from('avatars').getPublicUrl(filePath);
+[35mapp/page.tsx[m[36m:[m[32m2816[m[36m:[m        const { error: profileError } = await [1;31msupabase[m
+[35mapp/page.tsx[m[36m:[m[32m2840[m[36m:[m      await [1;31msupabase[m.auth.signOut();
+[35mapp/page.tsx[m[36m:[m[32m3024[m[36m:[m            const { error } = await [1;31msupabase[m.from('spots').insert(
+[35mapp/page.tsx[m[36m:[m[32m3104[m[36m:[m        await [1;31msupabase[m.from('bookmarks').delete().eq('user_id', activeUser.id);
+[35mapp/page.tsx[m[36m:[m[32m3105[m[36m:[m        await [1;31msupabase[m.from('spot_votes').delete().eq('user_id', activeUser.id);
+[35mapp/page.tsx[m[36m:[m[32m3106[m[36m:[m        await [1;31msupabase[m.rpc('delete_user');
+[35mapp/page.tsx[m[36m:[m[32m3110[m[36m:[m        await [1;31msupabase[m.auth.signOut();
+[35mlib/categories.ts[m[36m:[m[32m1[m[36m:[mimport { [1;31msupabase[m } from './[1;31msupabase[m';
+[35mlib/categories.ts[m[36m:[m[32m15[m[36m:[m  const { data: { user } } = await [1;31msupabase[m.auth.getUser();
+[35mlib/categories.ts[m[36m:[m[32m18[m[36m:[m  const { data, error } = await [1;31msupabase[m
+[35mlib/categories.ts[m[36m:[m[32m35[m[36m:[m  const { data: { user } } = await [1;31msupabase[m.auth.getUser();
+[35mlib/categories.ts[m[36m:[m[32m38[m[36m:[m  const { data, error } = await [1;31msupabase[m
+[35mlib/categories.ts[m[36m:[m[32m57[m[36m:[m  const { data: { user } } = await [1;31msupabase[m.auth.getUser();
+[35mlib/categories.ts[m[36m:[m[32m60[m[36m:[m  const { error } = await [1;31msupabase[m
+[35mlib/categories.ts[m[36m:[m[32m71[m[36m:[m  const { data: { user } } = await [1;31msupabase[m.auth.getUser();
+[35mlib/categories.ts[m[36m:[m[32m80[m[36m:[m  const { error } = await [1;31msupabase[m
+[35mlib/categories.ts[m[36m:[m[32m89[m[36m:[m  const { data: { user } } = await [1;31msupabase[m.auth.getUser();
+[35mlib/categories.ts[m[36m:[m[32m92[m[36m:[m  const { data, error } = await [1;31msupabase[m
+[35mlib/supabase.ts[m[36m:[m[32m1[m[36m:[mimport { [1;31mcreateClient[m } from '@[1;31msupabase[m/[1;31msupabase[m-js';
+[35mlib/supabase.ts[m[36m:[m[32m3[m[36m:[mconst [1;31msupabase[mUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+[35mlib/supabase.ts[m[36m:[m[32m4[m[36m:[mconst [1;31msupabase[mAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+[35mlib/supabase.ts[m[36m:[m[32m6[m[36m:[mexport const [1;31msupabase[m = [1;31mcreateClient[m([1;31msupabase[mUrl, [1;31msupabase[mAnonKey);

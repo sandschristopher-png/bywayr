@@ -74,6 +74,7 @@
     Download,
     Sparkle,
     Lock,
+    Book,
   ChevronLeft, ChevronRight } from 'lucide-react';
   import { AdMob } from '@capacitor-community/admob';
 
@@ -4640,8 +4641,13 @@
             type="button"
             onClick={() => {
               triggerHaptic(8);
-              setIsDrawerOpen(true);
-              pushModalHistoryState('fieldJournal');
+              if (!currentUserRef.current) {
+                setIsAuthModalOpen(true);
+                pushModalHistoryState('auth');
+                return;
+              }
+              setIsProfileModalOpen(true);
+              pushModalHistoryState('profile');
             }}
             style={{
               display: 'flex',
@@ -4656,7 +4662,7 @@
               color: isDrawerOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
-            <Bookmark style={{ width: '18px', height: '18px' }} />
+            <Book style={{ width: '18px', height: '18px' }} />
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Journal</span>
           </button>
         </div>
