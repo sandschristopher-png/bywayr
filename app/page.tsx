@@ -3091,7 +3091,7 @@ ${wptXml}
     } catch {}
 
     const primaryCartoTiles = [
-      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3fj4_2_ed95527311486a2cc01fd417',
+      'https://basemaps.cartocdn.com/rastertiles/positron/{z}/{x}/{y}.png?key=cb1_3fj4_2_ed95527311486a2cc01fd417',
     ];
     const fallbackOsmTiles = [
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -3124,7 +3124,7 @@ ${wptXml}
     });
 
     // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
-    fetch('https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?key=cb1_3fj4_2_ed95527311486a2cc01fd417', { method: 'HEAD' })
+    fetch('https://basemaps.cartocdn.com/rastertiles/positron/0/0/0.png?key=cb1_3fj4_2_ed95527311486a2cc01fd417', { method: 'HEAD' })
       .then((res) => {
         if (!res.ok) {
           const src = initializedMap.getSource('osm-tiles') as any;
@@ -3390,7 +3390,7 @@ ${wptXml}
           transition: filter 0.3s ease;
         }
         .map-light-tiles .maplibregl-canvas {
-          filter: sepia(0.08) saturate(1.1) brightness(1.02) hue-rotate(-2deg) contrast(1.02);
+          filter: saturate(1.05) brightness(1.02) contrast(1.02);
           transition: filter 0.3s ease;
         }
         input, textarea {
