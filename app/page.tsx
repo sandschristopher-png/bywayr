@@ -2525,6 +2525,10 @@ const showToast = (msg: string) => {
       pinEl.style.flexDirection = 'column';
       pinEl.style.alignItems = 'center';
       pinEl.style.transform = 'translate3d(0,0,0)';
+      const pinStroke = isDarkMode ? 3.2 : 2.5;
+      const pinFill = isDarkMode
+        ? pinColor
+        : pinColor;
       pinEl.innerHTML = `
         <div style="
           width: 32px;
@@ -2532,12 +2536,12 @@ const showToast = (msg: string) => {
           position: relative;
         ">
           <!-- Teardrop shape -->
-          <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}" stroke="white" stroke-width="2.5"/>
+          <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 4px rgba(0,0,0,0.55));">
+            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinFill}" stroke="white" stroke-width="${pinStroke}"/>
             <!-- Outer white ring -->
             <circle cx="16" cy="15" r="7" fill="white"/>
             <!-- Inner colored dot -->
-            <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+            <circle cx="16" cy="15" r="3.5" fill="${pinFill}"/>
           </svg>
           <!-- Shadow -->
           <div style="
@@ -2566,7 +2570,7 @@ const showToast = (msg: string) => {
 
       spotMarkersRef.current.push(marker);
     });
-  }, [filteredSpots, spots, mapReady, customCategories, resolveCategoryColor]);
+  }, [filteredSpots, spots, mapReady, customCategories, resolveCategoryColor, isDarkMode]);
   // Apply map tile filter to canvas only, so markers keep true brand colors
     // Load Native Ad when component mounts and user is not Plus
   useEffect(() => {
@@ -7687,10 +7691,12 @@ onKeyDown={(e) => {
                 style={{
                   width: '68%',
                   maxWidth: '280px',
-                  maxHeight: '230px',
+                  maxHeight: 'min(230px, 32vh)',
+                  flexShrink: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  overflow: 'hidden',
                   animation: 'onboardingImgFloat 4s ease-in-out infinite',
                 }}
               >
@@ -7711,7 +7717,7 @@ onKeyDown={(e) => {
 
             <div
               key={`text-${onboardingStep}`}
-              style={{ padding: '10px 32px 0 32px', textAlign: 'center', animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both` }}
+              style={{ padding: '10px 32px 0 32px', textAlign: 'center', flexShrink: 0, minHeight: '88px', animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both` }}
             >
               <h3 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
                 {step.title}
