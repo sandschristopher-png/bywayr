@@ -1,4 +1,11 @@
   'use client';
+
+// Helper to open legal pages in system browser, keeping the app intact
+const openLegalPage = (path: string) => {
+  if (typeof window !== 'undefined') {
+    window.open('https://bywayr.com' + path, '_blank');
+  }
+};
 // Retry wrapper for resilient network requests (VPN-resilient, 10s timeout, exponential backoff)
 async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit = {}, retries = 3): Promise<Response> {
   for (let i = 0; i < retries; i++) {
@@ -7264,9 +7271,9 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                 </button>
 
                 <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#a8a29e', marginBottom: '4px' }}>
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Terms of Service</a>
+                  <span onClick={() => openLegalPage('/terms')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Terms of Service</span>
                   <span style={{ color: '#c4beb5' }}>·</span>
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>Privacy Policy</a>
+                  <span onClick={() => openLegalPage('/privacy')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Privacy Policy</span>
                 </div>
 
                 <button
@@ -7380,9 +7387,9 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
               <p style={{ margin: '0', fontSize: '10.5px', color: '#a8a29e', lineHeight: 1.5 }}>
                 By continuing you agree to our{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#e05a47', fontWeight: 600, textDecoration: 'underline' }}>Terms of Service</a>
+                <span onClick={() => openLegalPage('/terms')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Terms of Service</span>
                 {' '}and our{' '}
-                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#e05a47', fontWeight: 600, textDecoration: 'underline' }}>Privacy Policy</a>.
+                <span onClick={() => openLegalPage('/privacy')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Privacy Policy</span>.
               </p>
 
               <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
