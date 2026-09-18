@@ -3990,7 +3990,7 @@
               <div style={{ flex: 1, position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
                 <input
                   type="text"
-                  placeholder="Search spots or Plus Codes..."
+                  placeholder="Search hidden gems or places..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => { if (searchQuery.trim().length >= 3) setShowDropdown(true); }}
