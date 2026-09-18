@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next';
+ï»¿import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Bywayr — Pocket Field Notes',
+  title: 'Bywayr ï¿½ Pocket Field Notes',
   description: 'Discover and curate unmapped local spots.',
 };
 
@@ -74,3 +74,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
