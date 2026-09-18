@@ -210,10 +210,29 @@
   };
 
   const triggerHaptic = (duration = 10) => {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate(duration);
-      } catch {}
+    // Suppress casual menu, tab, zoom, and navigation taps
+    if (duration < 12) return;
+
+    if (typeof window !== 'undefined') {
+      // Prioritize crisp native haptics if running in Capacitor
+      const CapHaptics = (window as any).Capacitor?.Plugins?.Haptics;
+      if (CapHaptics) {
+        try {
+          if (duration >= 25) {
+            CapHaptics.notification({ type: 'SUCCESS' });
+          } else {
+            CapHaptics.impact({ style: 'MEDIUM' });
+          }
+          return;
+        } catch {}
+      }
+
+      // Fallback to standard web vibration for critical events only
+      if ('vibrate' in navigator) {
+        try {
+          navigator.vibrate(Math.min(duration, 20));
+        } catch {}
+      }
     }
   };
 
@@ -8247,5 +8266,6 @@
       </div>
     );
   }
+
 
 
