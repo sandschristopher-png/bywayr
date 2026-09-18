@@ -1,30 +1,35 @@
   'use client';
-
-
-// Retry wrapper for resilient network requests (handles VPN timeouts/flakiness)
-async function fetchWithRetry(resource, options = {}, retries = 3) {
+// Retry wrapper for resilient network requests (VPN-resilient, 10s timeout, exponential backoff)
+async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit = {}, retries = 3): Promise<Response> {
   for (let i = 0; i < retries; i++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
-      // Use our existing fetchWithTimeout if available, otherwise standard fetch
-      const fetchFn = typeof fetchWithTimeout === 'function' ? fetchWithTimeout : fetch;
-      const response = await fetchFn(resource, { ...options, timeout: 10000 });
-      
+      const response = await fetch(resource, {
+        ...options,
+        signal: options.signal ?? controller.signal,
+      });
+      clearTimeout(timer);
       if (!response.ok) {
-        // If it's a 4xx/5xx error, don't retry immediately unless it's a server error (5xx)
         if (response.status >= 500 && i < retries - 1) {
-          await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Exponential backoff
+          await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
           continue;
         }
-        throw new Error(HTTP : );
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       return response;
     } catch (error) {
-      if (i === retries - 1) throw error; // Last attempt failed
-      console.warn(Fetch attempt  failed: . Retrying...);
-      await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Wait before retry
+      clearTimeout(timer);
+      if (i === retries - 1) throw error;
+      console.warn(`Fetch attempt ${i + 1} failed, retrying...`, error);
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
     }
   }
+  throw new Error("fetchWithRetry exhausted all retries");
 }
+
+
+
 
   import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
