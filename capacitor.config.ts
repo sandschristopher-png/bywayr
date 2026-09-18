@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Bywayr',
   webDir: 'out',
   server: {
-    hostname: 'bywayr.com',
+    url: 'https://bywayr.com',
     androidScheme: 'https',
   },
   android: {
