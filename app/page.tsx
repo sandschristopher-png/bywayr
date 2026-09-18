@@ -2250,15 +2250,17 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       setSavingProfile(true);
       triggerHaptic(10);
 
+      const cleanCountry = editCountryValue.trim() || userProfile?.country || 'United States';
       const { error } = await supabase.from('profiles').upsert({
         id: activeUser.id,
         username: cleanUsername,
         bio: cleanBio || null,
+        country: cleanCountry,
         updated_at: new Date().toISOString(),
       });
 
       if (!error) {
-        const updated = { ...userProfile, id: activeUser.id, username: cleanUsername, bio: cleanBio };
+                const updated = { ...userProfile, id: activeUser.id, username: cleanUsername, bio: cleanBio, country: cleanCountry };
         setUserProfile(updated);
         localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
         setIsEditProfileOpen(false);
@@ -6853,7 +6855,72 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
           </div>
         )}
 
-        {/* Slide-Out Profile Drawer */}
+        
+        {/* Unified Edit Profile Modal */}
+        {isEditProfileOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm" onClick={() => setIsEditProfileOpen(false)}>
+            <div 
+              className="bg-white dark:bg-[#121110] rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-200 dark:border-[#2a2826]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Edit Profile</h3>
+                <button onClick={() => setIsEditProfileOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveProfileEdits} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                  <input
+                    type="text"
+                    value={editUsernameValue}
+                    onChange={(e) => setEditUsernameValue(e.target.value)}
+                    placeholder="@username"
+                    maxLength={20}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#2a2826] rounded-lg bg-white dark:bg-[#1c1917] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Home Country</label>
+                  <input
+                    type="text"
+                    value={editCountryValue}
+                    onChange={(e) => setEditCountryValue(e.target.value)}
+                    placeholder="United States"
+                    maxLength={40}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#2a2826] rounded-lg bg-white dark:bg-[#1c1917] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">About Me</label>
+                  <textarea
+                    value={editBioValue || ''}
+                    onChange={(e) => setEditBioValue(e.target.value.slice(0, 140))}
+                    placeholder="Wanderer & local spot hunter"
+                    maxLength={140}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#2a2826] rounded-lg bg-white dark:bg-[#1c1917] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none resize-none"
+                  />
+                  <div className="text-xs text-right text-gray-500 mt-1">
+                    {(editBioValue?.length || 0)}/140
+                  </div>
+                </div>
+                {editProfileError && (
+                  <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">{editProfileError}</div>
+                )}
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="button" onClick={() => setIsEditProfileOpen(false)} className="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a2826] transition-colors">Cancel</button>
+                  <button type="submit" disabled={savingProfile} className="px-4 py-2 rounded-lg bg-[#e05a47] text-white font-medium hover:bg-[#d04a37] transition-colors disabled:opacity-50">
+                    {savingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+{/* Slide-Out Profile Drawer */}
         {(isProfileModalOpen || isProfileClosing) && currentUser && (
           <div 
             className={isProfileClosing ? 'backdrop-exit' : 'backdrop-enter'}
@@ -6908,7 +6975,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Account'}
-                  <button onClick={() => { setIsProfileModalOpen(false); setClaimUsername(userProfile?.username || ''); setClaimCountry(userProfile?.country || 'United States'); setIsClaimUsernameModalOpen(true); pushModalHistoryState('claimUsername'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                  <button onClick={() => { setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditProfileError(''); setIsEditProfileOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                     <Pencil style={{ width: '13px', height: '13px' }} />
                   </button>
                 </h3>
@@ -6922,7 +6989,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                       </span>
                       <button
                         onClick={() => {
-                          setIsEditingCountry(true);
+                          setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditProfileError(''); setIsEditProfileOpen(true);
                           setEditCountryValue(userProfile?.country || 'United States');
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }}
