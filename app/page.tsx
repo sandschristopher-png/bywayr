@@ -3091,7 +3091,7 @@
       <name>${escapeXml(s.name)}</name>
       <desc>${cdata(`${s.category} · ${s.city}${s.description ? ' — ' + s.description : ''}`)}</desc>
     </wpt>`;
-      }).join('\n');
+      }).join('\n');Get-ChildItem "C:\Program Files\Microsoft" -Filter "*jdk*"
 
       const gpx = `<?xml version="1.0" encoding="UTF-8"?>
   <gpx version="1.1" creator="Bywayr" xmlns="http://www.topografix.com/GPX/1/1">
