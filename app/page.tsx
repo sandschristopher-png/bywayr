@@ -3891,7 +3891,7 @@
           <AlertCircle style={{ width: '19px', height: '19px' }} />
         )}
       </div>
-      <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.4 }}>
+      <span style={{ fontSize: '15px', fontWeight: 700, lineHeight: 1.4 }}>
         {uiToast}
       </span>
     </div>
@@ -3941,13 +3941,14 @@
               backgroundColor: uiGlass,
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
-              padding: '6px 8px 6px 10px',
-              borderRadius: showDropdown ? '24px 24px 0 0' : '28px',
-              boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.12), 0 0 1px 1px rgba(28, 25, 23, 0.04)',
+              padding: '0 10px 0 14px',
+              borderRadius: showDropdown ? '28px 28px 0 0' : '28px',
+              height: '56px',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06)',
               border: `1px solid ${uiBorder}`,
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '10px',
               width: '100%',
               boxSizing: 'border-box',
               pointerEvents: 'auto',
@@ -3980,9 +3981,9 @@
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
-                    fontSize: '13.5px',
+                    fontSize: '15px',
                     color: uiText,
-                    padding: '6px 20px 6px 4px',
+                    padding: '8px 24px 8px 4px',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}
@@ -4055,21 +4056,23 @@
                     style={{
                       backgroundColor: '#1c1917',
                       border: 'none',
-                      borderRadius: '16px',
-                      padding: '6px 8px',
+                      borderRadius: '18px',
+                      padding: '7px 12px',
                       color: '#fafaf9',
-                      fontSize: '12px',
+                      fontSize: '12.5px',
                       fontWeight: 600,
+                      lineHeight: 1,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px',
+                      justifyContent: 'center',
+                      gap: '5px',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       pointerEvents: 'auto',
                     }}
                   >
-                    <LogIn style={{ width: '13px', height: '13px' }} /> Sign In
+                    <LogIn style={{ width: '13px', height: '13px', display: 'block' }} /> <span>Sign In</span>
                   </button>
                 )}
               </div>
@@ -6959,7 +6962,7 @@
                       <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <div>
-                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.01em', display: 'block', lineHeight: 1.2 }}>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.01em', display: 'block', lineHeight: 1.2 }}>
                         Bywayr Plus
                       </span>
                       <span style={{ fontSize: '10px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
@@ -7254,7 +7257,7 @@
                 <div>
                   <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13.5px', fontWeight: 600 }}>@</span>
+                    <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '15px', fontWeight: 600 }}>@</span>
                     <input
                       type="text"
                       required
@@ -7270,7 +7273,7 @@
                           setClaimUsernameError('');
                         }
                       }}
-                      style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
+                      style={{ width: '100%', boxSizing: 'border-box', fontSize: '15px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
                     />
                   </div>
                   {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
@@ -7284,7 +7287,7 @@
                     placeholder="e.g. United States"
                     value={claimCountry}
                     onChange={(e) => setClaimCountry(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13.5px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '15px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                 </div>
 
@@ -7437,7 +7440,7 @@
                     border: 'none',
                     borderRadius: '16px',
                     padding: '14px',
-                    fontSize: '13.5px',
+                    fontSize: '15px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     boxShadow: '0 8px 20px -4px rgba(224, 90, 71, 0.35)',
