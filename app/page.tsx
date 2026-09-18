@@ -4041,8 +4041,8 @@
                       backgroundColor: '#fff1ee',
                       border: '2px solid #e05a47',
                       borderRadius: '50%',
-                      width: '34px',
-                      height: '34px',
+                      width: '38px',
+                    height: '38px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -4058,7 +4058,7 @@
                     {userProfile?.avatar_url ? (
                       <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
                     ) : (
-                      <User style={{ width: '18px', height: '18px', color: '#e05a47', pointerEvents: 'none' }} />
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#e05a47', userSelect: 'none', pointerEvents: 'none' }}>{((userProfile?.username || userProfile?.full_name || 'E')[0]).toUpperCase()}</span>
                     )}
                   </button>
                 ) : (
