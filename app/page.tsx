@@ -621,6 +621,11 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
     const [isEditingCountry, setIsEditingCountry] = useState(false);
     const [editCountryValue, setEditCountryValue] = useState('');
     const [savingCountry, setSavingCountry] = useState(false);
+    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+    const [editUsernameValue, setEditUsernameValue] = useState('');
+    const [editBioValue, setEditBioValue] = useState('');
+    const [editProfileError, setEditProfileError] = useState('');
+    const [savingProfile, setSavingProfile] = useState(false);
 
     const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
@@ -1512,7 +1517,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       // Always pull fresh profile + comments straight from Supabase (works on cold-load shares too)
       const { data: profileData } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at')
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at')
     .eq('id', userId)
     .maybeSingle();
       const profile: UserProfile = profileData || profilesMap[userId] || { id: userId, username: 'wanderer' };
@@ -2158,7 +2163,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       try {
         const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at')
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at')
     .eq('id', userId)
     .maybeSingle();
         if (!error && data) {
@@ -2218,11 +2223,58 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       setSavingCountry(false);
     };
 
+    const handleSaveProfileEdits = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const activeUser = currentUserRef.current;
+      if (!activeUser) return;
+
+      const cleanUsername = editUsernameValue.trim().toLowerCase();
+      if (cleanUsername !== (userProfile?.username || '').toLowerCase()) {
+        if (!/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+          setEditProfileError('Username must be 3-20 characters (letters, numbers, underscores).');
+          return;
+        }
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', cleanUsername)
+          .maybeSingle();
+        if (existing && existing.id !== activeUser.id) {
+          setEditProfileError('That username is already taken.');
+          return;
+        }
+      }
+
+      const cleanBio = editBioValue.trim().slice(0, 140);
+      setEditProfileError('');
+      setSavingProfile(true);
+      triggerHaptic(10);
+
+      const { error } = await supabase.from('profiles').upsert({
+        id: activeUser.id,
+        username: cleanUsername,
+        bio: cleanBio || null,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (!error) {
+        const updated = { ...userProfile, id: activeUser.id, username: cleanUsername, bio: cleanBio };
+        setUserProfile(updated);
+        localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
+        setIsEditProfileOpen(false);
+        fetchProfiles();
+        showToast('Profile updated');
+      } else {
+        setEditProfileError(error.message);
+      }
+      setSavingProfile(false);
+    };
+
     const fetchProfiles = async () => {
       try {
         const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at');
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at');
         if (!error && data) {
           const map: Record<string, UserProfile> = {};
           data.forEach((p: UserProfile) => {
@@ -2606,7 +2658,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
         const { data: profileData } = await supabase
           .from('profiles')
-                  .select('id, username, full_name, avatar_url, updated_at, created_at, country, is_private, plus_enabled, plus_expires_at')
+                  .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at')
           .eq('id', curatorId)
           .maybeSingle();
         if (cancelled || !profileData) return;
