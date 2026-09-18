@@ -1,5 +1,31 @@
   'use client';
 
+
+// Retry wrapper for resilient network requests (handles VPN timeouts/flakiness)
+async function fetchWithRetry(resource, options = {}, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      // Use our existing fetchWithTimeout if available, otherwise standard fetch
+      const fetchFn = typeof fetchWithTimeout === 'function' ? fetchWithTimeout : fetch;
+      const response = await fetchFn(resource, { ...options, timeout: 10000 });
+      
+      if (!response.ok) {
+        // If it's a 4xx/5xx error, don't retry immediately unless it's a server error (5xx)
+        if (response.status >= 500 && i < retries - 1) {
+          await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Exponential backoff
+          continue;
+        }
+        throw new Error(HTTP : );
+      }
+      return response;
+    } catch (error) {
+      if (i === retries - 1) throw error; // Last attempt failed
+      console.warn(Fetch attempt  failed: . Retrying...);
+      await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Wait before retry
+    }
+  }
+}
+
   import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
   import * as maplibregl from 'maplibre-gl';
@@ -277,7 +303,7 @@
   // Fetch local weather via Open-Meteo (no API key required)
   const fetchLocalWeather = async (lat: number, lon: number) => {
     try {
-      const res = await fetch(
+      const res = await fetchWithRetry(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
       );
       const data = await res.json();
@@ -328,7 +354,7 @@
 
   const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string; country?: string }> => {
     try {
-      const res = await fetch(
+      const res = await fetchWithRetry(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
       );
       const data = await res.json();
@@ -646,7 +672,7 @@
           const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
           const refLat = 'lat' in center ? center.lat : 36.1699;
           const refLng = 'lng' in center ? center.lng : -115.1398;
-          const res = await fetch(
+          const res = await fetchWithRetry(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=6&accept-language=en`
           );
           const data = await res.json();
@@ -1128,7 +1154,7 @@
           let west = center.lng - spanDeg, east = center.lng + spanDeg;
           let south = center.lat - spanDeg, north = center.lat + spanDeg;
           const viewbox = `${west},${north},${east},${south}`;
-          const res = await fetch(
+          const res = await fetchWithRetry(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=8&viewbox=${viewbox}&bounded=0&accept-language=en`
           );        const osmData = await res.json();
 
@@ -2896,7 +2922,7 @@
     const handleStripeCheckout = async () => {
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || '';
-        const res = await fetch(`${apiBase}/api/create-checkout-session`, {
+        const res = await fetchWithRetry(`${apiBase}/api/create-checkout-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2940,7 +2966,7 @@
           let serverVerified = false;
           if (purchaseToken) {
             try {
-              const verifyRes = await fetch('https://bywayr-api.vercel.app/api/play-verify', {
+              const verifyRes = await fetchWithRetry('https://bywayr-api.vercel.app/api/play-verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
