@@ -2210,6 +2210,18 @@
         }
       });
 
+      if (Capacitor.isNativePlatform()) {
+        CapApp.addListener('appUrlOpen', async ({ url }) => {
+          if (url && url.includes('auth-callback')) {
+            try {
+              await supabase.auth.exchangeCodeForSession(url);
+            } catch (err) {
+              console.error('Deep link auth error:', err);
+            }
+          }
+        });
+      }
+
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         const user = session?.user ?? null;
         if (event === 'SIGNED_IN' && user) {
@@ -8231,3 +8243,4 @@
       </div>
     );
   }
+
