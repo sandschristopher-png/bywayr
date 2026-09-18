@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Bywayr � Pocket Field Notes',
+  title: 'Bywayr \u2013 Pocket Field Guide',
   description: 'Discover and curate unmapped local spots.',
 };
 
