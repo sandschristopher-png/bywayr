@@ -2225,6 +2225,7 @@
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         const user = session?.user ?? null;
         if (event === 'SIGNED_IN' && user) {
+          setIsAuthModalOpen(false);
           setCurrentUser(user);
           currentUserRef.current = user;
         } else if (event === 'SIGNED_OUT') {
@@ -8243,4 +8244,5 @@
       </div>
     );
   }
+
 
