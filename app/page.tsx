@@ -7255,76 +7255,52 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Passport Entry Card */}
-              <div style={{ backgroundColor: '#fafaf9', border: '1px solid #e7e5e4', borderRadius: '18px', padding: '14px', marginBottom: '0' }}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    triggerHaptic(8);
-                    setPassportBookPage(0);
-                    setIsPassportBookOpen(true);
-                    pushModalHistoryState('passportBook');
-                    handleCloseProfileDrawer();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      triggerHaptic(8);
-                      setPassportBookPage(0);
-                      setIsPassportBookOpen(true);
-                      pushModalHistoryState('passportBook');
-                      handleCloseProfileDrawer();
-                    }
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    cursor: 'pointer',
-                    borderRadius: '14px',
-                    padding: '8px',
-                    transition: 'background-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f4')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Compass style={{ width: '24px', height: '24px', color: '#e05a47' }} />
+                            {/* Compact Streamlined Passport Action Link */}
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(8);
+                  setPassportBookPage(0);
+                  setIsPassportBookOpen(true);
+                  pushModalHistoryState('passportBook');
+                  handleCloseProfileDrawer();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '9px 12px',
+                  borderRadius: '14px',
+                  backgroundColor: '#fafaf9',
+                  border: '1px solid #e7e5e4',
+                  marginBottom: '12px',
+                  cursor: 'pointer',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Compass style={{ width: '15px', height: '15px', color: '#e05a47' }} />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Passport</div>
-                    <div style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
-                      {myCountriesCount} {myCountriesCount === 1 ? 'country' : 'countries'} collected
-                    </div>
-                    {myPassportStamps.length > 0 && (
-                      <div style={{ marginTop: '6px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {myPassportStamps.slice(0, 8).map((st, idx) => (
-                          <div 
-                            key={idx} 
-                            style={{ 
-                              width: '14px', 
-                              height: '14px', 
-                              borderRadius: '50%', 
-                              border: `2px dashed ${st.color}`, 
-                              backgroundColor: `${st.color}15`,
-                              boxShadow: '0 0 0 1px rgba(231, 229, 228, 0.6)',
-                              flexShrink: 0,
-                              position: 'relative',
-                              transform: `rotate(${Math.sin(idx) * 10}deg)`,
-                            }} 
-                            title={st.country}
-                          />
-                        ))}
-                        {myPassportStamps.length > 8 && (
-                          <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#a8a29e', marginLeft: '2px' }}>+{myPassportStamps.length - 8}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <ArrowRight style={{ width: '15px', height: '15px', color: '#a8a29e', flexShrink: 0 }} />
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Passport</span>
+                  <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
+                    • {myCountriesCount} {myCountriesCount === 1 ? 'country' : 'countries'}
+                  </span>
                 </div>
-              </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  {myPassportStamps.length > 0 && (
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      {myPassportStamps.slice(0, 5).map((st, idx) => (
+                        <div key={idx} style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: st.color, border: '1px solid #ffffff', flexShrink: 0 }} />
+                      ))}
+                    </div>
+                  )}
+                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
+                </div>
+              </button>
+
+
               {/* Bywayr Plus Membership Card */}
               <div 
                 onClick={undefined}
@@ -7366,7 +7342,7 @@ export default function Home() {
                 <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
                   {isPlusSubscriber
                     ? 'Your Bywayr Plus membership is active. Enjoy ad-free exploring and custom tagging.'
-                    : 'Annual Curator Pass â€” includes custom categories, journal export, and ad-free exploring.'}
+                    : 'Annual Curator Pass includes custom categories, journal export, and ad-free exploring.'}
                 </p>
 
                 {driveStatusMessage && (
@@ -7469,7 +7445,7 @@ export default function Home() {
                       marginTop: '2px',
                     }}
                   >
-                    <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus â€” $19.99
+                    <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus • $19.99
                   </button>
                 )}
               </div>
@@ -7775,7 +7751,7 @@ export default function Home() {
                   <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.5 }}>
-                  Annual Curator Pass â€” includes custom categories,<br />journal export, and ad-free exploring
+                  Annual Curator Pass includes custom categories,<br />journal export, and ad-free exploring
                 </div>
               </div>
 
