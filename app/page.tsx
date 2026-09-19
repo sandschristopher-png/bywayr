@@ -239,14 +239,14 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       ? `${Math.round(bestMatch.distance * 1000)}m` 
       : `${bestMatch.distance.toFixed(1)}km`;
     
-    let hint = `${bestMatch.name} Â· ${distStr} away`;
+    let hint = `${bestMatch.name} · ${distStr} away`;
     
     if (hour >= 17 && hour < 19 && weather?.temp && weather.temp > 15) {
-      hint += ` Â· Great sunset spot!`;
+      hint += ` · Great sunset spot!`;
     } else if (weather && weather.weatherCode >= 51) {
-      hint += ` Â· Perfect rainy-day hideout`;
+      hint += ` · Perfect rainy-day hideout`;
     } else if (hour >= 6 && hour < 10) {
-      hint += ` Â· Morning coffee vibe`;
+      hint += ` · Morning coffee vibe`;
     }
 
     return { spot: bestMatch, hint };
@@ -345,7 +345,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         : `${Math.round(distKm)}km`;
 
     if (distKm > 25) return distStr;
-    return `${walkMinutes}m walk Â· ${distStr}`;
+    return `${walkMinutes}m walk · ${distStr}`;
   };
 
   const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
@@ -372,7 +372,13 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
   const reverseGeocode = async (lat: number, lon: number): Promise<{ name?: string; city?: string; country?: string }> => {
     try {
       const res = await fetchWithRetry(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'BywayrApp/1.0 (contact@bywayr.com)',
+            'Accept-Language': 'en',
+          },
+        }
       );
       const data = await res.json();
       if (data && data.address) {
@@ -612,7 +618,7 @@ export default function Home() {
       if (params.get('upgrade') === 'success') {
         setIsPlusSubscriber(true);
         localStorage.setItem('bywayr_is_plus', 'true');
-        showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. ðŸ‘‘');
+        showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. 👑');
         window.history.replaceState({}, '', window.location.pathname);
       }
     }, []);
@@ -721,7 +727,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           const refLat = 'lat' in center ? center.lat : 36.1699;
           const refLng = 'lng' in center ? center.lng : -115.1398;
           const res = await fetchWithRetry(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=6&accept-language=en`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=6&accept-language=en`,
+            {
+              headers: {
+                'User-Agent': 'BywayrApp/1.0 (contact@bywayr.com)',
+                'Accept-Language': 'en',
+              },
+            }
           );
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -1103,7 +1115,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         return timeB - timeA;
       });
 
-    // Live reference point â€” read at render time so sort and distance badges always agree
+    // Live reference point — read at render time so sort and distance badges always agree
     const drawerRefPoint = () => {
       const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
       const refLat = 'lat' in center ? center.lat : 36.1699;
@@ -1115,7 +1127,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       ? spots.filter((s: Spot) => s.user_id === currentUser.id)
       : [];
 
-    // Single source of truth for the drawer list â€” always sorted
+    // Single source of truth for the drawer list — always sorted
     const displayedDrawerSpots = (() => {
       const source = drawerTab === 'fieldNotes' ? myNotesSpots : mustTryList;
 
@@ -1138,7 +1150,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       );
     })();
 
-    // Index where the far group starts (nearest sort only) â€” drives the headers
+    // Index where the far group starts (nearest sort only) — drives the headers
     const firstFarIndex = (() => {
       if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
       const { refLat, refLng } = drawerRefPoint();
@@ -1187,7 +1199,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 spot.category.toLowerCase().includes(q.toLowerCase())
             )
             .map((spot) => ({
-              display_name: `${spot.name} (${spot.city} â€” ${spot.category})`,
+              display_name: `${spot.name} (${spot.city} — ${spot.category})`,
               name: spot.name,
               lat: spot.latitude,
               lon: spot.longitude,
@@ -1203,7 +1215,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           let south = center.lat - spanDeg, north = center.lat + spanDeg;
           const viewbox = `${west},${north},${east},${south}`;
           const res = await fetchWithRetry(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=8&viewbox=${viewbox}&bounded=0&accept-language=en`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=8&viewbox=${viewbox}&bounded=0&accept-language=en`,
+            {
+              headers: {
+                'User-Agent': 'BywayrApp/1.0 (contact@bywayr.com)',
+                'Accept-Language': 'en',
+              },
+            }
           );        const osmData = await res.json();
 
           const combined = [...localMatches, ...(osmData || [])];
@@ -1498,7 +1516,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       try {
         if (current === voteType) {
-          // Same vote tapped â€” remove it
+          // Same vote tapped — remove it
           const { error } = await supabase.from('spot_votes').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
           if (!error) {
             setMyVotes((prev) => {
@@ -1596,7 +1614,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         showToast(next ? 'Your journal is now private' : 'Your journal is now public');
       } else {
         console.error('Privacy toggle failed:', error);
-        showToast('Could not update privacy â€” please try again', 'error');
+        showToast('Could not update privacy — please try again', 'error');
       }
       setSavingPrivacy(false);
     };
@@ -1739,7 +1757,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           setIsLocating(false);
         },
         () => {
-          showToast("Couldn't get your location â€” check permissions");
+          showToast("Couldn't get your location — check permissions");
           setIsLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -1782,7 +1800,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           setIsModalLocating(false);
         },
         () => {
-          showToast("Couldn't get your location â€” check permissions");
+          showToast("Couldn't get your location — check permissions");
           setIsModalLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -1797,7 +1815,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: `Bywayr â€” ${spot.name}`, text: shareText, url: shareUrl });
+          await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
           return;
         } catch {}
       }
@@ -1813,13 +1831,16 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const handleShareFieldJournal = async () => {
       if (!currentUser) return;
       triggerHaptic(8);
+      if (userProfile?.is_private) {
+        showToast('Note: Your journal is currently set to Private in Settings.', 'error');
+      }
       const handle = userProfile?.username ? `@${userProfile.username}` : 'explorer';
       const shareUrl = `${window.location.origin}${window.location.pathname}?curator=${currentUser.id}`;
       const shareText = `Check out ${handle}'s Field Journal on Bywayr featuring ${mySpotsCount} pinned spots across ${myCountriesCount} countries!`;
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: `${handle}'s Field Journal â€” Bywayr`, text: shareText, url: shareUrl });
+          await navigator.share({ title: `${handle}'s Field Journal — Bywayr`, text: shareText, url: shareUrl });
           return;
         } catch {}
       }
@@ -1904,6 +1925,19 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       triggerHaptic(15);
       setDeleting(true);
+
+      // Clean up orphaned image file from Supabase storage bucket
+      if (spot.image_url) {
+        try {
+          const parts = spot.image_url.split('/spot-images/');
+          if (parts[1]) {
+            await supabase.storage.from('spot-images').remove([parts[1]]);
+          }
+        } catch (storageErr) {
+          console.warn('Storage cleanup failed on spot delete:', storageErr);
+        }
+      }
+
       const { error } = await supabase.from('spots').delete().eq('id', spot.id);
       if (!error) {
         setSpots((prev) => prev.filter((s) => s.id !== spot.id));
@@ -2009,7 +2043,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           if (isNewCountryUnlocked) {
             setTimeout(() => {
               triggerHaptic(30);
-              showToast(`âœ¨ New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
+              showToast(`✨ New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
             }, 600);
           }
         }
@@ -2475,12 +2509,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               <circle cx="70" cy="70" r="57" fill="none" stroke={st.color} strokeWidth="1.3" strokeDasharray="3 2" />
               <text fill={st.color} fontSize={st.country.length > 12 ? '9.5' : '11'} fontWeight="900" letterSpacing="0.12em">
                 <textPath href={`#arc-top-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                  â˜… {st.country.toUpperCase()} â˜…
+                  ★ {st.country.toUpperCase()} ★
                 </textPath>
               </text>
               <text fill={st.color} fontSize="8" fontWeight="800" letterSpacing="0.15em" opacity="0.85">
                 <textPath href={`#arc-bot-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                  â€¢ ENTRY Â· IMMIGRATION â€¢
+                  • ENTRY · IMMIGRATION •
                 </textPath>
               </text>
               <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
@@ -2506,7 +2540,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               opacity: 0.9,
             }}
           >
-            {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' â˜… gold' : tier === 'silver' ? ' â˜… silver' : ''}
+            {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
           </span>
         </div>
       );
@@ -2577,13 +2611,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             <circle cx="70" cy="70" r="64" fill="#fffdfa" stroke="#0284c7" strokeWidth="3" />
             <circle cx="70" cy="70" r="57" fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
             <text x="70" y="48" textAnchor="middle" fill="#0284c7" fontSize="9" fontWeight="900" letterSpacing="0.12em">
-              ? SPONSORED ?
+              ✦ SPONSORED ✦
             </text>
             <text x="70" y="74" textAnchor="middle" fill="#0284c7" fontSize="11" fontWeight="900" fontFamily="sans-serif">
               FLIGHT DEALS
             </text>
             <text x="70" y="98" textAnchor="middle" fill="#0284c7" fontSize="7.5" fontWeight="800" letterSpacing="0.1em">
-              VIA AVIASALES ?
+              VIA AVIASALES ✈
             </text>
           </svg>
         </div>
@@ -2825,35 +2859,96 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     }, [filteredSpots, spots, mapReady, customCategories, resolveCategoryColor, isDarkMode]);
     // Apply map tile filter to canvas only, so markers keep true brand colors
 
-    // Proximity Alert Watcher
+    // Consolidated Single Geolocation Watcher (Battery & Thread Efficient)
     useEffect(() => {
-      if (!navigator.geolocation || mustTrySpotIds.length === 0) return;
+      if (!navigator.geolocation) return;
       if (showWelcome || isOnboardingExiting) return;
+
+      const NEARBY_RADIUS_M = 500;
+      const THROTTLE_MS = 30000;
+
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const haversineM = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 2 * 6371000 * Math.asin(Math.sqrt(a));
+      };
+
+      const checkNearbyNotifications = async (lat: number, lng: number) => {
+        if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
+        if (Date.now() - lastNearbyCheckRef.current < THROTTLE_MS) return;
+        lastNearbyCheckRef.current = Date.now();
+
+        const nearby = spots.filter(
+          (s) =>
+            typeof s.id === 'string' &&
+            !notifiedSpotIdsRef.current.has(s.id) &&
+            haversineM(lat, lng, s.latitude, s.longitude) <= NEARBY_RADIUS_M
+        );
+
+        if (nearby.length === 0) return;
+
+        try {
+          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          const perm = await LocalNotifications.requestPermissions();
+          if (perm.display !== 'granted') return;
+
+          const closest = nearby.sort(
+            (a, b) => haversineM(lat, lng, a.latitude, a.longitude) - haversineM(lat, lng, b.latitude, b.longitude)
+          )[0];
+
+          const extras = nearby.length > 1 ? ` (+${nearby.length - 1} more nearby)` : '';
+
+          await LocalNotifications.schedule({
+            notifications: [
+              {
+                id: Math.abs((closest.id ?? '').split('').reduce((acc: number, ch: string) => (acc * 31 + ch.charCodeAt(0)) % 2147483647, 7)),
+                title: 'Hidden gem nearby',
+                body: `${closest.name}${extras}`,
+                schedule: { at: new Date(Date.now() + 100) },
+                actionTypeId: '',
+                extra: { spotId: closest.id ?? '' },
+              },
+            ],
+          });
+
+          nearby.forEach((s) => { if (typeof s.id === 'string') notifiedSpotIdsRef.current.add(s.id); });
+        } catch (err) {
+          console.error('Nearby notification failed:', err);
+        }
+      };
 
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
 
-          const nearbyMustTrySpot = spots.find((spot) => {
-            if (!spot.id || !mustTrySpotIds.includes(spot.id)) return false;
-            if (dismissedAlertIds.includes(spot.id)) return false;
-            if (activeProximityAlert?.id === spot.id) return false;
+          // 1. Proximity Alert (Within 100m of a saved Must-Try)
+          if (mustTrySpotIds.length > 0) {
+            const nearbyMustTry = spots.find((spot) => {
+              if (!spot.id || !mustTrySpotIds.includes(spot.id)) return false;
+              if (dismissedAlertIds.includes(spot.id)) return false;
+              if (activeProximityAlert?.id === spot.id) return false;
+              return getDistanceFromLatLonInKm(latitude, longitude, spot.latitude, spot.longitude) <= 0.1;
+            });
 
-            const dist = getDistanceFromLatLonInKm(latitude, longitude, spot.latitude, spot.longitude);
-            return dist <= 0.1;
-          });
-
-          if (nearbyMustTrySpot) {
-            triggerHaptic(25);
-            setActiveProximityAlert(nearbyMustTrySpot);
+            if (nearbyMustTry) {
+              triggerHaptic(25);
+              setActiveProximityAlert(nearbyMustTry);
+            }
           }
+
+          // 2. Throttled Native Foreground Push Notifications
+          checkNearbyNotifications(latitude, longitude);
         },
         (err) => console.error('Geolocation watch error:', err),
         { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
       );
 
       return () => navigator.geolocation.clearWatch(watchId);
-    }, [spots, mustTrySpotIds, dismissedAlertIds, activeProximityAlert]);
+    }, [spots, mustTrySpotIds, dismissedAlertIds, activeProximityAlert, showWelcome, isOnboardingExiting]);
 
     useEffect(() => {
       if (viewingSpot?.id) {
@@ -3104,9 +3199,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               setIsPlusSubscriber(true);
               localStorage.setItem('bywayr_is_plus', 'true');
               setIsPlusModalOpen(false);
-              showToast('Thank you for upgrading to Bywayr Plus! ðŸ‘‘');
+              showToast('Thank you for upgrading to Bywayr Plus! 👑');
             } else {
-              showToast('Verifying subscriptionâ€¦ please check Restore in a moment');
+              showToast('Verifying subscription… please check Restore in a moment');
             }
           }
         } else {
@@ -3173,7 +3268,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('Journal exported to your device âœ…');
+      showToast('Journal exported to your device ✅');
     };
 
     const handleImportJournal = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3264,7 +3359,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         const cdata = (v?: string) => `<![CDATA[${(v || '').replace(/]]>/g, ']]&gt;')}]]>`;
         return `  <wpt lat="${s.latitude}" lon="${s.longitude}">
       <name>${escapeXml(s.name)}</name>
-      <desc>${cdata(`${s.category} Â· ${s.city}${s.description ? ' â€” ' + s.description : ''}`)}</desc>
+      <desc>${cdata(`${s.category} · ${s.city}${s.description ? ' — ' + s.description : ''}`)}</desc>
     </wpt>`;
       }).join('\n');
 
@@ -3272,7 +3367,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
   <gpx version="1.1" creator="Bywayr" xmlns="http://www.topografix.com/GPX/1/1">
     <metadata>
       <name>Bywayr Field Journal</name>
-      <desc>Exported from Bywayr â€” your data, your device.</desc>
+      <desc>Exported from Bywayr — your data, your device.</desc>
     </metadata>
   ${wptXml}
   </gpx>`;
@@ -3286,7 +3381,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('Pins exported as GPX ðŸ—ºï¸');
+      showToast('Pins exported as GPX 🗺️');
     };
 
     const handleDeleteAccount = async () => {
@@ -3344,7 +3439,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               type: 'raster',
               tiles: primaryCartoTiles,
               tileSize: 256,
-              attribution: 'Â© OpenStreetMap contributors Â© CARTO',
+              attribution: '© OpenStreetMap contributors © CARTO',
             },
           },
           layers: [
@@ -3533,78 +3628,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         mapInstance.off('moveend', onMoveEnd);
       };
     }, [spots, userCoords]); // map ref is stable; spots/coords drive re-runs
-  // Nearby hidden-gem notifications (foreground, native Android only)
-    useEffect(() => {
-      if (typeof window === 'undefined' || !(window as any).Capacitor?.isNativePlatform()) return;
-      if (!navigator.geolocation) return;
-
-      const NEARBY_RADIUS_M = 500;
-      const THROTTLE_MS = 30000;
-
-      const toRad = (d: number) => (d * Math.PI) / 180;
-      const haversineM = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-        const dLat = toRad(lat2 - lat1);
-        const dLng = toRad(lng2 - lng1);
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        return 2 * 6371000 * Math.asin(Math.sqrt(a));
-      };
-
-      const notifyNearby = async (lat: number, lng: number) => {
-        if (Date.now() - lastNearbyCheckRef.current < THROTTLE_MS) return;
-        lastNearbyCheckRef.current = Date.now();
-
-        const nearby = spots.filter(
-          (s) =>
-            typeof s.id === 'string' &&
-            !notifiedSpotIdsRef.current.has(s.id) &&
-            haversineM(lat, lng, s.latitude, s.longitude) <= NEARBY_RADIUS_M
-        );
-
-        if (nearby.length === 0) return;
-
-        try {
-          const { LocalNotifications } = await import('@capacitor/local-notifications');
-
-          const perm = await LocalNotifications.requestPermissions();
-          if (perm.display !== 'granted') return;
-
-          const closest = nearby.sort(
-            (a, b) => haversineM(lat, lng, a.latitude, a.longitude) - haversineM(lat, lng, b.latitude, b.longitude)
-          )[0];
-
-          const extras = nearby.length > 1 ? ` (+${nearby.length - 1} more nearby)` : '';
-
-          await LocalNotifications.schedule({
-            notifications: [
-              {
-                id: Math.abs((closest.id ?? '').split('').reduce((acc: number, ch: string) => (acc * 31 + ch.charCodeAt(0)) % 2147483647, 7)),
-                title: 'Hidden gem nearby',
-                body: `${closest.name}${extras}`,
-                schedule: { at: new Date(Date.now() + 100) },
-                actionTypeId: '',
-                extra: { spotId: closest.id ?? '' },
-              },
-            ],
-          });
-
-          nearby.forEach((s) => { if (typeof s.id === 'string') notifiedSpotIdsRef.current.add(s.id); });
-        } catch (err) {
-          console.error('Nearby notification failed:', err);
-        }
-      };
-
-      const watchId = navigator.geolocation.watchPosition(
-        (pos) => notifyNearby(pos.coords.latitude, pos.coords.longitude),
-        () => {},
-        { enableHighAccuracy: false, maximumAge: 15000, timeout: 20000 }
-      );
-
-      return () => {
-        navigator.geolocation.clearWatch(watchId);
-      };
-    }, [spots]);
+  
     return (
       <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#0a0a0a' : '#ecebe7', transition: 'background-color 0.5s ease' }}>
         <style jsx global>{`
@@ -4081,7 +4105,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             pointerEvents: 'none',
           }}>
             <WifiOff style={{ width: '14px', height: '14px', color: '#e05a47' }} />
-            <span>Offline mode active Â· Using cached field notes</span>
+            <span>Offline mode active · Using cached field notes</span>
           </div>
         )}
 
@@ -4470,7 +4494,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     boxSizing: 'border-box'
                   }}
                 >
-                  <span>{cat.icon || 'ðŸ“'}</span>
+                  <span>{cat.icon || '📍'}</span>
                   <span>{cat.name}</span>
                   <span style={{
                     fontSize: '10.5px',
@@ -4969,7 +4993,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 </span>
                 <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>
-                  {activeSearchedSpot.city}{activeSearchedSpot.country ? ` Â· ${activeSearchedSpot.country}` : ''}
+                  {activeSearchedSpot.city}{activeSearchedSpot.country ? ` · ${activeSearchedSpot.country}` : ''}
                 </p>
               </div>
               <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
@@ -5118,7 +5142,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                             {spot.name}
                           </h4>
                           <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {spot.city} Â· <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                            {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                           </p>
                         </div>
 
@@ -5223,7 +5247,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                               {spot.name}
                             </h4>
                             <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
-                              {spot.city} Â· Map Location
+                              {spot.city} · Map Location
                             </p>
                           </div>
                           
@@ -5528,12 +5552,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     }}
                   >
                     {viewingSpot.city}
-                    {viewingSpot.country ? ` Â· ${viewingSpot.country}` : ''}
+                    {viewingSpot.country ? ` · ${viewingSpot.country}` : ''}
                     {viewingSpot.user_id &&
                     profilesMap[viewingSpot.user_id]?.username &&
                     !profilesMap[viewingSpot.user_id]?.is_private ? (
                       <>
-                        {' Â· '}
+                        {' · '}
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -5853,7 +5877,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                                     borderRadius: '4px',
                                   }}
                                 >
-                                  {authorTier === 'gold' ? 'â˜… Gold' : authorTier === 'silver' ? 'â˜… Silver' : `${authorSpots.length} pins`}
+                                  {authorTier === 'gold' ? '★ Gold' : authorTier === 'silver' ? '★ Silver' : `${authorSpots.length} pins`}
                                 </span>
                               )}
                               <span
@@ -6072,7 +6096,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Ã”DELICE"
+                    placeholder="e.g. Ôdelice Bakery"
                     value={newSpot.name}
                     onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
@@ -6382,7 +6406,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        ðŸ“ {city}
+                        📍 {city}
                       </button>
                     ))}
                   </div>
@@ -6426,7 +6450,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '10px', fontWeight: 700, color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 6px', borderRadius: '4px' }}>{c.tag || '[Tip]'}</span>
-                              <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>â–² {c.upvotes || 0}</span>
+                              <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>▲ {c.upvotes || 0}</span>
                             </div>
                             <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.content}</p>
                           </div>
@@ -6464,7 +6488,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           </div>
                           <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
                           <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                            {s.city}{s.country ? ` Â· ${s.country}` : ''}
+                            {s.city}{s.country ? ` · ${s.country}` : ''}
                           </p>
                         </div>
 
@@ -6550,7 +6574,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
                 >
                   <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800 }}>ð•</span>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
                   </div>
                   Post
                 </a>
@@ -6916,7 +6942,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                               textOverflow: 'ellipsis',
                             }}
                           >
-                            {spot.city} Â· <span style={{ color, fontWeight: 600 }}>{spot.category}</span> Â· <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                            {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
                           </p>
                         </div>
                       </div>
@@ -6928,19 +6954,118 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           </div>
         )}
-        {/* 6. Field Journal Profile Drawer */}
+        {/* 6. Field Journal Slide-Up Sheet (Mobile: Slide-Up / Desktop: Elevated Card) */}
         {(isProfileModalOpen || isProfileClosing) && (
           <div
             className="animate-fade-in"
-            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}
+            onClick={handleCloseProfileDrawer}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(28, 25, 23, 0.5)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: isMobileLayout ? 'flex-end' : 'center',
+              justifyContent: 'center',
+              zIndex: 100005,
+              padding: isMobileLayout ? 0 : '16px',
+              boxSizing: 'border-box',
+              pointerEvents: 'auto',
+            }}
           >
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto', animation: isProfileClosing ? 'fadeScaleDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined }}>
-              <button onClick={handleCloseProfileDrawer} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-                <X style={{ width: '18px', height: '18px' }} />
-              </button>
+            <div
+              className="animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: '#ffffff',
+                width: '100%',
+                maxWidth: isMobileLayout ? '480px' : '440px',
+                height: isMobileLayout ? '86dvh' : 'auto',
+                maxHeight: isMobileLayout ? '88dvh' : '90vh',
+                borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
+                boxShadow: isMobileLayout ? '0 -10px 40px rgba(28, 25, 23, 0.28)' : '0 25px 50px -12px rgba(28, 25, 23, 0.35)',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                animation: isProfileClosing ? (isMobileLayout ? 'slideDownOut 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'fadeScaleDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards') : undefined,
+              }}
+            >
+              {/* Drag pill for mobile sheet */}
+              {isMobileLayout && (
+                <div
+                  onClick={handleCloseProfileDrawer}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    paddingTop: '10px',
+                    paddingBottom: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ width: '38px', height: '4px', borderRadius: '2px', backgroundColor: '#d6d3d1' }} />
+                </div>
+              )}
 
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '22px 22px 0 22px' }}>
+              {/* Distinct Top Title Header Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: isMobileLayout ? '8px 20px 10px 20px' : '16px 22px 10px 22px',
+                  borderBottom: '1px solid #f0ede8',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
+                      backgroundColor: '#fff1ee',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#e05a47',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Book style={{ width: '15px', height: '15px' }} />
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                    Field Journal
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCloseProfileDrawer}
+                  style={{
+                    border: 'none',
+                    background: '#ecebe7',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    color: '#78716c',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                  title="Close Journal"
+                >
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
+              </div>
+
+              {/* Profile Bio & Stats Row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 22px 0 22px' }}>
                 <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, border: '2px solid #e7e5e4' }}>
                   {userProfile?.avatar_url ? (
                     <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -6992,27 +7117,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 </div>
               </div>
 
-              {/* Tab Bar */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '12px', padding: '3px', margin: '12px 22px 0 22px', border: '1px solid #e7e5e4' }}>
+              {/* Tab Bar (Balanced 3 Tabs) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '12px', padding: '3px', margin: '12px 22px 0 22px', border: '1px solid #e7e5e4' }}>
                 {(['overview', 'spots', 'musttry'] as const).map((t) => (
                   <button key={t} onClick={() => { triggerHaptic(4); setJournalTab(t); }} style={{ border: 'none', padding: '7px 4px', borderRadius: '9px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: journalTab === t ? '#ffffff' : 'transparent', color: journalTab === t ? '#e05a47' : '#78716c', boxShadow: journalTab === t ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>
-                    {t === 'overview' ? 'Overview' : t === 'spots' ? 'Spots' : 'Must-Try'}
+                    {t === 'overview' ? 'Overview' : t === 'spots' ? `My Pins (${mySpotsCount})` : `Must-Try (${mustTrySpotIds.length})`}
                   </button>
                 ))}
-                <button
-                  onClick={() => {
-                    triggerHaptic(8);
-                    setIsProfileModalOpen(false);
-                    setViewingPassportSpots(myUserSpots);
-                    setViewingPassportProfile(null);
-                    setPassportBookPage(0);
-                    setIsPassportBookOpen(true);
-                    pushModalHistoryState('passportBook');
-                  }}
-                  style={{ border: 'none', padding: '7px 4px', borderRadius: '9px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: 'transparent', color: '#78716c' }}
-                >
-                  Passport
-                </button>
               </div>
 
               {/* Tab Content */}
@@ -7026,13 +7137,60 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                       </p>
                     </div>
                     {(userProfile?.youtube_url || userProfile?.instagram_url || userProfile?.facebook_url || userProfile?.website_url) && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {userProfile.youtube_url && <a href={userProfile.youtube_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>YouTube</a>}
-                        {userProfile.instagram_url && <a href={userProfile.instagram_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>Instagram</a>}
-                        {userProfile.facebook_url && <a href={userProfile.facebook_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>Facebook</a>}
-                        {userProfile.website_url && <a href={userProfile.website_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>Website</a>}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                        {userProfile.youtube_url && (
+                          <a href={userProfile.youtube_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <IconYoutube size={13} /> YouTube
+                        </a>
+                      )}
+                      {userProfile.instagram_url && (
+                        <a href={userProfile.instagram_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fce7f3', color: '#db2777', border: '1px solid #f9a8d4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                          <IconInstagram size={13} /> Instagram
+                      </a>
+                      )}
+                      {userProfile.facebook_url && (
+                        <a href={userProfile.facebook_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                          <IconFacebook size={13} /> Facebook
+                      </a>
+                      )}
+                      {userProfile.website_url && (
+                        <a href={userProfile.website_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fff1ee', color: '#e05a47', border: '1px solid #fecdd3', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                          <LinkIcon size={13} /> Website
+                      </a>
+                      )}
+                    </div>
+                  )}
+                    <button
+                      onClick={() => {
+                        triggerHaptic(8);
+                        setIsProfileModalOpen(false);
+                        setViewingPassportSpots(myUserSpots);
+                        setViewingPassportProfile(null);
+                        setPassportBookPage(0);
+                        setIsPassportBookOpen(true);
+                        pushModalHistoryState('passportBook');
+                      }}
+                      style={{
+                        border: '1px solid #fecdd3',
+                        background: '#fff1ee',
+                        borderRadius: '12px',
+                        padding: '11px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        color: '#e05a47',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Compass style={{ width: '15px', height: '15px' }} />
+                        <span>Open Passport Booklet ({myCountriesCount} Stamps)</span>
                       </div>
-                    )}
+                      <ChevronRight style={{ width: '15px', height: '15px' }} />
+                    </button>
+
                     <button onClick={handleShareFieldJournal} style={{ border: '1px solid #e7e5e4', background: '#fafaf9', borderRadius: '12px', padding: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#57534e', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <Share2 style={{ width: '14px', height: '14px' }} /> Share My Field Journal
                     </button>
@@ -7165,17 +7323,17 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <Tag style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> â€” Create custom lists, accent colors, and tag any saved gem.
+                    <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> — Create custom lists, accent colors, and tag any saved gem.
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#e7e5e4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#44403c', flexShrink: 0, marginTop: '2px' }}>
                     <Download style={{ width: '15px', height: '15px' }} />
-          </div>
-                  <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Journal Export</strong> â€” Download a portable copy of your entire field journal, any time.
                   </div>
+                  <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
+                    <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
+        </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -7183,7 +7341,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <ShieldCheck style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> â€” Browse the entire map with zero ads.
+                    <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero ads.
                   </div>
                 </div>
 
@@ -7192,7 +7350,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <Sparkle style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> â€” Cancel anytime with zero charge before trial ends.
+                    <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> — Cancel anytime with zero charge before trial ends.
                   </div>
                 </div>
               </div>
@@ -7214,7 +7372,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     letterSpacing: '0.01em',
                   }}
                 >
-                  Annual Curator Pass â€” $19.99/yr
+                  Annual Curator Pass — $19.99/yr
                 </button>
 
                 {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() && (
@@ -7237,7 +7395,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           </div>
         )}
-        {/* Scrollable Passport Booklet ï¿½ Clean Organic Spread */}
+        {/* Scrollable Passport Booklet — Clean Organic Spread */}
         {(isPassportBookOpen || isBookClosing) && (() => {
           // Book can render YOUR passport or a viewed public profile's (read-only)
           const isViewingOther = !!viewingPassportProfile;
@@ -7360,7 +7518,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     scrollbarWidth: 'thin',
                   }}
                 >
-                  {/* Full-Bleed Organic Guillochï¿½ Mesh ï¿½ Terracotta page / Teal page */}
+                  {/* Full-Bleed Organic Guilloché Mesh — Terracotta page / Teal page */}
                   <div
                     style={{
                       position: 'absolute',
@@ -7459,7 +7617,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     }}
                   >
                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
-                      BW ï¿½ {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
+                      BW · {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
                     </span>
                     {isDesktopViewport && (
                       <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
@@ -7788,7 +7946,402 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             }
             showToast('Category deleted');
           }}
-        />      
+        />
+
+        {/* Edit Profile Modal */}
+        {isEditProfileOpen && (
+          <div
+            className="animate-fade-in"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100050,
+              backgroundColor: 'rgba(28, 25, 23, 0.55)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              boxSizing: 'border-box',
+            }}
+            onClick={() => {
+              triggerHaptic(6);
+              setIsEditProfileOpen(false);
+            }}
+          >
+            <div
+              className="animate-scale-up"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '28px',
+                boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)',
+                width: '100%',
+                maxWidth: '430px',
+                maxHeight: '88vh',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '22px 24px',
+                position: 'relative',
+                boxSizing: 'border-box',
+                overflowY: 'auto',
+                gap: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+                    Edit Profile
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
+                    Update your curator presence & links
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(6);
+                    setIsEditProfileOpen(false);
+                  }}
+                  style={{
+                    border: 'none',
+                    background: '#ecebe7',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    color: '#78716c',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                  title="Close"
+                >
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveProfileEdits} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <label htmlFor="avatar-upload-input" style={{ cursor: 'pointer', position: 'relative', display: 'inline-block' }}>
+                    <div
+                      style={{
+                        width: '84px',
+                        height: '84px',
+                        borderRadius: '50%',
+                        backgroundColor: '#fff1ee',
+                        border: '2px solid #e7e5e4',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 14px rgba(224, 90, 71, 0.16)',
+                      }}
+                    >
+                      {userProfile?.avatar_url ? (
+                        <img src={userProfile.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '28px', fontWeight: 700, color: '#e05a47' }}>
+                          {((editUsernameValue || userProfile?.username || 'E')[0]).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        right: '2px',
+                        backgroundColor: '#e05a47',
+                        color: '#ffffff',
+                        borderRadius: '50%',
+                        width: '26px',
+                        height: '26px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid #ffffff',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+                      }}
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 style={{ width: '13px', height: '13px', animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <Camera style={{ width: '13px', height: '13px' }} />
+                      )}
+                    </div>
+                  </label>
+                  <input
+                    id="avatar-upload-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    disabled={uploadingAvatar}
+                    style={{ display: 'none' }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500 }}>
+                    {uploadingAvatar ? 'Optimizing & uploading avatar…' : 'Tap photo to change avatar'}
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>
+                    Username
+                  </label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '13px', fontWeight: 700 }}>
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      value={editUsernameValue}
+                      onChange={(e) => setEditUsernameValue(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                      placeholder="username"
+                      maxLength={20}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        fontSize: '13px',
+                        padding: '10px 12px 10px 28px',
+                        borderRadius: '12px',
+                        border: '1px solid #d6d3d1',
+                        outline: 'none',
+                        color: '#1c1917',
+                        backgroundColor: '#ffffff',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>
+                    Base / Country
+                  </label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Globe style={{ position: 'absolute', left: '11px', color: '#a8a29e', width: '15px', height: '15px' }} />
+                    <input
+                      type="text"
+                      value={editCountryValue}
+                      onChange={(e) => setEditCountryValue(e.target.value)}
+                      placeholder="United States"
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        fontSize: '13px',
+                        padding: '10px 12px 10px 34px',
+                        borderRadius: '12px',
+                        border: '1px solid #d6d3d1',
+                        outline: 'none',
+                        color: '#1c1917',
+                        backgroundColor: '#ffffff',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e' }}>
+                      Field Bio
+                    </label>
+                    <span style={{ fontSize: '10px', color: editBioValue.length >= 140 ? '#e05a47' : '#a8a29e', fontWeight: 600 }}>
+                      {editBioValue.length}/140
+                    </span>
+                  </div>
+                  <textarea
+                    value={editBioValue}
+                    onChange={(e) => setEditBioValue(e.target.value)}
+                    placeholder="Tell fellow wanderers what you search for..."
+                    rows={3}
+                    maxLength={140}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      fontSize: '13px',
+                      padding: '10px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid #d6d3d1',
+                      outline: 'none',
+                      color: '#1c1917',
+                      backgroundColor: '#ffffff',
+                      resize: 'none',
+                      lineHeight: 1.45,
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '6px' }}>
+                    Connected Channels & Links
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '11px', display: 'flex', color: '#dc2626' }}>
+                        <IconYoutube size={15} />
+                      </span>
+                      <input
+                        type="url"
+                        value={editYoutubeUrl}
+                        onChange={(e) => setEditYoutubeUrl(e.target.value)}
+                        placeholder="https://youtube.com/@handle"
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          fontSize: '12.5px',
+                          padding: '9px 12px 9px 34px',
+                          borderRadius: '11px',
+                          border: '1px solid #d6d3d1',
+                          outline: 'none',
+                          color: '#1c1917',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '11px', display: 'flex', color: '#db2777' }}>
+                        <IconInstagram size={15} />
+                      </span>
+                      <input
+                        type="url"
+                        value={editInstagramUrl}
+                        onChange={(e) => setEditInstagramUrl(e.target.value)}
+                        placeholder="https://instagram.com/username"
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          fontSize: '12.5px',
+                          padding: '9px 12px 9px 34px',
+                          borderRadius: '11px',
+                          border: '1px solid #d6d3d1',
+                          outline: 'none',
+                          color: '#1c1917',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ position: 'absolute', left: '11px', display: 'flex', color: '#2563eb' }}>
+                        <IconFacebook size={15} />
+                      </span>
+                      <input
+                        type="url"
+                        value={editFacebookUrl}
+                        onChange={(e) => setEditFacebookUrl(e.target.value)}
+                        placeholder="https://facebook.com/page"
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          fontSize: '12.5px',
+                          padding: '9px 12px 9px 34px',
+                          borderRadius: '11px',
+                          border: '1px solid #d6d3d1',
+                          outline: 'none',
+                          color: '#1c1917',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <LinkIcon style={{ position: 'absolute', left: '11px', color: '#78716c', width: '14px', height: '14px' }} />
+                      <input
+                        type="url"
+                        value={editWebsiteUrl}
+                        onChange={(e) => setEditWebsiteUrl(e.target.value)}
+                        placeholder="https://yourwebsite.com"
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          fontSize: '12.5px',
+                          padding: '9px 12px 9px 34px',
+                          borderRadius: '11px',
+                          border: '1px solid #d6d3d1',
+                          outline: 'none',
+                          color: '#1c1917',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {editProfileError && (
+                  <div
+                    className="animate-slide-up"
+                    style={{
+                      padding: '10px 12px',
+                      backgroundColor: '#fff1ee',
+                      color: '#e05a47',
+                      border: '1px solid #fecdd3',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <AlertCircle style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                    <span>{editProfileError}</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic(6);
+                      setIsEditProfileOpen(false);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '14px',
+                      border: '1px solid #e7e5e4',
+                      backgroundColor: '#ecebe7',
+                      color: '#44403c',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    style={{
+                      flex: 1.4,
+                      padding: '12px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      backgroundColor: '#e05a47',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: savingProfile ? 'not-allowed' : 'pointer',
+                      opacity: savingProfile ? 0.75 : 1,
+                      boxShadow: '0 4px 14px rgba(224, 90, 71, 0.28)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {savingProfile ? (
+                      <>
+                        <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                        <span>Saving…</span>
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}        
         {/* Welcome / Onboarding Carousel â€” full screen */}
           {showWelcome && (() => {
           const ONBOARDING_STEPS = [
