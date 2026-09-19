@@ -151,8 +151,6 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
     youtube_url?: string;
     instagram_url?: string;
     facebook_url?: string;
-    x_url?: string;
-    tiktok_url?: string;
     website_url?: string;
   }
 
@@ -530,12 +528,6 @@ const IconFacebook = ({ size = 14, className = "" }: { size?: number; className?
   </svg>
 );
 
-const IconTwitter = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-);
-
 export default function Home() {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
@@ -660,8 +652,6 @@ export default function Home() {
     const [editYoutubeUrl, setEditYoutubeUrl] = useState('');
     const [editInstagramUrl, setEditInstagramUrl] = useState('');
     const [editFacebookUrl, setEditFacebookUrl] = useState('');
-    const [editXUrl, setEditXUrl] = useState('');
-    const [editTiktokUrl, setEditTiktokUrl] = useState('');
     const [editWebsiteUrl, setEditWebsiteUrl] = useState('');
     const [editProfileError, setEditProfileError] = useState('');
     const [savingProfile, setSavingProfile] = useState(false);
@@ -669,6 +659,8 @@ export default function Home() {
     const [selectedCountryFilter, setSelectedCountryFilter] = useState<string | null>(null);
 
     const [isPlusModalOpen, setIsPlusModalOpen] = useState(false);
+const [journalTab, setJournalTab] = useState<'overview' | 'spots' | 'musttry'>('overview');
+const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const [isPassportBookOpen, setIsPassportBookOpen] = useState(false);
     const passportBookTouchStartRef = useRef<number | null>(null);
     const passportDesktopDragStartRef = useRef<number | null>(null);
@@ -1558,7 +1550,7 @@ export default function Home() {
       // Always pull fresh profile + comments straight from Supabase (works on cold-load shares too)
       const { data: profileData } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url')
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, website_url')
     .eq('id', userId)
     .maybeSingle();
       const profile: UserProfile = profileData || profilesMap[userId] || { id: userId, username: 'wanderer' };
@@ -2204,7 +2196,7 @@ export default function Home() {
       try {
         const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url')
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, website_url')
     .eq('id', userId)
     .maybeSingle();
         if (!error && data) {
@@ -2295,8 +2287,6 @@ export default function Home() {
       const cleanYoutube = editYoutubeUrl.trim() || null;
       const cleanInstagram = editInstagramUrl.trim() || null;
       const cleanFacebook = editFacebookUrl.trim() || null;
-      const cleanX = editXUrl.trim() || null;
-      const cleanTiktok = editTiktokUrl.trim() || null;
       const cleanWebsite = editWebsiteUrl.trim() || null;
       const { error } = await supabase.from('profiles').upsert({
         id: activeUser.id,
@@ -2306,8 +2296,6 @@ export default function Home() {
         youtube_url: cleanYoutube,
         instagram_url: cleanInstagram,
         facebook_url: cleanFacebook,
-        x_url: cleanX,
-        tiktok_url: cleanTiktok,
         website_url: cleanWebsite,
         updated_at: new Date().toISOString(),
       });
@@ -2322,8 +2310,6 @@ export default function Home() {
           youtube_url: cleanYoutube || undefined,
           instagram_url: cleanInstagram || undefined,
           facebook_url: cleanFacebook || undefined,
-          x_url: cleanX || undefined,
-          tiktok_url: cleanTiktok || undefined,
           website_url: cleanWebsite || undefined,
         };
         setUserProfile(updated);
@@ -2341,7 +2327,7 @@ export default function Home() {
       try {
         const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url');
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, website_url');
         if (!error && data) {
           const map: Record<string, UserProfile> = {};
           data.forEach((p: UserProfile) => {
@@ -2725,7 +2711,7 @@ export default function Home() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-                  .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url')
+                  .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, website_url')
           .eq('id', curatorId)
           .maybeSingle();
         if (cancelled || !profileData) return;
@@ -5461,39 +5447,7 @@ export default function Home() {
                         >
                           <Pencil style={{ width: '13px', height: '13px' }} />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic(8);
-                        setEditUsernameValue(userProfile?.username || '');
-                        setEditCountryValue(userProfile?.country || 'United States');
-                        setEditBioValue(userProfile?.bio || '');
-                        setEditYoutubeUrl(userProfile?.youtube_url || '');
-                        setEditInstagramUrl(userProfile?.instagram_url || '');
-                        setEditFacebookUrl(userProfile?.facebook_url || '');
-                        setEditXUrl(userProfile?.x_url || '');
-                        setEditTiktokUrl(userProfile?.tiktok_url || '');
-                        setEditWebsiteUrl(userProfile?.website_url || '');
-                        setEditProfileError('');
-                        setIsEditProfileOpen(true);
-                      }}
-                      style={{
-                        marginLeft: '8px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        backgroundColor: '#ffffff',
-                        color: '#1c1917',
-                        border: '1px solid #d6d3d1',
-                        borderRadius: '8px',
-                        padding: '2px 8px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Edit Profile
-                        </button>
+
                         <button
                           onClick={(e) => handleDeleteSpot(viewingSpot, e)}
                           disabled={deleting}
@@ -6280,7 +6234,7 @@ export default function Home() {
                     <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
                       {viewingProfile.bio || 'Wanderer & local spot hunter'}
                     </p>
-                    {(viewingProfile.youtube_url || viewingProfile.instagram_url || viewingProfile.facebook_url || viewingProfile.x_url || viewingProfile.tiktok_url || viewingProfile.website_url) && (
+                    {(viewingProfile.youtube_url || viewingProfile.instagram_url || viewingProfile.facebook_url || viewingProfile.website_url) && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
                         {viewingProfile.youtube_url && (
                           <a href={viewingProfile.youtube_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
@@ -6297,17 +6251,8 @@ export default function Home() {
                             <IconFacebook size={13} /> Facebook
                           </a>
                         )}
-                        {viewingProfile.x_url && (
-                          <a href={viewingProfile.x_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#f5f5f4', color: '#1c1917', border: '1px solid #d6d3d1', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
-                            <IconTwitter size={13} /> 𝕏
-                          </a>
-                        )}
-                        {viewingProfile.tiktok_url && (
-                          <a href={viewingProfile.tiktok_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#f5f5f4', color: '#1c1917', border: '1px solid #d6d3d1', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.88 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.4 0 .78.08 1.13.22v-3.55a6.35 6.35 0 0 0-1.13-.1 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V9.41a8.16 8.16 0 0 0 4.76 1.52V7.48a4.85 4.85 0 0 1-1-.79z"/></svg> TikTok
-                          </a>
-                        )}
-                        {viewingProfile.website_url && (
+                        
+                                                {viewingProfile.website_url && (
                           <a href={viewingProfile.website_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fff1ee', color: '#e05a47', border: '1px solid #fecdd3', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
                             <LinkIcon size={13} /> Website
                           </a>
@@ -6983,791 +6928,206 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        
-        {/* Unified Edit Profile Modal */}
-        {isEditProfileOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm" onClick={() => setIsEditProfileOpen(false)}>
-            <div 
-              className="bg-white dark:bg-[#121110] rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-200 dark:border-[#2a2826]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Edit Profile</h3>
-                <button onClick={() => setIsEditProfileOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveProfileEdits} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-                  <input
-                    type="text"
-                    value={editUsernameValue}
-                    onChange={(e) => setEditUsernameValue(e.target.value)}
-                    placeholder="@username"
-                    maxLength={20}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#2a2826] rounded-lg bg-white dark:bg-[#1c1917] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Home Country</label>
-                  <input
-                    type="text"
-                    value={editCountryValue}
-                    onChange={(e) => setEditCountryValue(e.target.value)}
-                    placeholder="United States"
-                    maxLength={40}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#2a2826] rounded-lg bg-white dark:bg-[#1c1917] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">About Me</label>
-                  <textarea
-                    value={editBioValue || ''}
-                    onChange={(e) => setEditBioValue(e.target.value.slice(0, 140))}
-                    placeholder="Wanderer & local spot hunter"
-                    maxLength={140}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#2a2826] rounded-lg bg-white dark:bg-[#1c1917] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none resize-none"
-                  />
-                  <div className="text-xs text-right text-gray-500 mt-1">
-                    {(editBioValue?.length || 0)}/140
-                  </div>
-                </div>
-
-                  <div className="pt-3 border-t border-gray-200 dark:border-[#2a2826] space-y-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Creator & Social Links</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          <IconYoutube size={13} className="text-red-500" /> YouTube
-                        </label>
-                        <input
-                          type="url"
-                          value={editYoutubeUrl}
-                          onChange={(e) => setEditYoutubeUrl(e.target.value)}
-                          placeholder="https://youtube.com/@channel"
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          <IconInstagram size={13} className="text-pink-500" /> Instagram
-                        </label>
-                        <input
-                          type="url"
-                          value={editInstagramUrl}
-                          onChange={(e) => setEditInstagramUrl(e.target.value)}
-                          placeholder="https://instagram.com/handle"
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          <IconFacebook size={13} className="text-blue-500" /> Facebook
-                        </label>
-                        <input
-                          type="url"
-                          value={editFacebookUrl}
-                          onChange={(e) => setEditFacebookUrl(e.target.value)}
-                          placeholder="https://facebook.com/page"
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          <IconTwitter size={13} className="text-gray-900 dark:text-gray-200" /> X (Twitter)
-                        </label>
-                        <input
-                          type="url"
-                          value={editXUrl}
-                          onChange={(e) => setEditXUrl(e.target.value)}
-                          placeholder="https://x.com/handle"
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-gray-900 dark:text-gray-200">
-                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.88 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.4 0 .78.08 1.13.22v-3.55a6.35 6.35 0 0 0-1.13-.1 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V9.41a8.16 8.16 0 0 0 4.76 1.52V7.48a4.85 4.85 0 0 1-1-.79z"/>
-                          </svg> TikTok
-                        </label>
-                        <input
-                          type="url"
-                          value={editTiktokUrl}
-                          onChange={(e) => setEditTiktokUrl(e.target.value)}
-                          placeholder="https://tiktok.com/@handle"
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          <LinkIcon size={13} className="text-[#e05a47]" /> Website
-                        </label>
-                        <input
-                          type="url"
-                          value={editWebsiteUrl}
-                          onChange={(e) => setEditWebsiteUrl(e.target.value)}
-                          placeholder="https://mywebsite.com"
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                {editProfileError && (
-                  <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">{editProfileError}</div>
-                )}
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setIsEditProfileOpen(false)} className="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a2826] transition-colors">Cancel</button>
-                  <button type="submit" disabled={savingProfile} className="px-4 py-2 rounded-lg bg-[#e05a47] text-white font-medium hover:bg-[#d04a37] transition-colors disabled:opacity-50">
-                    {savingProfile ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-{/* Slide-Out Profile Drawer */}
-        {(isProfileModalOpen || isProfileClosing) && currentUser && (
-          <div 
-            className={isProfileClosing ? 'backdrop-exit' : 'backdrop-enter'}
-            style={{ 
-              position: 'fixed', 
-              inset: 0, 
-              backgroundColor: 'rgba(28, 25, 23, 0.45)', 
-              backdropFilter: 'blur(6px)', 
-              WebkitBackdropFilter: 'blur(6px)', 
-              zIndex: 100000, 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              pointerEvents: 'none',
-            }}
+        {/* 6. Field Journal Profile Drawer */}
+        {(isProfileModalOpen || isProfileClosing) && (
+          <div
+            className="animate-fade-in"
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}
           >
-            <div 
-              className={isProfileClosing ? 'drawer-right-exit' : 'drawer-right-enter'}
-              style={{ 
-                width: '100%', 
-                maxWidth: '380px', 
-                pointerEvents: 'auto', 
-                backgroundColor: '#ffffff', 
-                height: '100%', 
-                boxShadow: '-10px 0 35px rgba(28, 25, 23, 0.18)', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                padding: '24px', 
-                gap: '18px', 
-                boxSizing: 'border-box', 
-                overflowY: 'auto', 
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexShrink: 0 }}>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Field Journal</h2>
-                <button onClick={handleCloseProfileDrawer} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <X style={{ width: '18px', height: '18px' }} />
-                </button>
-              </div>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '28px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '440px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto', animation: isProfileClosing ? 'fadeScaleDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined }}>
+              <button onClick={handleCloseProfileDrawer} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '0' }}>
-                <label style={{ width: '88px', height: '88px', borderRadius: '50%', backgroundColor: '#ecebe7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1c1917', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: '2.5px solid #e7e5e4', marginBottom: '10px', boxShadow: '0 8px 24px rgba(28, 25, 23, 0.1)' }} title="Click to upload profile photo">
-                  {uploadingAvatar ? (
-                    <Loader2 style={{ width: '26px', height: '26px', animation: 'spin 1s linear infinite', color: '#e05a47' }} />
-                  ) : userProfile?.avatar_url ? (
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '22px 22px 0 22px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', overflow: 'hidden', flexShrink: 0, border: '2px solid #e7e5e4' }}>
+                  {userProfile?.avatar_url ? (
                     <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <User style={{ width: '38px', height: '38px', color: '#78716c' }} />
+                    <span style={{ fontSize: '24px', fontWeight: 700 }}>{((userProfile?.username || 'E')[0]).toUpperCase()}</span>
                   )}
-                  <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', color: '#ffffff' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>
-                    <Camera style={{ width: '22px', height: '22px' }} />
-                  </div>
-                  <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
-                </label>
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    @{userProfile?.username || 'wanderer'}
+                    {isPlusSubscriber && <Crown style={{ width: '15px', height: '15px', color: '#d97706' }} />}
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
+                    {userProfile?.country || 'Wanderer'} · Member
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    triggerHaptic(8);
+                    setEditUsernameValue(userProfile?.username || '');
+                    setEditCountryValue(userProfile?.country || 'United States');
+                    setEditBioValue(userProfile?.bio || '');
+                    setEditYoutubeUrl(userProfile?.youtube_url || '');
+                    setEditInstagramUrl(userProfile?.instagram_url || '');
+                    setEditFacebookUrl(userProfile?.facebook_url || '');
+                    setEditWebsiteUrl(userProfile?.website_url || '');
+                    setEditProfileError('');
+                    setIsEditProfileOpen(true);
+                  }}
+                  style={{ border: '1px solid #d6d3d1', background: '#ffffff', borderRadius: '16px', padding: '7px 13px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#1c1917', flexShrink: 0 }}
+                >
+                  Edit Profile
+                </button>
+              </div>
 
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
-                  {userProfile?.username ? `@${userProfile.username}` : 'Account'}
-                  <button onClick={() => { setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditYoutubeUrl(userProfile?.youtube_url || ''); setEditInstagramUrl(userProfile?.instagram_url || ''); setEditFacebookUrl(userProfile?.facebook_url || ''); setEditXUrl(userProfile?.x_url || ''); setEditTiktokUrl(userProfile?.tiktok_url || ''); setEditWebsiteUrl(userProfile?.website_url || ''); setEditProfileError(''); setIsEditProfileOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
-                    <Pencil style={{ width: '13px', height: '13px' }} />
+              {/* Stats — neutral like Reddit */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '14px 22px', textAlign: 'center', borderBottom: '1px solid #e7e5e4' }}>
+                <div>
+                  <div style={{ fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Pins</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>{myCitiesCount}</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Cities</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>{myCountriesCount}</div>
+                  <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600 }}>Countries</div>
+                </div>
+              </div>
+
+              {/* Tab Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', backgroundColor: '#ecebe7', borderRadius: '12px', padding: '3px', margin: '12px 22px 0 22px', border: '1px solid #e7e5e4' }}>
+                {(['overview', 'spots', 'musttry'] as const).map((t) => (
+                  <button key={t} onClick={() => { triggerHaptic(4); setJournalTab(t); }} style={{ border: 'none', padding: '7px 4px', borderRadius: '9px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: journalTab === t ? '#ffffff' : 'transparent', color: journalTab === t ? '#e05a47' : '#78716c', boxShadow: journalTab === t ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}>
+                    {t === 'overview' ? 'Overview' : t === 'spots' ? 'Spots' : 'Must-Try'}
                   </button>
-                </h3>
-                
-                <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {!isEditingCountry ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <span style={{ fontSize: '12px', color: '#78716c', display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#ecebe7', padding: '2px 8px', borderRadius: '8px', border: '1px solid #e7e5e4', fontWeight: 600 }}>
-                        <Globe style={{ width: '11px', height: '11px', color: '#e05a47' }} />
-                        {userProfile?.country || 'United States'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditYoutubeUrl(userProfile?.youtube_url || ''); setEditInstagramUrl(userProfile?.instagram_url || ''); setEditFacebookUrl(userProfile?.facebook_url || ''); setEditXUrl(userProfile?.x_url || ''); setEditTiktokUrl(userProfile?.tiktok_url || ''); setEditWebsiteUrl(userProfile?.website_url || ''); setEditProfileError(''); setIsEditProfileOpen(true);
-                          setEditCountryValue(userProfile?.country || 'United States');
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }}
-                        title="Edit Country of Origin"
-                      >
-                        <Pencil style={{ width: '11px', height: '11px' }} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input
-                        type="text"
-                        value={editCountryValue}
-                        onChange={(e) => setEditCountryValue(e.target.value)}
-                        placeholder="Country of Origin"
-                        style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '8px', border: '1px solid #d6d3d1', outline: 'none', width: '110px' }}
-                      />
-                      <button
-                        onClick={() => handleUpdateCountry(editCountryValue)}
-                        disabled={savingCountry}
-                        style={{ backgroundColor: '#1c1917', color: '#fafaf9', border: 'none', borderRadius: '8px', padding: '4px 7px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}
-                      >
-                        {savingCountry ? '...' : 'Save'}
-                      </button>
-                      <button
-                        onClick={() => setIsEditingCountry(false)}
-                        style={{ background: 'none', border: 'none', color: '#78716c', fontSize: '11px', cursor: 'pointer', padding: '2px' }}
-                      >
-                        <X style={{ width: '13px', height: '13px' }} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#a8a29e' }}>
-                  {mySpotsCount} {mySpotsCount === 1 ? 'spot' : 'spots'} pinned so far
-                </p>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '4px 10px 14px 10px', marginBottom: '0', textAlign: 'center', borderBottom: '1px solid #e7e5e4' }}>
-                <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
-                  <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Pins</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#d97706' }}>{mustTrySpotIds.length}</div>
-                  <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Must-Try</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#0284c7' }}>{myCitiesCount}</div>
-                  <div style={{ fontSize: '10.5px', color: '#78716c', fontWeight: 600 }}>Cities</div>
-                </div>
-              </div>
-
-                                          {/* Dedicated Edit Profile Action Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic(8);
-                  setEditUsernameValue(userProfile?.username || '');
-                  setEditBioValue(userProfile?.bio || '');
-                  setEditYoutubeUrl(userProfile?.youtube_url || '');
-                  setEditInstagramUrl(userProfile?.instagram_url || '');
-                  setEditFacebookUrl(userProfile?.facebook_url || '');
-                  setEditXUrl(userProfile?.x_url || '');
-                  setEditTiktokUrl(userProfile?.tiktok_url || '');
-                  setEditWebsiteUrl(userProfile?.website_url || '');
-                  setEditCountryValue(userProfile?.country || 'United States');
-                  setEditProfileError('');
-                  setIsEditProfileOpen(true);
-                }}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '10px 12px',
-                  borderRadius: '14px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e7e5e4',
-                  marginBottom: '12px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#1c1917',
-                  boxSizing: 'border-box',
-                  transition: 'background-color 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fafaf9')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
-              >
-                <Pencil style={{ width: '14px', height: '14px', color: '#78716c' }} />
-                Edit Profile
-              </button>
-
-{/* Compact Streamlined Passport Action Link */}
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic(8);
-                  setPassportBookPage(0);
-                  handleCloseProfileDrawer();
-                  setTimeout(() => {
+                ))}
+                <button
+                  onClick={() => {
+                    triggerHaptic(8);
+                    setIsProfileModalOpen(false);
+                    setViewingPassportSpots(myUserSpots);
+                    setViewingPassportProfile(null);
+                    setPassportBookPage(0);
                     setIsPassportBookOpen(true);
                     pushModalHistoryState('passportBook');
-                  }, 260);
-                }}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '9px 12px',
-                  borderRadius: '14px',
-                  backgroundColor: '#fafaf9',
-                  border: '1px solid #e7e5e4',
-                  marginBottom: '12px',
-                  cursor: 'pointer',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#fff1ee', border: '1px solid #fecdd3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Compass style={{ width: '15px', height: '15px', color: '#e05a47' }} />
-                  </div>
-                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1c1917' }}>Passport</span>
-                  <span style={{ fontSize: '11.5px', color: '#78716c', fontWeight: 500 }}>
-                    • {myCountriesCount} {myCountriesCount === 1 ? 'country' : 'countries'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  {myPassportStamps.length > 0 && (
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      {myPassportStamps.slice(0, 5).map((st, idx) => (
-                        <div key={idx} style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: st.color, border: '1px solid #ffffff', flexShrink: 0 }} />
-                      ))}
-                    </div>
-                  )}
-                  <ArrowRight style={{ width: '13px', height: '13px', color: '#a8a29e' }} />
-                </div>
-              </button>
+                  }}
+                  style={{ border: 'none', padding: '7px 4px', borderRadius: '9px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', backgroundColor: 'transparent', color: '#78716c' }}
+                >
+                  Passport
+                </button>
+              </div>
 
-
-              {/* Bywayr Plus Membership Card */}
-              <div 
-                onClick={undefined}
-                style={{ 
-                  backgroundColor: isPlusSubscriber ? '#f8fbf9' : '#fffbfb', 
-                  border: isPlusSubscriber ? '1.5px solid #86efac' : '1.5px solid #fed7aa', 
-                  borderRadius: '20px', 
-                  padding: '16px', 
-                  marginBottom: '0', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '12px', 
-                  boxShadow: isPlusSubscriber 
-                    ? '0 6px 20px -4px rgba(22, 163, 74, 0.1), 0 1px 3px rgba(0, 0, 0, 0.03)' 
-                    : '0 6px 20px -4px rgba(224, 90, 71, 0.12), 0 1px 3px rgba(0, 0, 0, 0.03)',
-                  cursor: isPlusSubscriber ? 'default' : 'pointer'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '38px', height: '38px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(224, 90, 71, 0.2)', border: '1px solid rgba(224, 90, 71, 0.15)', flexShrink: 0 }}>
-                      <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
+              {/* Tab Content */}
+              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 22px 8px 22px' }}>
+                {journalTab === 'overview' && (
+                  <>
                     <div>
-                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.01em', display: 'block', lineHeight: 1.2 }}>
-                        Bywayr Plus
-                      </span>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-                        Curator Pass
-                      </span>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>About</div>
+                      <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                        {userProfile?.bio || 'Wanderer & local spot hunter. Add a bio from Edit Profile to tell fellow wanderers what you hunt for.'}
+                      </p>
                     </div>
-                  </div>
-
-                  <span style={{ backgroundColor: isPlusSubscriber ? '#dcfce7' : '#fff1ee', color: isPlusSubscriber ? '#16a34a' : '#e05a47', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '8px', border: isPlusSubscriber ? '1px solid #86efac' : '1px solid #fecdd3', letterSpacing: '0.02em' }}>
-                    {isPlusSubscriber ? 'PLUS ACTIVE' : 'ANNUAL'}
-                  </span>
-                </div>  
-
-                <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
-                  {isPlusSubscriber
-                    ? 'Your Bywayr Plus membership is active. Enjoy ad-free exploring and custom tagging.'
-                    : 'Annual Curator Pass includes custom categories, journal export, and ad-free exploring.'}
-                </p>
-
-                {driveStatusMessage && (
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#059669', backgroundColor: '#ecfdf5', padding: '6px 10px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
-                    {driveStatusMessage}
-                  </div>
+                    {(userProfile?.youtube_url || userProfile?.instagram_url || userProfile?.facebook_url || userProfile?.website_url) && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {userProfile.youtube_url && <a href={userProfile.youtube_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>YouTube</a>}
+                        {userProfile.instagram_url && <a href={userProfile.instagram_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>Instagram</a>}
+                        {userProfile.facebook_url && <a href={userProfile.facebook_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>Facebook</a>}
+                        {userProfile.website_url && <a href={userProfile.website_url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: '#ecebe7', color: '#1c1917', border: '1px solid #e7e5e4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>Website</a>}
+                      </div>
+                    )}
+                    <button onClick={handleShareFieldJournal} style={{ border: '1px solid #e7e5e4', background: '#fafaf9', borderRadius: '12px', padding: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#57534e', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <Share2 style={{ width: '14px', height: '14px' }} /> Share My Field Journal
+                    </button>
+                  </>
                 )}
 
+                {journalTab === 'spots' && (
+                  myNotesSpots.length === 0 ? (
+                    <p style={{ margin: '20px 0', fontSize: '12.5px', color: '#a8a29e', textAlign: 'center' }}>No pins yet. Tap + on the map to drop your first spot.</p>
+                  ) : myNotesSpots.map((s) => (
+                    <div key={s.id || s.name} className="spot-card-hover" onClick={() => { triggerHaptic(8); handleCloseProfileDrawer(); flyToSpot(s); }} style={{ padding: '11px 13px', borderRadius: '14px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}>
+                      <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px', flexShrink: 0 }}>{s.category}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}{s.country ? ` · ${s.country}` : ''}</p>
+                      </div>
+                      <ExternalLink style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
+                    </div>
+                  ))
+                )}
+
+                {journalTab === 'musttry' && (
+                  mustTryList.length === 0 ? (
+                    <p style={{ margin: '20px 0', fontSize: '12.5px', color: '#a8a29e', textAlign: 'center' }}>Nothing saved yet. Bookmark spots as Must-Try from their detail sheet.</p>
+                  ) : mustTryList.map((s) => (
+                    <div key={s.id || s.name} className="spot-card-hover" onClick={() => { triggerHaptic(8); handleCloseProfileDrawer(); flyToSpot(s); }} style={{ padding: '11px 13px', borderRadius: '14px', border: '1px solid #e7e5e4', backgroundColor: '#ffffff', display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}>
+                      <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px', flexShrink: 0 }}>{s.category}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}{s.country ? ` · ${s.country}` : ''}</p>
+                      </div>
+                      <ExternalLink style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer: Settings Gear + Plus banner */}
+              <div style={{ padding: '10px 22px calc(14px + env(safe-area-inset-bottom, 0px))', borderTop: '1px solid #e7e5e4', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button onClick={() => { triggerHaptic(6); setIsJournalSettingsOpen(!isJournalSettingsOpen); }} style={{ width: '36px', height: '36px', border: '1px solid #e7e5e4', background: '#fafaf9', borderRadius: '50%', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} title="Settings">
+                  <SlidersHorizontal style={{ width: '16px', height: '16px' }} />
+                </button>
                 {isPlusSubscriber ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
-                    <button
-                      onClick={handleExportJournal}
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#1c1917',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '12px',
-                        padding: '10px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <CloudUpload style={{ width: '14px', height: '14px' }} />
-                      Export Journal Backup
-                    </button>
-
-                    <label
-                      style={{
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        backgroundColor: '#ffffff',
-                        color: '#1c1917',
-                        border: '1px solid #d6d3d1',
-                        borderRadius: '12px',
-                        padding: '9px',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: isRestoringDrive ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {isRestoringDrive ? <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} /> : <CloudDownload style={{ width: '14px', height: '14px' }} />}
-                      <span>{isRestoringDrive ? 'Restoring...' : 'Restore Backup File'}</span>
-                      <input type="file" accept="application/json" onChange={handleImportJournal} disabled={isRestoringDrive} style={{ display: 'none' }} />
-                    </label>
-
-                    <button
-                      onClick={handleExportGpx}
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#ffffff',
-                        color: '#1c1917',
-                        border: '1px solid #d6d3d1',
-                        borderRadius: '12px',
-                        padding: '9px',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <Download style={{ width: '14px', height: '14px' }} /> Export Pins as GPX
-                    </button>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '12px', padding: '8px 12px', fontSize: '11.5px', fontWeight: 700, color: '#059669' }}>
+                    <Crown style={{ width: '14px', height: '14px' }} /> Bywayr Plus Active
                   </div>
                 ) : (
-                  <button
-                    onClick={() => {
-                      triggerHaptic(8);
-                      setIsPlusModalOpen(true);
-                      pushModalHistoryState('plusModal');
-                    }}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#e05a47',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '11px',
-                      fontSize: '12.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)',
-                      marginTop: '2px',
-                    }}
-                  >
-                    <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus • $19.99
+                  <button onClick={() => { triggerHaptic(8); setIsPlusModalOpen(true); pushModalHistoryState('plusModal'); }} style={{ flex: 1, backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '8px 12px', fontSize: '11.5px', fontWeight: 600, color: '#92400e', cursor: 'pointer', textAlign: 'left' }}>
+                    Bywayr Plus — custom categories, export, ad-free · <strong>Upgrade</strong>
                   </button>
                 )}
               </div>
 
-              <div onClick={handleTogglePrivacy} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: userProfile?.is_private ? '#f5f5f4' : '#ffffff', border: userProfile?.is_private ? '1px solid #d6d3d1' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {savingPrivacy ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite', color: '#a8a29e' }} /> : <Lock style={{ width: '16px', height: '16px' }} color={userProfile?.is_private ? '#57534e' : '#a8a29e'} />}
-                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: userProfile?.is_private ? '#44403c' : '#44403c' }}>
-                    {userProfile?.is_private ? 'Private journal â€” comments & profile hidden' : 'Make my profile & comments private'}
-                  </span>
-                </div>
-                {userProfile?.is_private ? <CheckSquare style={{ width: '16px', height: '16px', color: '#57534e' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
-              </div>
-
-              
-              <div onClick={() => { triggerHaptic(6); setOnlyMySpots(!onlyMySpots); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: onlyMySpots ? '#fff7ed' : '#ffffff', border: onlyMySpots ? '1px solid #fdba74' : '1px solid #e7e5e4', borderRadius: '16px', cursor: 'pointer', marginBottom: '0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MapPin style={{ width: '16px', height: '16px' }} color={onlyMySpots ? '#ea580c' : '#78716c'} />
-                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: onlyMySpots ? '#c2410c' : '#44403c' }}>Filter map to my pins only</span>
-                </div>
-                {onlyMySpots ? <CheckSquare style={{ width: '16px', height: '16px', color: '#ea580c' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSignOut}
-                style={{
-                  marginTop: '4px',
-                  width: '100%',
-                  backgroundColor: '#f5f5f4',
-                  color: '#1c1917',
-                  border: '1px solid #e7e5e4',
-                  borderRadius: '12px',
-                  padding: '10px',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                }}
-              >
-                <LogOut style={{ width: '14px', height: '14px', color: '#78716c' }} />
-                Sign Out
-              </button>
-
-              <button
-                onClick={() => {
-                  triggerHaptic(8);
-                  setDeleteConfirmText('');
-                  setIsDeleteAccountModalOpen(true);
-                  pushModalHistoryState('deleteAccount');
-                }}
-                style={{
-                  marginTop: '2px',
-                  background: 'none',
-                  border: 'none',
-                  color: '#e05a47',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  width: '100%',
-                  padding: '4px',
-                  opacity: 0.85,
-                  transition: 'opacity 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.85')}
-              >
-                Delete Account
-              </button>
-
-
-            </div>
-          </div>
-        )}
-
-        {/* Delete Account Verification Dialog */}
-        {isDeleteAccountModalOpen && currentUser && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.6)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100003, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '16px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
-                <AlertTriangle style={{ width: '24px', height: '24px' }} />
-              </div>
-
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Delete Account</h3>
-              <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#78716c', lineHeight: 1.45 }}>
-                This will permanently delete your profile, handle, and bookmarks. Your public spots will remain anonymously as community field notes.
-              </p>
-
-              <div style={{ marginBottom: '14px', textAlign: 'left' }}>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#57534e', display: 'block', marginBottom: '5px' }}>
-                  Type <span style={{ color: '#e05a47' }}>DELETE</span> to confirm:
-                </label>
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="DELETE"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', textAlign: 'center', letterSpacing: '0.05em', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE' || isDeletingAccount}
-                  style={{
-                    width: '100%',
-                    backgroundColor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#e05a47' : '#ecebe7',
-                    color: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#ffffff' : '#a8a29e',
-                    fontWeight: 700,
-                    fontSize: '12.5px',
-                    padding: '12px',
-                    borderRadius: '14px',
-                    border: 'none',
-                    cursor: deleteConfirmText.trim().toUpperCase() === 'DELETE' && !isDeletingAccount ? 'pointer' : 'not-allowed',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    boxShadow: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '0 4px 12px rgba(224, 90, 71, 0.25)' : 'none',
-                  }}
-                >
-                  {isDeletingAccount ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : 'Permanently Delete Account'}
-                </button>
-
-                <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#a8a29e', marginBottom: '4px' }}>
-                  <span onClick={() => openLegalPage('/terms')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Terms of Service</span>
-                  <span style={{ color: '#c4beb5' }}>Â·</span>
-                  <span onClick={() => openLegalPage('/privacy')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Privacy Policy</span>
-                </div>
-
-                <button
-                  onClick={() => dismissModalWithHistory(() => setIsDeleteAccountModalOpen(false))}
-                  disabled={isDeletingAccount}
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'transparent',
-                    color: '#78716c',
-                    fontWeight: 600,
-                    fontSize: '12px',
-                    padding: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Claim Handle & Country Modal */}
-        {isClaimUsernameModalOpen && currentUser && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100002, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', boxSizing: 'border-box' }}>
-              <button onClick={() => dismissModalWithHistory(() => setIsClaimUsernameModalOpen(false))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-                <X style={{ width: '18px', height: '18px' }} />
-              </button>
-              <div style={{ width: '46px', height: '46px', backgroundColor: '#fff1ee', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#e05a47' }}>
-                <AtSign style={{ width: '24px', height: '24px' }} />
-              </div>
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em', textAlign: 'center' }}>Set Up Profile</h3>
-              <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#78716c', textAlign: 'center' }}>Pick a handle and confirm your country of origin for your field journal.</p>
-
-              <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Username</label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontSize: '15px', fontWeight: 600 }}>@</span>
-                    <input
-                      type="text"
-                      required
-                      maxLength={20}
-                      placeholder="traveler"
-                      value={claimUsername}
-                      onChange={(e) => {
-                        const clean = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                        setClaimUsername(clean);
-                        if (clean.length > 0 && clean.length < 3) {
-                          setClaimUsernameError('Must be at least 3 characters');
-                        } else {
-                          setClaimUsernameError('');
-                        }
-                      }}
-                      style={{ width: '100%', boxSizing: 'border-box', fontSize: '15px', padding: '10px 12px 10px 28px', borderRadius: '14px', border: claimUsernameError ? '1px solid #e05a47' : '1px solid #d6d3d1', outline: 'none' }}
-                    />
+              {/* Settings Sheet */}
+              {isJournalSettingsOpen && (
+                <div className="animate-slide-up" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fafaf9', borderTop: '2px solid #e7e5e4', borderRadius: '24px 24px 0 0', padding: '16px 22px calc(18px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -10px 30px rgba(28, 25, 23, 0.12)', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917' }}>Settings</span>
+                    <button onClick={() => setIsJournalSettingsOpen(false)} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <X style={{ width: '15px', height: '15px' }} />
+                    </button>
                   </div>
-                  {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11px', marginTop: '4px', display: 'block' }}>{claimUsernameError}</span>}
-                </div>
 
-                <div>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '4px' }}>Country of Origin</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. United States"
-                    value={claimCountry}
-                    onChange={(e) => setClaimCountry(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '15px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
-                  />
-                </div>
+                  {isPlusSubscriber ? (
+                    <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '12px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '5px' }}><Crown style={{ width: '13px', height: '13px' }} /> Bywayr Plus Active</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={handleExportJournal} style={{ flex: 1, border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', color: '#44403c' }}>Export JSON</button>
+                        <button onClick={handleExportGpx} style={{ flex: 1, border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', color: '#44403c' }}>Export GPX</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => { triggerHaptic(8); setIsJournalSettingsOpen(false); setIsPlusModalOpen(true); pushModalHistoryState('plusModal'); }} style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px', fontSize: '12px', fontWeight: 600, color: '#92400e', cursor: 'pointer', textAlign: 'left' }}>
+                      <strong>Upgrade to Bywayr Plus</strong> — custom categories, journal export, ad-free exploring
+                    </button>
+                  )}
 
-                <button type="submit" disabled={isSavingUsername || profileSavedAt !== null || claimUsername.length < 3} style={{ width: '100%', backgroundColor: profileSavedAt !== null ? '#059669' : '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px', transition: 'background-color 0.25s ease' }}>
-    {isSavingUsername ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : profileSavedAt !== null ? <><Check style={{ width: '15px', height: '15px' }} /> Profile Saved!</> : 'Complete Profile'}
-  </button>
-              </form>
+                  <button onClick={handleTogglePrivacy} disabled={savingPrivacy} style={{ border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '12px', padding: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#44403c', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lock style={{ width: '13px', height: '13px' }} /> Private journal &amp; comments</span>
+                    <span style={{ width: '34px', height: '20px', borderRadius: '10px', backgroundColor: userProfile?.is_private ? '#e05a47' : '#d6d3d1', position: 'relative' }}>
+                      <span style={{ position: 'absolute', top: '2px', left: userProfile?.is_private ? '16px' : '2px', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#ffffff', transition: 'left 0.2s ease' }} />
+                    </span>
+                  </button>
+
+                  <button onClick={handleSignOut} style={{ border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '12px', padding: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#44403c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <LogOut style={{ width: '13px', height: '13px' }} /> Sign Out
+                  </button>
+                  <button onClick={() => { triggerHaptic(8); setIsDeleteAccountModalOpen(true); }} style={{ border: '1px solid #fecdd3', background: '#fff1ee', borderRadius: '12px', padding: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#e05a47', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Trash2 style={{ width: '13px', height: '13px' }} /> Delete Account
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
-
-        {/* 10. Auth Modal */}
-        {isAuthModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box', pointerEvents: 'auto' }}>
-              <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-                <X style={{ width: '18px', height: '18px' }} />
-              </button>
-              <div style={{ width: '52px', height: '52px', borderRadius: '50%', overflow: 'hidden', display: 'flex', margin: '0 auto 14px auto', boxShadow: '0 6px 16px rgba(28, 25, 23, 0.1)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
-                <img src="/icon-512.png" alt="Bywayr" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Join or sign in</h3>
-              <p style={{ margin: '0 0 18px 0', fontSize: '12.5px', color: '#78716c' }}>New here? Create an account. Returning? Sign in with the same Google or email you used before.</p>
-
-              <button onClick={handleGoogleSignIn} style={{ width: '100%', backgroundColor: '#ffffff', border: '1px solid #d6d3d1', borderRadius: '14px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', fontSize: '13px', fontWeight: 600, color: '#1c1917', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: '14px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                Continue with Google
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
-                <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
-                <span style={{ fontSize: '11px', color: '#a8a29e', fontWeight: 600 }}>OR EMAIL</span>
-                <div style={{ flex: 1, height: '1px', backgroundColor: '#e7e5e4' }} />
-              </div>
-
-              <p style={{ margin: '0', fontSize: '10.5px', color: '#a8a29e', lineHeight: 1.5 }}>
-                By continuing you agree to our{' '}
-                <span onClick={() => openLegalPage('/terms')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Terms of Service</span>
-                {' '}and our{' '}
-                <span onClick={() => openLegalPage('/privacy')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Privacy Policy</span>.
-              </p>
-
-              <form onSubmit={handleMagicLinkSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-
-
-                <div style={{ textAlign: 'left' }}>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="Enter your email"
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
-                  />
-                  <span style={{ fontSize: '10.5px', color: '#78716c', display: 'block', marginTop: '4px' }}>
-                    ðŸ”’ Your email is never shared publicly or displayed on your profile.
-                  </span>
-                </div>
-
-                <button type="submit" disabled={isSendingMagicLink} style={{ width: '100%', backgroundColor: '#1c1917', color: '#fafaf9', fontWeight: 600, fontSize: '12.5px', padding: '12px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                  {isSendingMagicLink ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : <><Mail style={{ width: '14px', height: '14px' }} /> Send Magic Link</>}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
       {/* Bywayr Plus Upgrade Modal */}
         {isPlusModalOpen && (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px', pointerEvents: 'none' }}>
