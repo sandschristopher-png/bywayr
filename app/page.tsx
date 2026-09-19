@@ -3634,7 +3634,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     }, [spots, userCoords]); // map ref is stable; spots/coords drive re-runs
   
     return (
-      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#0a0a0a' : '#ecebe7', transition: 'background-color 0.5s ease' }}>
+      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#0a0a0a' : '#ecebe7', transition: 'background-color 1.2s cubic-bezier(0.33, 1, 0.68, 1)' }}>
         <style jsx global>{`
           html, body {
             position: fixed;
