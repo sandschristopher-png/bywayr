@@ -1302,6 +1302,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         setViewingPassportProfile(null);
         setViewingPassportSpots([]);
         setPassportBookPage(0);
+        // Ensure the underlying Field Journal profile modal stays open
+        if (currentUserRef.current && !isProfileModalOpen) {
+          setIsProfileModalOpen(true);
+        }
       }, 240);
       if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
         window.history.back();
