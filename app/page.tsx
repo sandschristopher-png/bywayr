@@ -5460,6 +5460,39 @@ export default function Home() {
                           title="Edit Spot"
                         >
                           <Pencil style={{ width: '13px', height: '13px' }} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(8);
+                        setEditUsernameValue(userProfile?.username || '');
+                        setEditCountryValue(userProfile?.country || 'United States');
+                        setEditBioValue(userProfile?.bio || '');
+                        setEditYoutubeUrl(userProfile?.youtube_url || '');
+                        setEditInstagramUrl(userProfile?.instagram_url || '');
+                        setEditFacebookUrl(userProfile?.facebook_url || '');
+                        setEditXUrl(userProfile?.x_url || '');
+                        setEditTiktokUrl(userProfile?.tiktok_url || '');
+                        setEditWebsiteUrl(userProfile?.website_url || '');
+                        setEditProfileError('');
+                        setIsEditProfileOpen(true);
+                      }}
+                      style={{
+                        marginLeft: '8px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        backgroundColor: '#ffffff',
+                        color: '#1c1917',
+                        border: '1px solid #d6d3d1',
+                        borderRadius: '8px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Edit Profile
                         </button>
                         <button
                           onClick={(e) => handleDeleteSpot(viewingSpot, e)}
