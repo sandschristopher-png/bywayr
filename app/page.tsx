@@ -1,4 +1,4 @@
-  'use client';
+﻿  'use client';
 
 // Helper to open legal pages in system browser, keeping the app intact
 const openLegalPage = (path: string) => {
@@ -112,10 +112,11 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
     Download,
     Sparkle,
     Lock,
-    Book,
-    AlertCircle,
+  Book,
+  AlertCircle,
   ChevronLeft, ChevronRight, Mountain,
   ShoppingBag,
+  Link as LinkIcon,
 } from 'lucide-react';
   import { AdMob } from '@capacitor-community/admob';
 
@@ -147,6 +148,12 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
     is_private?: boolean;
     plus_enabled?: boolean;
     plus_expires_at?: string;
+    youtube_url?: string;
+    instagram_url?: string;
+    facebook_url?: string;
+    x_url?: string;
+    tiktok_url?: string;
+    website_url?: string;
   }
 
   interface SpotComment {
@@ -234,14 +241,14 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       ? `${Math.round(bestMatch.distance * 1000)}m` 
       : `${bestMatch.distance.toFixed(1)}km`;
     
-    let hint = `${bestMatch.name} · ${distStr} away`;
+    let hint = `${bestMatch.name} Â· ${distStr} away`;
     
     if (hour >= 17 && hour < 19 && weather?.temp && weather.temp > 15) {
-      hint += ` · Great sunset spot!`;
+      hint += ` Â· Great sunset spot!`;
     } else if (weather && weather.weatherCode >= 51) {
-      hint += ` · Perfect rainy-day hideout`;
+      hint += ` Â· Perfect rainy-day hideout`;
     } else if (hour >= 6 && hour < 10) {
-      hint += ` · Morning coffee vibe`;
+      hint += ` Â· Morning coffee vibe`;
     }
 
     return { spot: bestMatch, hint };
@@ -340,7 +347,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         : `${Math.round(distKm)}km`;
 
     if (distKm > 25) return distStr;
-    return `${walkMinutes}m walk · ${distStr}`;
+    return `${walkMinutes}m walk Â· ${distStr}`;
   };
 
   const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
@@ -503,7 +510,33 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       essential: true,
     });
   };
-  export default function Home() {
+  const IconYoutube = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
+
+const IconInstagram = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const IconFacebook = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+  </svg>
+);
+
+const IconTwitter = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
+export default function Home() {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
     const previewMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -587,7 +620,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       if (params.get('upgrade') === 'success') {
         setIsPlusSubscriber(true);
         localStorage.setItem('bywayr_is_plus', 'true');
-        showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. 👑');
+        showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. ðŸ‘‘');
         window.history.replaceState({}, '', window.location.pathname);
       }
     }, []);
@@ -624,6 +657,12 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [editUsernameValue, setEditUsernameValue] = useState('');
     const [editBioValue, setEditBioValue] = useState('');
+    const [editYoutubeUrl, setEditYoutubeUrl] = useState('');
+    const [editInstagramUrl, setEditInstagramUrl] = useState('');
+    const [editFacebookUrl, setEditFacebookUrl] = useState('');
+    const [editXUrl, setEditXUrl] = useState('');
+    const [editTiktokUrl, setEditTiktokUrl] = useState('');
+    const [editWebsiteUrl, setEditWebsiteUrl] = useState('');
     const [editProfileError, setEditProfileError] = useState('');
     const [savingProfile, setSavingProfile] = useState(false);
 
@@ -1072,7 +1111,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         return timeB - timeA;
       });
 
-    // Live reference point — read at render time so sort and distance badges always agree
+    // Live reference point â€” read at render time so sort and distance badges always agree
     const drawerRefPoint = () => {
       const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
       const refLat = 'lat' in center ? center.lat : 36.1699;
@@ -1084,7 +1123,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       ? spots.filter((s: Spot) => s.user_id === currentUser.id)
       : [];
 
-    // Single source of truth for the drawer list — always sorted
+    // Single source of truth for the drawer list â€” always sorted
     const displayedDrawerSpots = (() => {
       const source = drawerTab === 'fieldNotes' ? myNotesSpots : mustTryList;
 
@@ -1107,7 +1146,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       );
     })();
 
-    // Index where the far group starts (nearest sort only) — drives the headers
+    // Index where the far group starts (nearest sort only) â€” drives the headers
     const firstFarIndex = (() => {
       if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
       const { refLat, refLng } = drawerRefPoint();
@@ -1156,7 +1195,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                 spot.category.toLowerCase().includes(q.toLowerCase())
             )
             .map((spot) => ({
-              display_name: `${spot.name} (${spot.city} — ${spot.category})`,
+              display_name: `${spot.name} (${spot.city} â€” ${spot.category})`,
               name: spot.name,
               lat: spot.latitude,
               lon: spot.longitude,
@@ -1313,6 +1352,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         return;
       }
     }, [
+      isPassportBookOpen,
       isPlusModalOpen,
       isDeleteAccountModalOpen,
       isClaimUsernameModalOpen,
@@ -1325,6 +1365,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       isDiscussionModalOpen,
       isModalOpen,
       viewingSpot,
+      isSheetExpanded,
       activeSearchedSpot,
       isDrawerOpen,
       showWelcome,
@@ -1465,7 +1506,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
       try {
         if (current === voteType) {
-          // Same vote tapped — remove it
+          // Same vote tapped â€” remove it
           const { error } = await supabase.from('spot_votes').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
           if (!error) {
             setMyVotes((prev) => {
@@ -1517,7 +1558,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       // Always pull fresh profile + comments straight from Supabase (works on cold-load shares too)
       const { data: profileData } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at')
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url')
     .eq('id', userId)
     .maybeSingle();
       const profile: UserProfile = profileData || profilesMap[userId] || { id: userId, username: 'wanderer' };
@@ -1563,7 +1604,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         showToast(next ? 'Your journal is now private' : 'Your journal is now public');
       } else {
         console.error('Privacy toggle failed:', error);
-        showToast('Could not update privacy — please try again', 'error');
+        showToast('Could not update privacy â€” please try again', 'error');
       }
       setSavingPrivacy(false);
     };
@@ -1706,7 +1747,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
           setIsLocating(false);
         },
         () => {
-          showToast("Couldn't get your location — check permissions");
+          showToast("Couldn't get your location â€” check permissions");
           setIsLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -1749,7 +1790,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
           setIsModalLocating(false);
         },
         () => {
-          showToast("Couldn't get your location — check permissions");
+          showToast("Couldn't get your location â€” check permissions");
           setIsModalLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -1764,7 +1805,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: `Bywayr — ${spot.name}`, text: shareText, url: shareUrl });
+          await navigator.share({ title: `Bywayr â€” ${spot.name}`, text: shareText, url: shareUrl });
           return;
         } catch {}
       }
@@ -1786,7 +1827,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: `${handle}'s Field Journal — Bywayr`, text: shareText, url: shareUrl });
+          await navigator.share({ title: `${handle}'s Field Journal â€” Bywayr`, text: shareText, url: shareUrl });
           return;
         } catch {}
       }
@@ -1976,7 +2017,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
           if (isNewCountryUnlocked) {
             setTimeout(() => {
               triggerHaptic(30);
-              showToast(`✨ New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
+              showToast(`âœ¨ New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
             }, 600);
           }
         }
@@ -2163,7 +2204,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       try {
         const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at')
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url')
     .eq('id', userId)
     .maybeSingle();
         if (!error && data) {
@@ -2175,7 +2216,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
           const hasPlus = Boolean(data.plus_enabled) && notExpired;
 
           if (!hasPlus && localStorage.getItem('bywayr_is_plus') === 'true') {
-            // Server says no Plus but localStorage claims it — probable tampering, correct it
+            // Server says no Plus but localStorage claims it â€” probable tampering, correct it
             console.warn('Plus entitlement mismatch: local flag cleared');
           }
 
@@ -2251,16 +2292,40 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       triggerHaptic(10);
 
       const cleanCountry = editCountryValue.trim() || userProfile?.country || 'United States';
+      const cleanYoutube = editYoutubeUrl.trim() || null;
+      const cleanInstagram = editInstagramUrl.trim() || null;
+      const cleanFacebook = editFacebookUrl.trim() || null;
+      const cleanX = editXUrl.trim() || null;
+      const cleanTiktok = editTiktokUrl.trim() || null;
+      const cleanWebsite = editWebsiteUrl.trim() || null;
       const { error } = await supabase.from('profiles').upsert({
         id: activeUser.id,
         username: cleanUsername,
         bio: cleanBio || null,
         country: cleanCountry,
+        youtube_url: cleanYoutube,
+        instagram_url: cleanInstagram,
+        facebook_url: cleanFacebook,
+        x_url: cleanX,
+        tiktok_url: cleanTiktok,
+        website_url: cleanWebsite,
         updated_at: new Date().toISOString(),
       });
 
       if (!error) {
-                const updated = { ...userProfile, id: activeUser.id, username: cleanUsername, bio: cleanBio, country: cleanCountry };
+                const updated: UserProfile = {
+          ...userProfile,
+          id: activeUser.id,
+          username: cleanUsername,
+          bio: cleanBio,
+          country: cleanCountry,
+          youtube_url: cleanYoutube || undefined,
+          instagram_url: cleanInstagram || undefined,
+          facebook_url: cleanFacebook || undefined,
+          x_url: cleanX || undefined,
+          tiktok_url: cleanTiktok || undefined,
+          website_url: cleanWebsite || undefined,
+        };
         setUserProfile(updated);
         localStorage.setItem('bywayr_user_profile', JSON.stringify(updated));
         setIsEditProfileOpen(false);
@@ -2276,7 +2341,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       try {
         const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at');
+    .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url');
         if (!error && data) {
           const map: Record<string, UserProfile> = {};
           data.forEach((p: UserProfile) => {
@@ -2424,12 +2489,12 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               <circle cx="70" cy="70" r="57" fill="none" stroke={st.color} strokeWidth="1.3" strokeDasharray="3 2" />
               <text fill={st.color} fontSize={st.country.length > 12 ? '9.5' : '11'} fontWeight="900" letterSpacing="0.12em">
                 <textPath href={`#arc-top-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                  ★ {st.country.toUpperCase()} ★
+                  â˜… {st.country.toUpperCase()} â˜…
                 </textPath>
               </text>
               <text fill={st.color} fontSize="8" fontWeight="800" letterSpacing="0.15em" opacity="0.85">
                 <textPath href={`#arc-bot-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                  • ENTRY · IMMIGRATION •
+                  â€¢ ENTRY Â· IMMIGRATION â€¢
                 </textPath>
               </text>
               <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
@@ -2455,7 +2520,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               opacity: 0.9,
             }}
           >
-            {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ★ gold' : tier === 'silver' ? ' ★ silver' : ''}
+            {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' â˜… gold' : tier === 'silver' ? ' â˜… silver' : ''}
           </span>
         </div>
       );
@@ -2660,7 +2725,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
         const { data: profileData } = await supabase
           .from('profiles')
-                  .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at')
+                  .select('id, username, full_name, avatar_url, updated_at, created_at, country, bio, is_private, plus_enabled, plus_expires_at, youtube_url, instagram_url, facebook_url, x_url, tiktok_url, website_url')
           .eq('id', curatorId)
           .maybeSingle();
         if (cancelled || !profileData) return;
@@ -3053,9 +3118,9 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               setIsPlusSubscriber(true);
               localStorage.setItem('bywayr_is_plus', 'true');
               setIsPlusModalOpen(false);
-              showToast('Thank you for upgrading to Bywayr Plus! 👑');
+              showToast('Thank you for upgrading to Bywayr Plus! ðŸ‘‘');
             } else {
-              showToast('Verifying subscription… please check Restore in a moment');
+              showToast('Verifying subscriptionâ€¦ please check Restore in a moment');
             }
           }
         } else {
@@ -3122,7 +3187,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('Journal exported to your device ✅');
+      showToast('Journal exported to your device âœ…');
     };
 
     const handleImportJournal = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3213,7 +3278,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         const cdata = (v?: string) => `<![CDATA[${(v || '').replace(/]]>/g, ']]&gt;')}]]>`;
         return `  <wpt lat="${s.latitude}" lon="${s.longitude}">
       <name>${escapeXml(s.name)}</name>
-      <desc>${cdata(`${s.category} · ${s.city}${s.description ? ' — ' + s.description : ''}`)}</desc>
+      <desc>${cdata(`${s.category} Â· ${s.city}${s.description ? ' â€” ' + s.description : ''}`)}</desc>
     </wpt>`;
       }).join('\n');
 
@@ -3221,7 +3286,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
   <gpx version="1.1" creator="Bywayr" xmlns="http://www.topografix.com/GPX/1/1">
     <metadata>
       <name>Bywayr Field Journal</name>
-      <desc>Exported from Bywayr — your data, your device.</desc>
+      <desc>Exported from Bywayr â€” your data, your device.</desc>
     </metadata>
   ${wptXml}
   </gpx>`;
@@ -3235,7 +3300,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('Pins exported as GPX 🗺️');
+      showToast('Pins exported as GPX ðŸ—ºï¸');
     };
 
     const handleDeleteAccount = async () => {
@@ -3293,7 +3358,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               type: 'raster',
               tiles: primaryCartoTiles,
               tileSize: 256,
-              attribution: '© OpenStreetMap contributors © CARTO',
+              attribution: 'Â© OpenStreetMap contributors Â© CARTO',
             },
           },
           layers: [
@@ -4030,7 +4095,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
             pointerEvents: 'none',
           }}>
             <WifiOff style={{ width: '14px', height: '14px', color: '#e05a47' }} />
-            <span>Offline mode active · Using cached field notes</span>
+            <span>Offline mode active Â· Using cached field notes</span>
           </div>
         )}
 
@@ -4419,7 +4484,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     boxSizing: 'border-box'
                   }}
                 >
-                  <span>{cat.icon || '📍'}</span>
+                  <span>{cat.icon || 'ðŸ“'}</span>
                   <span>{cat.name}</span>
                   <span style={{
                     fontSize: '10.5px',
@@ -4918,7 +4983,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                 </span>
                 <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>
-                  {activeSearchedSpot.city}{activeSearchedSpot.country ? ` · ${activeSearchedSpot.country}` : ''}
+                  {activeSearchedSpot.city}{activeSearchedSpot.country ? ` Â· ${activeSearchedSpot.country}` : ''}
                 </p>
               </div>
               <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
@@ -4953,8 +5018,8 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
         {/* Proximity Walk Modal */}
         {isWalkModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box' }}>
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
@@ -5067,7 +5132,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                             {spot.name}
                           </h4>
                           <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {spot.city} · <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                            {spot.city} Â· <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                           </p>
                         </div>
 
@@ -5172,7 +5237,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                               {spot.name}
                             </h4>
                             <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
-                              {spot.city} · Map Location
+                              {spot.city} Â· Map Location
                             </p>
                           </div>
                           
@@ -5240,13 +5305,6 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         {viewingSpot && (
           <div
             className="animate-fade-in"
-            onClick={() =>
-              dismissModalWithHistory(() => {
-                setViewingSpot(null);
-                setIsSheetExpanded(false);
-                if (typeof window !== 'undefined') window.history.replaceState(null, '', window.location.pathname);
-              })
-            }
             style={{
               position: 'fixed',
               inset: 0,
@@ -5258,12 +5316,14 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               justifyContent: 'center',
               zIndex: 99999,
               padding: isMobileLayout ? '0' : '16px',
+              pointerEvents: 'none',
             }}
           >
             <div
               className="animate-slide-up"
               onClick={(e) => e.stopPropagation()}
               style={{
+                pointerEvents: 'auto',
                 backgroundColor: '#ffffff',
                 boxShadow: '0 -10px 40px rgba(28, 25, 23, 0.25)',
                 display: 'flex',
@@ -5481,12 +5541,12 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     }}
                   >
                     {viewingSpot.city}
-                    {viewingSpot.country ? ` · ${viewingSpot.country}` : ''}
+                    {viewingSpot.country ? ` Â· ${viewingSpot.country}` : ''}
                     {viewingSpot.user_id &&
                     profilesMap[viewingSpot.user_id]?.username &&
                     !profilesMap[viewingSpot.user_id]?.is_private ? (
                       <>
-                        {' · '}
+                        {' Â· '}
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -5806,7 +5866,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                                     borderRadius: '4px',
                                   }}
                                 >
-                                  {authorTier === 'gold' ? '★ Gold' : authorTier === 'silver' ? '★ Silver' : `${authorSpots.length} pins`}
+                                  {authorTier === 'gold' ? 'â˜… Gold' : authorTier === 'silver' ? 'â˜… Silver' : `${authorSpots.length} pins`}
                                 </span>
                               )}
                               <span
@@ -6007,8 +6067,8 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
         {/* Add / Edit Spot Modal */}
         {isModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px' }}>
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px', pointerEvents: 'auto' }}>
               <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, flexShrink: 0 }}>
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
@@ -6025,7 +6085,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                   <input
                     type="text"
                     required
-                    placeholder="e.g. ÔDELICE"
+                    placeholder="e.g. Ã”DELICE"
                     value={newSpot.name}
                     onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
@@ -6187,6 +6247,40 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
                       {viewingProfile.bio || 'Wanderer & local spot hunter'}
                     </p>
+                    {(viewingProfile.youtube_url || viewingProfile.instagram_url || viewingProfile.facebook_url || viewingProfile.x_url || viewingProfile.tiktok_url || viewingProfile.website_url) && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                        {viewingProfile.youtube_url && (
+                          <a href={viewingProfile.youtube_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <IconYoutube size={13} /> YouTube
+                          </a>
+                        )}
+                        {viewingProfile.instagram_url && (
+                          <a href={viewingProfile.instagram_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fce7f3', color: '#db2777', border: '1px solid #f9a8d4', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <IconInstagram size={13} /> Instagram
+                          </a>
+                        )}
+                        {viewingProfile.facebook_url && (
+                          <a href={viewingProfile.facebook_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <IconFacebook size={13} /> Facebook
+                          </a>
+                        )}
+                        {viewingProfile.x_url && (
+                          <a href={viewingProfile.x_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#f5f5f4', color: '#1c1917', border: '1px solid #d6d3d1', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <IconTwitter size={13} /> 𝕏
+                          </a>
+                        )}
+                        {viewingProfile.tiktok_url && (
+                          <a href={viewingProfile.tiktok_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#f5f5f4', color: '#1c1917', border: '1px solid #d6d3d1', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.88 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.4 0 .78.08 1.13.22v-3.55a6.35 6.35 0 0 0-1.13-.1 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V9.41a8.16 8.16 0 0 0 4.76 1.52V7.48a4.85 4.85 0 0 1-1-.79z"/></svg> TikTok
+                          </a>
+                        )}
+                        {viewingProfile.website_url && (
+                          <a href={viewingProfile.website_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#fff1ee', color: '#e05a47', border: '1px solid #fecdd3', borderRadius: '8px', padding: '4px 9px', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                            <LinkIcon size={13} /> Website
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -6310,7 +6404,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        📍 {city}
+                        ðŸ“ {city}
                       </button>
                     ))}
                   </div>
@@ -6354,7 +6448,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '10px', fontWeight: 700, color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 6px', borderRadius: '4px' }}>{c.tag || '[Tip]'}</span>
-                              <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>▲ {c.upvotes || 0}</span>
+                              <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>â–² {c.upvotes || 0}</span>
                             </div>
                             <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.content}</p>
                           </div>
@@ -6392,7 +6486,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                           </div>
                           <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
                           <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                            {s.city}{s.country ? ` · ${s.country}` : ''}
+                            {s.city}{s.country ? ` Â· ${s.country}` : ''}
                           </p>
                         </div>
 
@@ -6478,7 +6572,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#1c1917', fontSize: '11px', fontWeight: 600 }}
                 >
                   <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800 }}>𝕏</span>
+                    <span style={{ fontSize: '18px', fontWeight: 800 }}>ð•</span>
                   </div>
                   Post
                 </a>
@@ -6538,6 +6632,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               zIndex: 100000, 
               display: 'flex', 
               justifyContent: 'flex-start', 
+              pointerEvents: 'none',
             }}
           >
             <div 
@@ -6545,6 +6640,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               style={{ 
                 width: '100%', 
                 maxWidth: '370px', 
+                pointerEvents: 'auto', 
                 backgroundColor: '#ffffff', 
                 height: '100%', 
                 maxHeight: '100dvh',
@@ -6842,7 +6938,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                               textOverflow: 'ellipsis',
                             }}
                           >
-                            {spot.city} · <span style={{ color, fontWeight: 600 }}>{spot.category}</span> · <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                            {spot.city} Â· <span style={{ color, fontWeight: 600 }}>{spot.category}</span> Â· <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
                           </p>
                         </div>
                       </div>
@@ -6907,6 +7003,86 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     {(editBioValue?.length || 0)}/140
                   </div>
                 </div>
+
+                  <div className="pt-3 border-t border-gray-200 dark:border-[#2a2826] space-y-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Creator & Social Links</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <IconYoutube size={13} className="text-red-500" /> YouTube
+                        </label>
+                        <input
+                          type="url"
+                          value={editYoutubeUrl}
+                          onChange={(e) => setEditYoutubeUrl(e.target.value)}
+                          placeholder="https://youtube.com/@channel"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <IconInstagram size={13} className="text-pink-500" /> Instagram
+                        </label>
+                        <input
+                          type="url"
+                          value={editInstagramUrl}
+                          onChange={(e) => setEditInstagramUrl(e.target.value)}
+                          placeholder="https://instagram.com/handle"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <IconFacebook size={13} className="text-blue-500" /> Facebook
+                        </label>
+                        <input
+                          type="url"
+                          value={editFacebookUrl}
+                          onChange={(e) => setEditFacebookUrl(e.target.value)}
+                          placeholder="https://facebook.com/page"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <IconTwitter size={13} className="text-gray-900 dark:text-gray-200" /> X (Twitter)
+                        </label>
+                        <input
+                          type="url"
+                          value={editXUrl}
+                          onChange={(e) => setEditXUrl(e.target.value)}
+                          placeholder="https://x.com/handle"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-gray-900 dark:text-gray-200">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.88 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.4 0 .78.08 1.13.22v-3.55a6.35 6.35 0 0 0-1.13-.1 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V9.41a8.16 8.16 0 0 0 4.76 1.52V7.48a4.85 4.85 0 0 1-1-.79z"/>
+                          </svg> TikTok
+                        </label>
+                        <input
+                          type="url"
+                          value={editTiktokUrl}
+                          onChange={(e) => setEditTiktokUrl(e.target.value)}
+                          placeholder="https://tiktok.com/@handle"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <LinkIcon size={13} className="text-[#e05a47]" /> Website
+                        </label>
+                        <input
+                          type="url"
+                          value={editWebsiteUrl}
+                          onChange={(e) => setEditWebsiteUrl(e.target.value)}
+                          placeholder="https://mywebsite.com"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-[#2a2826] rounded-lg bg-gray-50 dark:bg-[#1a1816] text-gray-900 dark:text-white focus:ring-2 focus:ring-[#e05a47] outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 {editProfileError && (
                   <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">{editProfileError}</div>
                 )}
@@ -6933,6 +7109,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               zIndex: 100000, 
               display: 'flex', 
               justifyContent: 'flex-end', 
+              pointerEvents: 'none',
             }}
           >
             <div 
@@ -6940,6 +7117,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
               style={{ 
                 width: '100%', 
                 maxWidth: '380px', 
+                pointerEvents: 'auto', 
                 backgroundColor: '#ffffff', 
                 height: '100%', 
                 boxShadow: '-10px 0 35px rgba(28, 25, 23, 0.18)', 
@@ -6975,7 +7153,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Account'}
-                  <button onClick={() => { setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditProfileError(''); setIsEditProfileOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
+                  <button onClick={() => { setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditYoutubeUrl(userProfile?.youtube_url || ''); setEditInstagramUrl(userProfile?.instagram_url || ''); setEditFacebookUrl(userProfile?.facebook_url || ''); setEditXUrl(userProfile?.x_url || ''); setEditTiktokUrl(userProfile?.tiktok_url || ''); setEditWebsiteUrl(userProfile?.website_url || ''); setEditProfileError(''); setIsEditProfileOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                     <Pencil style={{ width: '13px', height: '13px' }} />
                   </button>
                 </h3>
@@ -6989,7 +7167,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                       </span>
                       <button
                         onClick={() => {
-                          setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditProfileError(''); setIsEditProfileOpen(true);
+                          setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditYoutubeUrl(userProfile?.youtube_url || ''); setEditInstagramUrl(userProfile?.instagram_url || ''); setEditFacebookUrl(userProfile?.facebook_url || ''); setEditXUrl(userProfile?.x_url || ''); setEditTiktokUrl(userProfile?.tiktok_url || ''); setEditWebsiteUrl(userProfile?.website_url || ''); setEditProfileError(''); setIsEditProfileOpen(true);
                           setEditCountryValue(userProfile?.country || 'United States');
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }}
@@ -7155,7 +7333,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                 <p style={{ margin: 0, fontSize: '11.5px', color: '#78716c', lineHeight: 1.45 }}>
                   {isPlusSubscriber
                     ? 'Your Bywayr Plus membership is active. Enjoy ad-free exploring and custom tagging.'
-                    : 'Annual Curator Pass — includes custom categories, journal export, and ad-free exploring.'}
+                    : 'Annual Curator Pass â€” includes custom categories, journal export, and ad-free exploring.'}
                 </p>
 
                 {driveStatusMessage && (
@@ -7258,7 +7436,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                       marginTop: '2px',
                     }}
                   >
-                    <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus — $19.99
+                    <Crown style={{ width: '15px', height: '15px' }} /> Upgrade to Plus â€” $19.99
                   </button>
                 )}
               </div>
@@ -7267,7 +7445,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {savingPrivacy ? <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite', color: '#a8a29e' }} /> : <Lock style={{ width: '16px', height: '16px' }} color={userProfile?.is_private ? '#57534e' : '#a8a29e'} />}
                   <span style={{ fontSize: '12.5px', fontWeight: 600, color: userProfile?.is_private ? '#44403c' : '#44403c' }}>
-                    {userProfile?.is_private ? 'Private journal — comments & profile hidden' : 'Make my profile & comments private'}
+                    {userProfile?.is_private ? 'Private journal â€” comments & profile hidden' : 'Make my profile & comments private'}
                   </span>
                 </div>
                 {userProfile?.is_private ? <CheckSquare style={{ width: '16px', height: '16px', color: '#57534e' }} /> : <Square style={{ width: '16px', height: '16px', color: '#a8a29e' }} />}
@@ -7391,7 +7569,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
                 <div style={{ display: 'flex', gap: '12px', fontSize: '10.5px', color: '#a8a29e', marginBottom: '4px' }}>
                   <span onClick={() => openLegalPage('/terms')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Terms of Service</span>
-                  <span style={{ color: '#c4beb5' }}>·</span>
+                  <span style={{ color: '#c4beb5' }}>Â·</span>
                   <span onClick={() => openLegalPage('/privacy')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Privacy Policy</span>
                 </div>
 
@@ -7477,8 +7655,8 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
         {/* 10. Auth Modal */}
         {isAuthModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box' }}>
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100001, padding: '16px', pointerEvents: 'none' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '360px', padding: '24px', position: 'relative', textAlign: 'center', boxSizing: 'border-box', pointerEvents: 'auto' }}>
               <button onClick={() => dismissModalWithHistory(() => setIsAuthModalOpen(false))} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
@@ -7525,7 +7703,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '13px', padding: '10px 12px', borderRadius: '14px', border: '1px solid #d6d3d1', outline: 'none' }}
                   />
                   <span style={{ fontSize: '10.5px', color: '#78716c', display: 'block', marginTop: '4px' }}>
-                    🔒 Your email is never shared publicly or displayed on your profile.
+                    ðŸ”’ Your email is never shared publicly or displayed on your profile.
                   </span>
                 </div>
 
@@ -7539,8 +7717,8 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
 
       {/* Bywayr Plus Upgrade Modal */}
         {isPlusModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', animation: isPlusClosing ? 'fadeOut 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards' : undefined, WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100035, padding: '16px', pointerEvents: 'none' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#faf8f5', borderRadius: '32px', boxShadow: '0 30px 60px -15px rgba(28, 25, 23, 0.45)', width: '100%', maxWidth: '380px', padding: '24px 22px 20px 22px', position: 'relative', boxSizing: 'border-box', border: '1px solid #f0ece1', maxHeight: '90vh', overflowY: 'auto', pointerEvents: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
                   Bywayr Plus
@@ -7564,7 +7742,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                   <img src="/bywayr-plus.png" alt="Bywayr Plus" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.5 }}>
-                  Annual Curator Pass — includes custom categories,<br />journal export, and ad-free exploring
+                  Annual Curator Pass â€” includes custom categories,<br />journal export, and ad-free exploring
                 </div>
               </div>
 
@@ -7574,7 +7752,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     <Tag style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> — Create custom lists, accent colors, and tag any saved gem.
+                    <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> â€” Create custom lists, accent colors, and tag any saved gem.
                   </div>
                 </div>
 
@@ -7583,7 +7761,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     <Download style={{ width: '15px', height: '15px' }} />
           </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Journal Export</strong> — Download a portable copy of your entire field journal, any time.
+                    <strong style={{ color: '#1c1917' }}>Journal Export</strong> â€” Download a portable copy of your entire field journal, any time.
                   </div>
                 </div>
 
@@ -7592,7 +7770,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     <ShieldCheck style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> — Browse the entire map with zero ads.
+                    <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> â€” Browse the entire map with zero ads.
                   </div>
                 </div>
 
@@ -7601,7 +7779,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     <Sparkle style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> — Cancel anytime with zero charge before trial ends.
+                    <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> â€” Cancel anytime with zero charge before trial ends.
                   </div>
                 </div>
               </div>
@@ -7623,7 +7801,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     letterSpacing: '0.01em',
                   }}
                 >
-                  Annual Curator Pass — $19.99/yr
+                  Annual Curator Pass â€” $19.99/yr
                 </button>
 
                 {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() && (
@@ -7646,7 +7824,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
             </div>
           </div>
         )}
-        {/* Scrollable Passport Booklet � Clean Organic Spread */}
+        {/* Scrollable Passport Booklet ï¿½ Clean Organic Spread */}
         {(isPassportBookOpen || isBookClosing) && (() => {
           // Book can render YOUR passport or a viewed public profile's (read-only)
           const isViewingOther = !!viewingPassportProfile;
@@ -7684,15 +7862,14 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                 padding: '16px',
                 boxSizing: 'border-box',
                 fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-              }}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) handleClosePassportBook();
+                pointerEvents: 'none',
               }}
             >
               {/* Passport Book Container */}
               <div
                 className={`animate-scale-up ${isBookClosing ? 'paper-exit' : ''}`}
                 style={{
+                  pointerEvents: 'auto',
                   width: '100%',
                   maxWidth: isDesktopViewport ? '780px' : '390px',
                   height: isDesktopViewport ? 'min(86vh, 560px)' : 'min(84vh, 600px)',
@@ -7770,7 +7947,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     scrollbarWidth: 'thin',
                   }}
                 >
-                  {/* Full-Bleed Organic Guilloch� Mesh � Terracotta page / Teal page */}
+                  {/* Full-Bleed Organic Guillochï¿½ Mesh ï¿½ Terracotta page / Teal page */}
                   <div
                     style={{
                       position: 'absolute',
@@ -7869,7 +8046,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     }}
                   >
                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
-                      BW � {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
+                      BW ï¿½ {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
                     </span>
                     {isDesktopViewport && (
                       <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
@@ -7878,7 +8055,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                     )}
                   </div>
 
-                                {/* Bottom Official Page Number Badges � desktop spreads only */}
+                                {/* Bottom Official Page Number Badges ï¿½ desktop spreads only */}
                   {isDesktopViewport && activeStampItems.length > 0 && (() => {
                     const STAMPS_PER_SPREAD = 4;
                     const totalSpreads = Math.max(1, Math.ceil(activeStampItems.length / STAMPS_PER_SPREAD));
@@ -7986,7 +8163,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                             zIndex: 1,
                           }}
                         >
-                          {/* LEFT PAGE � Identity */}
+                          {/* LEFT PAGE ï¿½ Identity */}
                           <div
                             className="book-page-turn"
                             key={`identity-page-${page}`}
@@ -8075,7 +8252,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
                             </div>
                           </div>
 
-                          {/* RIGHT PAGE � Paginated Stamp Spread */}
+                          {/* RIGHT PAGE ï¿½ Paginated Stamp Spread */}
                           <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '36px', minWidth: 0 }}>
                             <div
                               className="book-page-turn"
@@ -8199,7 +8376,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
             showToast('Category deleted');
           }}
         />      
-        {/* Welcome / Onboarding Carousel — full screen */}
+        {/* Welcome / Onboarding Carousel â€” full screen */}
           {showWelcome && (() => {
           const ONBOARDING_STEPS = [
             {
