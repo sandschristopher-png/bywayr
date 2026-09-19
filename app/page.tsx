@@ -7184,7 +7184,7 @@ export default function Home() {
                   <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                 </label>
 
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '-0.02em' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                   {userProfile?.username ? `@${userProfile.username}` : 'Account'}
                   <button onClick={() => { setEditUsernameValue(userProfile?.username || ''); setEditBioValue(userProfile?.bio || ''); setEditYoutubeUrl(userProfile?.youtube_url || ''); setEditInstagramUrl(userProfile?.instagram_url || ''); setEditFacebookUrl(userProfile?.facebook_url || ''); setEditXUrl(userProfile?.x_url || ''); setEditTiktokUrl(userProfile?.tiktok_url || ''); setEditWebsiteUrl(userProfile?.website_url || ''); setEditProfileError(''); setIsEditProfileOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '2px' }} title="Change Username">
                     <Pencil style={{ width: '13px', height: '13px' }} />
@@ -7255,7 +7255,49 @@ export default function Home() {
                 </div>
               </div>
 
-                            {/* Compact Streamlined Passport Action Link */}
+                                          {/* Dedicated Edit Profile Action Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(8);
+                  setEditUsernameValue(userProfile?.username || '');
+                  setEditBioValue(userProfile?.bio || '');
+                  setEditYoutubeUrl(userProfile?.youtube_url || '');
+                  setEditInstagramUrl(userProfile?.instagram_url || '');
+                  setEditFacebookUrl(userProfile?.facebook_url || '');
+                  setEditXUrl(userProfile?.x_url || '');
+                  setEditTiktokUrl(userProfile?.tiktok_url || '');
+                  setEditWebsiteUrl(userProfile?.website_url || '');
+                  setEditCountryValue(userProfile?.country || 'United States');
+                  setEditProfileError('');
+                  setIsEditProfileOpen(true);
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  borderRadius: '14px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e7e5e4',
+                  marginBottom: '12px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#1c1917',
+                  boxSizing: 'border-box',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fafaf9')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+              >
+                <Pencil style={{ width: '14px', height: '14px', color: '#78716c' }} />
+                Edit Profile
+              </button>
+
+{/* Compact Streamlined Passport Action Link */}
               <button
                 type="button"
                 onClick={() => {
