@@ -7261,9 +7261,11 @@ export default function Home() {
                 onClick={() => {
                   triggerHaptic(8);
                   setPassportBookPage(0);
-                  setIsPassportBookOpen(true);
-                  pushModalHistoryState('passportBook');
                   handleCloseProfileDrawer();
+                  setTimeout(() => {
+                    setIsPassportBookOpen(true);
+                    pushModalHistoryState('passportBook');
+                  }, 260);
                 }}
                 style={{
                   width: '100%',
