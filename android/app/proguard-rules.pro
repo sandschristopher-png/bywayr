@@ -19,3 +19,24 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- Capacitor Core Rules ---
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keepclassmembers class * extends com.getcapacitor.Plugin {
+    @com.getcapacitor.PluginMethod public *;
+}
+-keep class com.getcapacitor.** { *; }
+
+# Preserve WebView JavaScript Interfaces
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# --- Google Play Billing & Native Purchases ---
+-keep class com.android.billingclient.api.** { *; }
+-keep class ee.forgr.nativepurchases.** { *; }
+-keep class com.google.android.gms.ads.** { *; }
+
+# Suppress common dependency build warnings
+-dontwarn com.google.android.gms.**
+-dontwarn okio.**
