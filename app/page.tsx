@@ -1006,7 +1006,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           const hasPlus =
             Object.keys(entitlements).length > 0 ||
             restored?.transactions?.some(
-              (tx: any) => tx.productId === 'bywayr_plus_yearly' || tx.productIdentifier === 'bywayr_plus_yearly'
+              (tx: any) => tx.productId === 'bywayr_plus_lifetime' || tx.productIdentifier === 'bywayr_plus_lifetime'
             );  
 
           if (hasPlus) {
@@ -3172,8 +3172,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
           const { NativePurchases: Purchases, PURCHASE_TYPE } = (await import('@capgo/native-purchases')) as any;
           const purchaseResult = await Purchases.purchaseProduct({
-            productIdentifier: 'bywayr_plus_yearly',
-            productType: PURCHASE_TYPE.SUBS,
+            productIdentifier: 'bywayr_plus_lifetime',
+            productType: PURCHASE_TYPE.INAPP,
           });
 
           const tx = purchaseResult?.transaction;
@@ -3188,7 +3188,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 body: JSON.stringify({ 
                   purchaseToken,
                   userId: currentUser.id,
-                  productId: 'bywayr_plus_yearly' 
+                  productId: 'bywayr_plus_lifetime' 
                 }),
               });
               const verifyJson = await verifyRes.json();
@@ -3198,7 +3198,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             }
           }
 
-          if ((purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_yearly') || tx) {
+          if ((purchaseResult && purchaseResult.product?.identifier === 'bywayr_plus_lifetime') || tx) {
             if (serverVerified) {
               setIsPlusSubscriber(true);
               localStorage.setItem('bywayr_is_plus', 'true');
@@ -3228,10 +3228,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           const restored = await Purchases.restorePurchases();
           const entitlements = restored?.customerInfo?.entitlements || {};
           const hasPlus =
-            'bywayr_plus_yearly' in entitlements ||
+            'bywayr_plus_lifetime' in entitlements ||
             Object.keys(entitlements).length > 0 ||
             restored?.transactions?.some(
-              (tx: any) => tx.productId === 'bywayr_plus_yearly' || tx.productIdentifier === 'bywayr_plus_yearly'
+              (tx: any) => tx.productId === 'bywayr_plus_lifetime' || tx.productIdentifier === 'bywayr_plus_lifetime'
             );
 
           if (hasPlus) {
@@ -7357,7 +7357,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     letterSpacing: '0.01em',
                   }}
                 >
-                  Annual Curator Pass — $19.99/yr
+                  Curator Pass — $19.99 Lifetime
                 </button>
 
                 {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() && (
