@@ -3477,23 +3477,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           }
         });
 
-      const containerEl = mapContainer.current;
-      if (containerEl) {
-        const preventDefaultTouch = (e: TouchEvent) => {
-          if (e.touches.length > 1) return;
-          const target = e.target as HTMLElement;
-          if (target?.closest('button, input, textarea, a, select, [role="button"], .passport-stamp-card, .passport-stamp-cachet')) {
-            return;
-          }
-          if (target?.closest('.maplibregl-canvas, .maplibregl-map')) {
-            return;
-          }
-        };
-        containerEl.addEventListener('touchstart', preventDefaultTouch, { passive: false });
-        containerEl.addEventListener('touchmove', preventDefaultTouch, { passive: false });
-      }
-
-      let moveEndTimeout: NodeJS.Timeout | null = null;
+      // Non-passive touch listeners removed for Android WebView
+      let moveEndTimeout: any = null;
       initializedMap.on('moveend', () => {
         if (moveEndTimeout) clearTimeout(moveEndTimeout);
         moveEndTimeout = setTimeout(() => {
@@ -3546,14 +3531,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
-        const originalTarget = e.originalEvent.target as HTMLElement;
-        if (originalTarget?.closest('.maplibregl-marker')) return;
-        const lat = parseFloat(e.lngLat.lat.toFixed(6));
-        const lng = parseFloat(e.lngLat.lng.toFixed(6));
-        dropPreviewAndOpenModal(lat, lng);
       });
 
       initializedMap.on('dragstart', () => {
+        setTimeout(() => setIsInteracting(false), 1500);
         setShowDropdown(false);
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
@@ -4786,7 +4767,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             borderRadius: '32px',
             padding: '6px 8px',
             boxShadow: '0 20px 40px -10px rgba(28, 25, 23, 0.22), 0 0 1px 1px rgba(28, 25, 23, 0.05)',
-            pointerEvents: isInteracting ? 'none' : 'auto',
+            pointerEvents: 'auto',
           }}
         >
           {/* Field Notes (Left Drawer Trigger) */}
@@ -4920,7 +4901,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             padding: '4px',
             boxShadow: '0 10px 25px -5px rgba(28, 25, 23, 0.18)',
             gap: '4px',
-            pointerEvents: isInteracting ? 'none' : 'auto',
+            pointerEvents: 'auto',
             opacity: isInteracting ? 0 : 1,
             transform: isInteracting ? 'translateY(16px)' : 'translateY(0)',
             transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -7914,6 +7895,205 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           );
         })()}  
+        
+        {/* Sign In / Auth Modal */}
+        {isAuthModalOpen && (
+          <div
+            className="animate-fade-in"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(28, 25, 23, 0.55)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 100040,
+              padding: "16px",
+              boxSizing: "border-box",
+              pointerEvents: "auto",
+            }}
+            onClick={() => {
+              triggerHaptic(6);
+              dismissModalWithHistory(() => setIsAuthModalOpen(false));
+            }}
+          >
+            <div
+              className="animate-scale-up"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "28px",
+                boxShadow: "0 25px 50px -12px rgba(28, 25, 23, 0.35)",
+                width: "100%",
+                maxWidth: "380px",
+                padding: "24px 22px 20px 22px",
+                position: "relative",
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: "#1c1917", letterSpacing: "-0.02em" }}>
+                    Sign In to Bywayr
+                  </h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#78716c", fontWeight: 500 }}>
+                    Pin secret spots & collect passport stamps
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(6);
+                    dismissModalWithHistory(() => setIsAuthModalOpen(false));
+                  }}
+                  style={{
+                    border: "none",
+                    background: "#ecebe7",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    cursor: "pointer",
+                    color: "#78716c",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                  title="Close"
+                >
+                  <X style={{ width: "16px", height: "16px" }} />
+                </button>
+              </div>
+
+              {/* Google OAuth Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  backgroundColor: "#ffffff",
+                  border: "1.5px solid #e7e5e4",
+                  borderRadius: "16px",
+                  padding: "12px",
+                  fontSize: "13.5px",
+                  fontWeight: 700,
+                  color: "#1c1917",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+                  boxSizing: "border-box",
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "2px 0" }}>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#e7e5e4" }} />
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "#a8a29e", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  or email link
+                </span>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#e7e5e4" }} />
+              </div>
+
+              {magicLinkSent ? (
+                <div
+                  className="animate-slide-up"
+                  style={{
+                    backgroundColor: "#ecfdf5",
+                    border: "1px solid #a7f3d0",
+                    borderRadius: "14px",
+                    padding: "14px",
+                    textAlign: "center",
+                    color: "#059669",
+                  }}
+                >
+                  <Mail style={{ width: "24px", height: "24px", margin: "0 auto 6px auto", display: "block" }} />
+                  <div style={{ fontSize: "13px", fontWeight: 700 }}>Check your inbox!</div>
+                  <div style={{ fontSize: "11.5px", marginTop: "2px", color: "#047857" }}>
+                    We sent a magic sign-in link to <strong>{authEmail}</strong>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleMagicLinkSignIn} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div>
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter your email address"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                        fontSize: "13px",
+                        padding: "11px 12px",
+                        borderRadius: "14px",
+                        border: "1px solid #d6d3d1",
+                        outline: "none",
+                        color: "#1c1917",
+                        backgroundColor: "#ffffff",
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSendingMagicLink || !authEmail.trim()}
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#1c1917",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "14px",
+                      padding: "11px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor: isSendingMagicLink || !authEmail.trim() ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      opacity: isSendingMagicLink ? 0.7 : 1,
+                    }}
+                  >
+                    {isSendingMagicLink ? (
+                      <Loader2 style={{ width: "15px", height: "15px", animation: "spin 1s linear infinite" }} />
+                    ) : (
+                      "Send Magic Link"
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Create Custom Category Modal */}
         <CreateCategoryModal
           isOpen={isCreateCategoryOpen}
