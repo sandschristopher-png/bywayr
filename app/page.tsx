@@ -239,14 +239,14 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
       ? `${Math.round(bestMatch.distance * 1000)}m` 
       : `${bestMatch.distance.toFixed(1)}km`;
     
-    let hint = `${bestMatch.name} ∑ ${distStr} away`;
+    let hint = `${bestMatch.name} ¬∑ ${distStr} away`;
     
     if (hour >= 17 && hour < 19 && weather?.temp && weather.temp > 15) {
-      hint += ` ∑ Great sunset spot!`;
+      hint += ` ¬∑ Great sunset spot!`;
     } else if (weather && weather.weatherCode >= 51) {
-      hint += ` ∑ Perfect rainy-day hideout`;
+      hint += ` ¬∑ Perfect rainy-day hideout`;
     } else if (hour >= 6 && hour < 10) {
-      hint += ` ∑ Morning coffee vibe`;
+      hint += ` ¬∑ Morning coffee vibe`;
     }
 
     return { spot: bestMatch, hint };
@@ -345,7 +345,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
         : `${Math.round(distKm)}km`;
 
     if (distKm > 25) return distStr;
-    return `${walkMinutes}m walk ∑ ${distStr}`;
+    return `${walkMinutes}m walk ¬∑ ${distStr}`;
   };
 
   const sanitizeCountryAndCity = (city: string, country: string): { city: string; country: string } => {
@@ -1115,7 +1115,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         return timeB - timeA;
       });
 
-    // Live reference point ó read at render time so sort and distance badges always agree
+    // Live reference point ‚Äî read at render time so sort and distance badges always agree
     const drawerRefPoint = () => {
       const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
       const refLat = 'lat' in center ? center.lat : 36.1699;
@@ -1127,7 +1127,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       ? spots.filter((s: Spot) => s.user_id === currentUser.id)
       : [];
 
-    // Single source of truth for the drawer list ó always sorted
+    // Single source of truth for the drawer list ‚Äî always sorted
     const displayedDrawerSpots = (() => {
       const source = drawerTab === 'fieldNotes' ? myNotesSpots : mustTryList;
 
@@ -1150,7 +1150,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       );
     })();
 
-    // Index where the far group starts (nearest sort only) ó drives the headers
+    // Index where the far group starts (nearest sort only) ‚Äî drives the headers
     const firstFarIndex = (() => {
       if (drawerTab !== 'fieldNotes' || drawerSortMode !== 'nearest') return -1;
       const { refLat, refLng } = drawerRefPoint();
@@ -1199,7 +1199,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 spot.category.toLowerCase().includes(q.toLowerCase())
             )
             .map((spot) => ({
-              display_name: `${spot.name} (${spot.city} ó ${spot.category})`,
+              display_name: `${spot.name} (${spot.city} ‚Äî ${spot.category})`,
               name: spot.name,
               lat: spot.latitude,
               lon: spot.longitude,
@@ -1520,7 +1520,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       try {
         if (current === voteType) {
-          // Same vote tapped ó remove it
+          // Same vote tapped ‚Äî remove it
           const { error } = await supabase.from('spot_votes').delete().eq('user_id', activeUser.id).eq('spot_id', spotId);
           if (!error) {
             setMyVotes((prev) => {
@@ -1618,7 +1618,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         showToast(next ? 'Your journal is now private' : 'Your journal is now public');
       } else {
         console.error('Privacy toggle failed:', error);
-        showToast('Could not update privacy ó please try again', 'error');
+        showToast('Could not update privacy ‚Äî please try again', 'error');
       }
       setSavingPrivacy(false);
     };
@@ -1761,7 +1761,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           setIsLocating(false);
         },
         () => {
-          showToast("Couldn't get your location ó check permissions");
+          showToast("Couldn't get your location ‚Äî check permissions");
           setIsLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -1804,7 +1804,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           setIsModalLocating(false);
         },
         () => {
-          showToast("Couldn't get your location ó check permissions");
+          showToast("Couldn't get your location ‚Äî check permissions");
           setIsModalLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -1819,7 +1819,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: `Bywayr ó ${spot.name}`, text: shareText, url: shareUrl });
+          await navigator.share({ title: `Bywayr ‚Äî ${spot.name}`, text: shareText, url: shareUrl });
           return;
         } catch {}
       }
@@ -1844,7 +1844,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: `${handle}'s Field Journal ó Bywayr`, text: shareText, url: shareUrl });
+          await navigator.share({ title: `${handle}'s Field Journal ‚Äî Bywayr`, text: shareText, url: shareUrl });
           return;
         } catch {}
       }
@@ -2246,7 +2246,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           const hasPlus = Boolean(data.plus_enabled) && notExpired;
 
           if (!hasPlus && localStorage.getItem('bywayr_is_plus') === 'true') {
-            // Server says no Plus but localStorage claims it ‚Äî probable tampering, correct it
+            // Server says no Plus but localStorage claims it √¢‚Ç¨‚Äù probable tampering, correct it
             console.warn('Plus entitlement mismatch: local flag cleared');
           }
 
@@ -2518,7 +2518,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               </text>
               <text fill={st.color} fontSize="8" fontWeight="800" letterSpacing="0.15em" opacity="0.85">
                 <textPath href={`#arc-bot-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                  ï ENTRY ∑ IMMIGRATION ï
+                  ‚Ä¢ ENTRY ¬∑ IMMIGRATION ‚Ä¢
                 </textPath>
               </text>
               <g transform="translate(70, 70) rotate(45) scale(3.5) translate(-9, -11)" opacity="0.12">
@@ -3205,7 +3205,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               setIsPlusModalOpen(false);
               showToast('Thank you for upgrading to Bywayr Plus! ??');
             } else {
-              showToast('Verifying subscriptionÖ please check Restore in a moment');
+              showToast('Verifying subscription‚Ä¶ please check Restore in a moment');
             }
           }
         } else {
@@ -3363,7 +3363,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         const cdata = (v?: string) => `<![CDATA[${(v || '').replace(/]]>/g, ']]&gt;')}]]>`;
         return `  <wpt lat="${s.latitude}" lon="${s.longitude}">
       <name>${escapeXml(s.name)}</name>
-      <desc>${cdata(`${s.category} ∑ ${s.city}${s.description ? ' ó ' + s.description : ''}`)}</desc>
+      <desc>${cdata(`${s.category} ¬∑ ${s.city}${s.description ? ' ‚Äî ' + s.description : ''}`)}</desc>
     </wpt>`;
       }).join('\n');
 
@@ -3371,7 +3371,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
   <gpx version="1.1" creator="Bywayr" xmlns="http://www.topografix.com/GPX/1/1">
     <metadata>
       <name>Bywayr Field Journal</name>
-      <desc>Exported from Bywayr ó your data, your device.</desc>
+      <desc>Exported from Bywayr ‚Äî your data, your device.</desc>
     </metadata>
   ${wptXml}
   </gpx>`;
@@ -3443,7 +3443,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               type: 'raster',
               tiles: primaryCartoTiles,
               tileSize: 256,
-              attribution: '© OpenStreetMap contributors © CARTO',
+              attribution: '¬© OpenStreetMap contributors ¬© CARTO',
             },
           },
           layers: [
@@ -4090,7 +4090,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             pointerEvents: 'none',
           }}>
             <WifiOff style={{ width: '14px', height: '14px', color: '#e05a47' }} />
-            <span>Offline mode active ∑ Using cached field notes</span>
+            <span>Offline mode active ¬∑ Using cached field notes</span>
           </div>
         )}
 
@@ -4978,7 +4978,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 </span>
                 <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>{activeSearchedSpot.name}</h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#78716c' }}>
-                  {activeSearchedSpot.city}{activeSearchedSpot.country ? ` ∑ ${activeSearchedSpot.country}` : ''}
+                  {activeSearchedSpot.city}{activeSearchedSpot.country ? ` ¬∑ ${activeSearchedSpot.country}` : ''}
                 </p>
               </div>
               <button onClick={() => dismissModalWithHistory(() => { setActiveSearchedSpot(null); if (previewMarkerRef.current) previewMarkerRef.current.remove(); })} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a8a29e', padding: '5px' }}>
@@ -5127,7 +5127,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                             {spot.name}
                           </h4>
                           <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {spot.city} ∑ <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
+                            {spot.city} ¬∑ <span style={{ color: getCategoryColor(spot.category), fontWeight: 600 }}>{spot.category}</span>
                           </p>
                         </div>
 
@@ -5232,7 +5232,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                               {spot.name}
                             </h4>
                             <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#0284c7', fontWeight: 500 }}>
-                              {spot.city} ∑ Map Location
+                              {spot.city} ¬∑ Map Location
                             </p>
                           </div>
                           
@@ -5537,12 +5537,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     }}
                   >
                     {viewingSpot.city}
-                    {viewingSpot.country ? ` ∑ ${viewingSpot.country}` : ''}
+                    {viewingSpot.country ? ` ¬∑ ${viewingSpot.country}` : ''}
                     {viewingSpot.user_id &&
                     profilesMap[viewingSpot.user_id]?.username &&
                     !profilesMap[viewingSpot.user_id]?.is_private ? (
                       <>
-                        {' ∑ '}
+                        {' ¬∑ '}
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -6081,7 +6081,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   <input
                     type="text"
                     required
-                    placeholder="e.g. ‘delice Bakery"
+                    placeholder="e.g. √îdelice Bakery"
                     value={newSpot.name}
                     onChange={(e) => setNewSpot({ ...newSpot, name: e.target.value })}
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917' }}
@@ -6473,7 +6473,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           </div>
                           <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
                           <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
-                            {s.city}{s.country ? ` ∑ ${s.country}` : ''}
+                            {s.city}{s.country ? ` ¬∑ ${s.country}` : ''}
                           </p>
                         </div>
 
@@ -6927,7 +6927,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                               textOverflow: 'ellipsis',
                             }}
                           >
-                            {spot.city} ∑ <span style={{ color, fontWeight: 600 }}>{spot.category}</span> ∑ <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
+                            {spot.city} ¬∑ <span style={{ color, fontWeight: 600 }}>{spot.category}</span> ¬∑ <span style={{ color: '#a8a29e' }}>{formatRelativeTime(spot.created_at)}</span>
                           </p>
                         </div>
                       </div>
@@ -7064,7 +7064,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     {isPlusSubscriber && <Crown style={{ width: '15px', height: '15px', color: '#d97706' }} />}
                   </h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#78716c', fontWeight: 500 }}>
-                    {userProfile?.country || 'Wanderer'} ∑ Member
+                    {userProfile?.country || 'Wanderer'} ¬∑ Member
                   </p>
                 </div>
                 <button
@@ -7086,7 +7086,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 </button>
               </div>
 
-              {/* Stats ó neutral like Reddit */}
+              {/* Stats ‚Äî neutral like Reddit */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', padding: '14px 22px', textAlign: 'center', borderBottom: '1px solid #e7e5e4' }}>
                 <div>
                   <div style={{ fontSize: '17px', fontWeight: 700, color: '#1c1917' }}>{mySpotsCount}</div>
@@ -7190,7 +7190,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                       <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px', flexShrink: 0 }}>{s.category}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
-                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}{s.country ? ` ∑ ${s.country}` : ''}</p>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}{s.country ? ` ¬∑ ${s.country}` : ''}</p>
                       </div>
                       <ExternalLink style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                     </div>
@@ -7205,7 +7205,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                       <span style={{ display: 'inline-block', backgroundColor: `${getCategoryColor(s.category)}18`, color: getCategoryColor(s.category), fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px', flexShrink: 0 }}>{s.category}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</h4>
-                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}{s.country ? ` ∑ ${s.country}` : ''}</p>
+                        <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.city}{s.country ? ` ¬∑ ${s.country}` : ''}</p>
                       </div>
                       <ExternalLink style={{ width: '13px', height: '13px', color: '#a8a29e', flexShrink: 0 }} />
                     </div>
@@ -7224,7 +7224,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   </div>
                 ) : (
                   <button onClick={() => { triggerHaptic(8); setIsPlusModalOpen(true); pushModalHistoryState('plusModal'); }} style={{ flex: 1, backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '8px 12px', fontSize: '11.5px', fontWeight: 600, color: '#92400e', cursor: 'pointer', textAlign: 'left' }}>
-                    Bywayr Plus ó custom categories, export, ad-free ∑ <strong>Upgrade</strong>
+                    Bywayr Plus ‚Äî custom categories, export, ad-free ¬∑ <strong>Upgrade</strong>
                   </button>
                 )}
               </div>
@@ -7249,7 +7249,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     </div>
                   ) : (
                     <button onClick={() => { triggerHaptic(8); setIsJournalSettingsOpen(false); setIsPlusModalOpen(true); pushModalHistoryState('plusModal'); }} style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px', fontSize: '12px', fontWeight: 600, color: '#92400e', cursor: 'pointer', textAlign: 'left' }}>
-                      <strong>Upgrade to Bywayr Plus</strong> ó custom categories, journal export, ad-free exploring
+                      <strong>Upgrade to Bywayr Plus</strong> ‚Äî custom categories, journal export, ad-free exploring
                     </button>
                   )}
 
@@ -7308,7 +7308,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <Tag style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> ó Create custom lists, accent colors, and tag any saved gem.
+                    <strong style={{ color: '#1c1917' }}>Custom Categories & Tagging</strong> ‚Äî Create custom lists, accent colors, and tag any saved gem.
                   </div>
                 </div>
 
@@ -7317,7 +7317,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <Download style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Journal Export</strong> ó Download a portable copy of your entire field journal, any time.
+                    <strong style={{ color: '#1c1917' }}>Journal Export</strong> ‚Äî Download a portable copy of your entire field journal, any time.
         </div>
                 </div>
 
@@ -7326,7 +7326,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <ShieldCheck style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> ó Browse the entire map with zero ads.
+                    <strong style={{ color: '#1c1917' }}>Ad-Free Exploring</strong> ‚Äî Browse the entire map with zero ads.
                   </div>
                 </div>
 
@@ -7335,7 +7335,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <Sparkle style={{ width: '15px', height: '15px' }} />
                   </div>
                   <div style={{ fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, fontWeight: 500 }}>
-                    <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> ó Cancel anytime with zero charge before trial ends.
+                    <strong style={{ color: '#1c1917' }}>3-Day Free Trial</strong> ‚Äî Cancel anytime with zero charge before trial ends.
                   </div>
                 </div>
               </div>
@@ -7357,7 +7357,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     letterSpacing: '0.01em',
                   }}
                 >
-                  Curator Pass ó $19.99 Lifetime
+                  Curator Pass ‚Äî $19.99 Lifetime
                 </button>
 
                 {typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() && (
@@ -7380,7 +7380,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           </div>
         )}
-        {/* Scrollable Passport Booklet ó Clean Organic Spread */}
+        {/* Scrollable Passport Booklet ‚Äî Clean Organic Spread */}
         {(isPassportBookOpen || isBookClosing) && (() => {
           // Book can render YOUR passport or a viewed public profile's (read-only)
           const isViewingOther = !!viewingPassportProfile;
@@ -7503,7 +7503,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     scrollbarWidth: 'thin',
                   }}
                 >
-                  {/* Full-Bleed Organic GuillochÈ Mesh ó Terracotta page / Teal page */}
+                  {/* Full-Bleed Organic Guilloch√© Mesh ‚Äî Terracotta page / Teal page */}
                   <div
                     style={{
                       position: 'absolute',
@@ -7602,7 +7602,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     }}
                   >
                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
-                      BW ∑ {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
+                      BW ¬∑ {bookUserId ? bookUserId.substring(0, 8).toUpperCase() : '84920194'}
                     </span>
                     {isDesktopViewport && (
                       <span style={{ fontSize: '11px', fontWeight: 900, color: '#0369a1', opacity: 0.42, letterSpacing: '0.35em', fontFamily: 'monospace', textTransform: 'uppercase' }}>
@@ -7611,7 +7611,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     )}
                   </div>
 
-                                {/* Bottom Official Page Number Badges ÔøΩ desktop spreads only */}
+                                {/* Bottom Official Page Number Badges √Ø¬ø¬Ω desktop spreads only */}
                   {isDesktopViewport && activeStampItems.length > 0 && (() => {
                     const STAMPS_PER_SPREAD = 4;
                     const totalSpreads = Math.max(1, Math.ceil(activeStampItems.length / STAMPS_PER_SPREAD));
@@ -7719,7 +7719,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                             zIndex: 1,
                           }}
                         >
-                          {/* LEFT PAGE ÔøΩ Identity */}
+                          {/* LEFT PAGE √Ø¬ø¬Ω Identity */}
                           <div
                             className="book-page-turn"
                             key={`identity-page-${page}`}
@@ -7808,7 +7808,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                             </div>
                           </div>
 
-                          {/* RIGHT PAGE ÔøΩ Paginated Stamp Spread */}
+                          {/* RIGHT PAGE √Ø¬ø¬Ω Paginated Stamp Spread */}
                           <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '36px', minWidth: 0 }}>
                             <div
                               className="book-page-turn"
@@ -8265,7 +8265,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     style={{ display: 'none' }}
                   />
                   <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 500 }}>
-                    {uploadingAvatar ? 'Optimizing & uploading avatarÖ' : 'Tap photo to change avatar'}
+                    {uploadingAvatar ? 'Optimizing & uploading avatar‚Ä¶' : 'Tap photo to change avatar'}
                   </span>
                 </div>
 
@@ -8515,7 +8515,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     {savingProfile ? (
                       <>
                         <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
-                        <span>SavingÖ</span>
+                        <span>Saving‚Ä¶</span>
                       </>
                     ) : (
                       'Save Changes'
@@ -8526,7 +8526,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           </div>
         )}        
-        {/* Welcome / Onboarding Carousel ‚Äî full screen */}
+        {/* Welcome / Onboarding Carousel √¢‚Ç¨‚Äù full screen */}
           {showWelcome && (() => {
           const ONBOARDING_STEPS = [
             {
