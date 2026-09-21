@@ -1,4 +1,4 @@
-  'use client';
+﻿  'use client';
 
 // Helper to open legal pages in system browser, keeping the app intact
 const openLegalPage = (path: string) => {
@@ -117,7 +117,9 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
   ChevronLeft, ChevronRight, Mountain,
   ShoppingBag,
   Link as LinkIcon,
+  Repeat,
 } from 'lucide-react';
+import { generateBywayLoopStops, launchNativeWalkingLoop } from '../lib/bywayLoop';
   import { AdMob } from '@capacitor-community/admob';
 
   const ADMOB_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888';
@@ -711,6 +713,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const [liveOsmResults, setLiveOsmResults] = useState<Spot[]>([]);
     const [isSearchingOsm, setIsSearchingOsm] = useState(false);
 
+    // Byway Loop state
+    const [isLoopModalOpen, setIsLoopModalOpen] = useState(false);
+    const [loopStops, setLoopStops] = useState<Spot[]>([]);
+    const [loopDuration, setLoopDuration] = useState<30 | 45 | 60>(45);
+
     useEffect(() => {
       if (typeof window === 'undefined') return;
       const q = walkSearchQuery.trim();
@@ -1249,6 +1256,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       isDiscussionModalOpen ||
       viewingProfile ||
       isWalkModalOpen ||
+      isLoopModalOpen ||
       shareDialogSpot ||
       Boolean(shareDialogCustomUrl) ||
       isAuthModalOpen ||
@@ -1333,6 +1341,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       if (isProfileModalOpen) { handleCloseProfileDrawer(); return; }
       if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
       if (shareDialogSpot || shareDialogCustomUrl) { setShareDialogSpot(null); setShareDialogCustomUrl(''); return; }
+      if (isLoopModalOpen) { setIsLoopModalOpen(false); return; }
       if (isWalkModalOpen) { setIsWalkModalOpen(false); return; }
       if (viewingProfile) { setViewingProfile(null); return; }
       if (isDiscussionModalOpen) {
@@ -1673,6 +1682,19 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       if (e.deltaY !== 0) {
         ref.current.scrollLeft += e.deltaY;
       }
+    };
+
+    const handleOpenBywayLoop = () => {
+      triggerHaptic(10);
+      const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+      const origin = { lat: 'lat' in center ? center.lat : 36.1699, lng: 'lng' in center ? center.lng : -115.1398 };
+
+      const radius = loopDuration === 30 ? 1.5 : loopDuration === 45 ? 2.5 : 3.5;
+      const stops = generateBywayLoopStops(origin, spots, 3, radius);
+
+      setLoopStops(stops);
+      setIsLoopModalOpen(true);
+      pushModalHistoryState('bywayLoop');
     };
 
     const handleSelectSearchResult = (item: any) => {
@@ -4811,13 +4833,34 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              padding: '6px 12px',
+              padding: '6px 10px',
               borderRadius: '20px',
               color: walkTargetSpot ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
             <Footprints style={{ width: '18px', height: '18px' }} />
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Walk</span>
+          </button>
+
+          {/* Byway Loop Trigger */}
+          <button
+            type="button"
+            onClick={handleOpenBywayLoop}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '6px 10px',
+              borderRadius: '20px',
+              color: isLoopModalOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+            }}
+          >
+            <Repeat style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Loop</span>
           </button>
 
           {/* Center Primary Action: Add Spot */}
@@ -5290,6 +5333,146 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   }}
                 >
                   Clear Active Walk
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Byway Loop Modal */}
+        {isLoopModalOpen && (
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '84vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                    <Repeat style={{ width: '19px', height: '19px' }} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Byway Loop</h3>
+                    <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Curated circular walking route</p>
+                  </div>
+                </div>
+                <button onClick={() => dismissModalWithHistory(() => setIsLoopModalOpen(false))} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
+              </div>
+
+              {/* Duration Selectors */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+                {([30, 45, 60] as const).map((mins) => {
+                  const isSelected = loopDuration === mins;
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(6);
+                        setLoopDuration(mins);
+                        const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+                        const origin = { lat: 'lat' in center ? center.lat : 36.1699, lng: 'lng' in center ? center.lng : -115.1398 };
+                        const radius = mins === 30 ? 1.5 : mins === 45 ? 2.5 : 3.5;
+                        setLoopStops(generateBywayLoopStops(origin, spots, 3, radius));
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '7px 0',
+                        borderRadius: '12px',
+                        border: isSelected ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
+                        backgroundColor: isSelected ? '#fff1ee' : '#fafaf9',
+                        color: isSelected ? '#e05a47' : '#57534e',
+                        fontSize: '12px',
+                        fontWeight: isSelected ? 700 : 600,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      ~{mins} min walk
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Stops Preview */}
+              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '42vh', paddingRight: '2px' }}>
+                {loopStops.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px 10px', color: '#78716c', fontSize: '12.5px' }}>
+                    <Compass style={{ width: '28px', height: '28px', color: '#a8a29e', margin: '0 auto 8px auto', display: 'block' }} />
+                    Not enough nearby pinned spots to form a loop in this range. Try increasing the duration or panning the map!
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '2px' }}>
+                      Loop Waypoints ({loopStops.length} Gems)
+                    </div>
+                    {loopStops.map((stop, index) => (
+                      <div
+                        key={stop.id || index}
+                        onClick={() => {
+                          triggerHaptic(6);
+                          flyToSpot(stop);
+                          dismissModalWithHistory(() => setIsLoopModalOpen(false));
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '14px',
+                          border: '1px solid #e7e5e4',
+                          backgroundColor: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#e05a47', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
+                          {index + 1}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1c1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {stop.name}
+                          </h4>
+                          <p style={{ margin: '1px 0 0 0', fontSize: '11px', color: '#78716c' }}>
+                            {stop.category} · {stop.city}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: '10px', fontWeight: 600, color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '6px' }}>
+                          {stop.distanceKm ? `${stop.distanceKm.toFixed(1)}km` : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* Action Button */}
+              {loopStops.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(12);
+                    const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
+                    const origin = { lat: 'lat' in center ? center.lat : 36.1699, lng: 'lng' in center ? center.lng : -115.1398 };
+                    launchNativeWalkingLoop(origin, loopStops);
+                  }}
+                  style={{
+                    marginTop: '14px',
+                    width: '100%',
+                    backgroundColor: '#e05a47',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '16px',
+                    padding: '13px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(224, 90, 71, 0.28)',
+                  }}
+                >
+                  <Navigation2 style={{ width: '15px', height: '15px' }} /> Start Walk in Maps
                 </button>
               )}
             </div>
