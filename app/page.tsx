@@ -1886,7 +1886,103 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       setCoordsCopied(true);
       setTimeout(() => setCoordsCopied(false), 2000);
     };
+    const dropDraggablePreviewPin = async (lat: number, lon: number) => {
+      const activeUser = currentUserRef.current;
+      if (!activeUser) {
+        setIsAuthModalOpen(true);
+        pushModalHistoryState('auth');
+        return;
+      }
+      if (!map.current) return;
+      triggerHaptic(12);
+      setViewingSpot(null);
+      setIsDiscussionModalOpen(false);
+      setActiveSearchedSpot(null);
+      setIsEditing(false);
 
+      if (previewMarkerRef.current) previewMarkerRef.current.remove();
+
+      // Create a custom branded Bywayr draggable pin element
+      const pinColor = '#e05a47'; // Signature Bywayr terracotta
+      const pinEl = document.createElement('div');
+      pinEl.className = 'bywayr-map-pin animate-spring-badge';
+      pinEl.style.cursor = 'grab';
+      pinEl.style.zIndex = '20';
+      pinEl.style.display = 'flex';
+      pinEl.style.flexDirection = 'column';
+      pinEl.style.alignItems = 'center';
+      pinEl.style.transform = 'translate3d(0,0,0)';
+      pinEl.innerHTML = `
+        <div style="
+          width: 36px;
+          height: 48px;
+          position: relative;
+          filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+        ">
+          <!-- Teardrop shape -->
+          <svg width="36" height="48" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
+            <!-- Outer white ring -->
+            <circle cx="16" cy="15" r="7" fill="white"/>
+            <!-- Inner colored dot -->
+            <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+          </svg>
+          <!-- Ground Shadow -->
+          <div style="
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 5px;
+            border-radius: 50%;
+            background-color: rgba(0,0,0,0.3);
+            filter: blur(1px);
+          "></div>
+        </div>
+      `;
+
+      const draggablePin = new maplibregl.Marker({ element: pinEl, anchor: 'bottom', draggable: true })
+        .setLngLat([lon, lat])
+        .addTo(map.current);
+
+      previewMarkerRef.current = draggablePin;
+
+      // When user drags the pin, update the active target coordinates
+      draggablePin.on('dragend', async () => {
+        const lngLat = draggablePin.getLngLat();
+        triggerHaptic(8);
+        const geo = await reverseGeocode(lngLat.lat, lngLat.lng);
+        setNewSpot((prev) => ({
+          ...prev,
+          latitude: parseFloat(lngLat.lat.toFixed(6)),
+          longitude: parseFloat(lngLat.lng.toFixed(6)),
+          city: geo.city || prev.city || 'Las Vegas',
+          country: geo.country || prev.country || 'United States',
+          name: prev.name || geo.name || '',
+        }));
+      });
+
+      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
+
+      const geo = await reverseGeocode(lat, lon);
+      setNewSpot({
+        name: geo.name || '',
+        category: 'Hidden Gems',
+        city: geo.city || 'Las Vegas',
+        country: geo.country || 'United States',
+        description: '',
+        latitude: parseFloat(lat.toFixed(6)),
+        longitude: parseFloat(lon.toFixed(6)),
+        image_url: '',
+      });
+
+      setImageFiles([]);
+      setImagePreviews([]);
+      setIsModalOpen(true);
+      pushModalHistoryState('addSpotModal');
+      showToast('Tip: Drag the red pin to fine-tune its exact location!');
+    };
     const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
       const activeUser = currentUserRef.current;
       if (!activeUser) {
@@ -3568,6 +3664,29 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
+      });
+
+      // Long-press / contextmenu / long-click to drop a draggable preview pin
+      let pressTimer: any = null;
+      initializedMap.on('mousedown', (e) => {
+        pressTimer = setTimeout(() => {
+          const { lng, lat } = e.lngLat;
+          dropDraggablePreviewPin(lat, lng);
+        }, 500); // 500ms hold triggers drop
+      });
+      initializedMap.on('mousemove', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      });
+      initializedMap.on('touchstart', (e: any) => {
+        pressTimer = setTimeout(() => {
+          if (e.lngLat) {
+            const { lng, lat } = e.lngLat;
+            dropDraggablePreviewPin(lat, lng);
+          }
+        }, 600);
+      });
+      initializedMap.on('touchmove', () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
       });
 
       initializedMap.on('dragstart', () => {
