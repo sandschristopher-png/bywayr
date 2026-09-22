@@ -3797,7 +3797,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     0%   { transform: translateY(-24px) scale(1.15); opacity: 0; }
     60%  { transform: translateY(0) scale(0.97); opacity: 1; }
     100% { transform: translateY(0) scale(1); opacity: 1; }
-  }
+  }Select-String -Path "app\globals.css" -Pattern "animate-spring-badge" -Context 2,6
           html, body {
             position: fixed;
             inset: 0;
