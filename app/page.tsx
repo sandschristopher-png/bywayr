@@ -7084,6 +7084,41 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               <div className="animate-slide-up" style={{ overflowY: 'auto', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px', scrollbarWidth: 'thin', paddingRight: '2px', paddingBottom: '16px', animationDelay: '0.16s' }}>
                 {drawerTab === 'essentials' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+                    {!Capacitor.isNativePlatform() && (
+                      <a
+                        href="https://play.google.com/store/apps/details?id=com.bywayr.app"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 14px',
+                          backgroundColor: '#1c1917',
+                          borderRadius: '14px',
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          boxShadow: '0 4px 12px rgba(28, 25, 23, 0.15)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#292524', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                              <path d="M3.609 1.814L13.792 12 3.61 22.186a2.016 2.016 0 0 1-.61-.955V2.77c0-.36.143-.706.609-.956z" fill="#00D7FF"/>
+                              <path d="M17.18 8.614l-3.388 3.386 3.388 3.386 3.844-2.183c1.096-.623 1.096-1.966 0-2.589L17.18 8.614z" fill="#FFD400"/>
+                              <path d="M3.609 1.814l10.183 10.186 3.388-3.386L7.145.487C6.05-.136 4.704-.136 3.609 1.814z" fill="#00F076"/>
+                              <path d="M13.792 12L3.609 22.186c1.095 1.95 2.441 1.95 3.536 1.327l10.035-7.9L13.792 12z" fill="#FF3A44"/>
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: '#a8a29e', fontWeight: 700, letterSpacing: '0.04em', lineHeight: 1.1 }}>GET IT ON</span>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#fafaf9', lineHeight: 1.2 }}>Google Play</span>
+                          </div>
+                        </div>
+                        <ArrowRight style={{ width: '15px', height: '15px', color: '#a8a29e', flexShrink: 0 }} />
+                      </a>
+                    )}
+
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#a8a29e', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: '4px' }}>
                       Curated Booking Tools
                     </div>
