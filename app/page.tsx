@@ -1976,11 +1976,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       const targetLng = lon ?? center.lng;
 
       // Static branded Bywayr pin — stays where dropped, map pans freely around it
+      // NOTE: never animate `transform` on the marker root; MapLibre owns it for positioning.
       const pinColor = '#e05a47';
       const pinEl = document.createElement('div');
-      pinEl.className = 'bywayr-map-pin animate-spring-badge';
+      pinEl.className = 'bywayr-map-pin';
       pinEl.innerHTML = `
-        <div style="
+        <div class="bywayr-pin-drop" style="
           width: 36px;
           height: 48px;
           filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
@@ -3788,6 +3789,15 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     return (
       <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#0a0a0a' : '#ecebe7', transition: 'background-color 1.2s cubic-bezier(0.33, 1, 0.68, 1)' }}>
         <style jsx global>{`
+  .bywayr-map-pin .bywayr-pin-drop {
+    animation: bywayrPinDrop 420ms cubic-bezier(0.175, 0.885, 0.32, 1.35) both;
+    transform-origin: 50% 100%;
+  }
+  @keyframes bywayrPinDrop {
+    0%   { transform: translateY(-24px) scale(1.15); opacity: 0; }
+    60%  { transform: translateY(0) scale(0.97); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
           html, body {
             position: fixed;
             inset: 0;
