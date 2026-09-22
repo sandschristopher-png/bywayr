@@ -134,6 +134,7 @@ import { generateBywayLoopStops, launchNativeWalkingLoop } from '../lib/bywayLoo
     latitude: number;
     longitude: number;
     image_url?: string;
+    image_urls?: string[];
     user_id?: string;
     created_at?: string;
     isLiveOsm?: boolean;
@@ -944,8 +945,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const [showExitToast, setShowExitToast] = useState(false);
     const [uiToast, setUiToast] = useState<string | null>(null);
@@ -1284,8 +1285,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         previewMarkerRef.current.remove();
         previewMarkerRef.current = null;
       }
-      setImageFile(null);
-      setImagePreview(null);
+      setImageFiles([]);
+      setImagePreviews([]);
       setIsEditing(false);
       setIsModalOpen(false);
     };
@@ -1921,8 +1922,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         image_url: '',
       });
 
-      setImageFile(null);
-      setImagePreview(null);
+      setImageFiles([]);
+      setImagePreviews([]);
       setIsModalOpen(true);
       pushModalHistoryState('addSpotModal');
     };
@@ -1934,8 +1935,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       triggerHaptic(8);
       setIsEditing(true);
       setNewSpot(spot);
-      setImagePreview(spot.image_url || null);
-      setImageFile(null);
+      const existingImages = spot.image_urls && spot.image_urls.length > 0 ? spot.image_urls : (spot.image_url ? [spot.image_url] : []);
+      setImagePreviews(existingImages);
+      setImageFiles([]);
       setViewingSpot(null);
       setIsDiscussionModalOpen(false);
       setActiveSearchedSpot(null);
@@ -1952,10 +1954,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       triggerHaptic(15);
       setDeleting(true);
 
-      // Clean up orphaned image file from Supabase storage bucket
-      if (spot.image_url) {
+      // Clean up orphaned image files from Supabase storage bucket
+      const allSpotPhotos = spot.image_urls && spot.image_urls.length > 0 ? spot.image_urls : (spot.image_url ? [spot.image_url] : []);
+      for (const photoUrl of allSpotPhotos) {
         try {
-          const parts = spot.image_url.split('/spot-images/');
+          const parts = photoUrl.split('/spot-images/');
           if (parts[1]) {
             await supabase.storage.from('spot-images').remove([parts[1]]);
           }
@@ -1974,10 +1977,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     };
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        setImageFile(file);
-        setImagePreview(URL.createObjectURL(file));
+      if (e.target.files && e.target.files.length > 0) {
+        const selected = Array.from(e.target.files).slice(0, 4);
+        setImageFiles(selected);
+        setImagePreviews(selected.map((f) => URL.createObjectURL(f)));
       }
     };
 
@@ -1995,16 +1998,26 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       setSaving(true);
       let uploadedUrl = newSpot.image_url || '';
 
-      if (imageFile) {
+      let uploadedUrls: string[] = [];
+      if (imageFiles.length > 0) {
         setUploadingImage(true);
-        const fileToUpload = await compressImageToWebP(imageFile);
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
-        const filePath = `spots/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage.from('spot-images').upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage.from('spot-images').getPublicUrl(filePath);
-          uploadedUrl = publicUrlData.publicUrl;
+        try {
+          uploadedUrls = await Promise.all(
+            imageFiles.map(async (file) => {
+              const fileToUpload = await compressImageToWebP(file);
+              const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
+              const filePath = `spots/${fileName}`;
+              const { error: uploadError } = await supabase.storage
+                .from('spot-images')
+                .upload(filePath, fileToUpload, { contentType: 'image/webp', upsert: true });
+              if (uploadError) throw uploadError;
+              const { data: publicUrlData } = supabase.storage.from('spot-images').getPublicUrl(filePath);
+              return publicUrlData.publicUrl;
+            })
+          );
+          if (uploadedUrls.length > 0) uploadedUrl = uploadedUrls[0];
+        } catch (err) {
+          console.error('Image uploads failed:', err);
         }
         setUploadingImage(false);
       }
@@ -2023,6 +2036,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             latitude: newSpot.latitude,
             longitude: newSpot.longitude,
             image_url: uploadedUrl || null,
+            image_urls: uploadedUrls.length > 0 ? uploadedUrls : (newSpot as any).image_urls || (uploadedUrl ? [uploadedUrl] : []),
           })
           .eq('id', newSpot.id)
           .select();
@@ -2045,6 +2059,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             latitude: newSpot.latitude,
             longitude: newSpot.longitude,
             image_url: uploadedUrl || null,
+            image_urls: uploadedUrls.length > 0 ? uploadedUrls : (uploadedUrl ? [uploadedUrl] : []),
             user_id: activeUser.id,
           }])
           .select();
@@ -3731,12 +3746,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             }
           }
           @keyframes slideUp {
-            from { transform: translate3d(0, 32px, 0); opacity: 0; }
+            from { transform: translate3d(0, 24px, 0); opacity: 0; }
             to { transform: translate3d(0, 0, 0); opacity: 1; }
           }
           @keyframes slideDownOut {
             from { transform: translate3d(0, 0, 0); opacity: 1; }
-            to { transform: translate3d(0, 32px, 0); opacity: 0; }
+            to { transform: translate3d(0, 24px, 0); opacity: 0; }
           }
           @keyframes drawerInLeft {
             from { transform: translate3d(-100%, 0, 0); }
@@ -3745,14 +3760,6 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           @keyframes drawerOutLeft {
             from { transform: translate3d(0, 0, 0); }
             to { transform: translate3d(-100%, 0, 0); }
-          }
-          @keyframes drawerInRight {
-            from { transform: translate3d(100%, 0, 0); }
-            to { transform: translate3d(0, 0, 0); }
-          }
-          @keyframes drawerOutRight {
-            from { transform: translate3d(0, 0, 0); }
-            to { transform: translate3d(100%, 0, 0); }
           }
           @keyframes fadeIn {
             from { opacity: 0; }
@@ -3763,41 +3770,43 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             to { opacity: 0; }
           }
           @keyframes scaleUp {
-            0% { transform: scale3d(0.94, 0.94, 1); opacity: 0; }
+            0% { transform: scale3d(0.96, 0.96, 1); opacity: 0; }
             100% { transform: scale3d(1, 1, 1); opacity: 1; }
-          }
-          @keyframes scaleDownOut {
-            0% { transform: scale3d(1, 1, 1); opacity: 1; }
-            100% { transform: scale3d(0.94, 0.94, 1); opacity: 0; }
           }
 
           .drawer-left-enter {
-            animation: drawerInLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+            animation: drawerInLeft 0.26s cubic-bezier(0.2, 0.9, 0.3, 1) both;
             will-change: transform;
+            transform: translate3d(0,0,0);
             backface-visibility: hidden;
           }
           .drawer-left-exit {
-            animation: drawerOutLeft 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+            animation: drawerOutLeft 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
             will-change: transform;
-            backface-visibility: hidden;
-          }
-          .drawer-right-enter {
-            animation: drawerInRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-            will-change: transform;
-            backface-visibility: hidden;
-          }
-          .drawer-right-exit {
-            animation: drawerOutRight 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
-            will-change: transform;
+            transform: translate3d(0,0,0);
             backface-visibility: hidden;
           }
           .backdrop-enter {
-            animation: fadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+            animation: fadeIn 0.22s ease-out both;
             will-change: opacity;
+            transform: translateZ(0);
           }
           .backdrop-exit {
-            animation: fadeOut 0.24s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+            animation: fadeOut 0.18s ease-in forwards;
             will-change: opacity;
+            transform: translateZ(0);
+          }
+          .animate-slide-up {
+            animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+            will-change: transform, opacity;
+            transform: translate3d(0,0,0);
+            backface-visibility: hidden;
+          }
+          .animate-scale-up {
+            animation: scaleUp 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+            will-change: transform, opacity;
+            transform: translate3d(0,0,0);
+            backface-visibility: hidden;
           }
           @keyframes spin {
             from { transform: rotate(0deg); }
@@ -4792,7 +4801,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             pointerEvents: 'auto',
           }}
         >
-          {/* Field Notes (Left Drawer Trigger) */}
+          {/* Field Notes */}
           <button
             type="button"
             onClick={() => {
@@ -4808,22 +4817,27 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              padding: '6px 12px',
+              padding: '6px 10px',
               borderRadius: '20px',
               color: isDrawerOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
             <List style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Field Notes</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Notes</span>
           </button>
 
-          {/* Where to Walk Modal Trigger */}
+          {/* Field Journal */}
           <button
             type="button"
             onClick={() => {
               triggerHaptic(8);
-              setIsWalkModalOpen(true);
-              pushModalHistoryState('walkModal');
+              if (!currentUserRef.current) {
+                setIsAuthModalOpen(true);
+                pushModalHistoryState('auth');
+                return;
+              }
+              setIsProfileModalOpen(true);
+              pushModalHistoryState('profile');
             }}
             style={{
               display: 'flex',
@@ -4835,32 +4849,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               cursor: 'pointer',
               padding: '6px 10px',
               borderRadius: '20px',
-              color: walkTargetSpot ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+              color: isProfileModalOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
-            <Footprints style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Walk</span>
-          </button>
-
-          {/* Byway Loop Trigger */}
-          <button
-            type="button"
-            onClick={handleOpenBywayLoop}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '6px 10px',
-              borderRadius: '20px',
-              color: isLoopModalOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-            }}
-          >
-            <Repeat style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Loop</span>
+            <Book style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Journal</span>
           </button>
 
           {/* Center Primary Action: Add Spot */}
@@ -4896,18 +4889,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             <Plus style={{ width: '22px', height: '22px', strokeWidth: 2.5 }} />
           </button>
 
-          {/* Journal Trigger */}
+          {/* Walk Trigger */}
           <button
             type="button"
             onClick={() => {
               triggerHaptic(8);
-              if (!currentUserRef.current) {
-                setIsAuthModalOpen(true);
-                pushModalHistoryState('auth');
-                return;
-              }
-              setIsProfileModalOpen(true);
-              pushModalHistoryState('profile');
+              setIsWalkModalOpen(true);
+              pushModalHistoryState('walkModal');
             }}
             style={{
               display: 'flex',
@@ -4917,13 +4905,34 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              padding: '6px 12px',
+              padding: '6px 10px',
               borderRadius: '20px',
-              color: isDrawerOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+              color: walkTargetSpot ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
-            <Book style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Field Journal</span>
+            <Footprints style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Walk</span>
+          </button>
+
+          {/* Loop Trigger */}
+          <button
+            type="button"
+            onClick={handleOpenBywayLoop}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '6px 10px',
+              borderRadius: '20px',
+              color: isLoopModalOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+            }}
+          >
+            <Repeat style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Loop</span>
           </button>
         </div>
 
@@ -5057,7 +5066,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         {/* Proximity Walk Modal */}
         {isWalkModalOpen && (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.94)' : 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${uiBorder}`, borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
@@ -5486,9 +5495,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(28, 25, 23, 0.45)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
+              backgroundColor: 'rgba(28, 25, 23, 0.6)',
               display: 'flex',
               alignItems: isMobileLayout ? 'flex-end' : 'center',
               justifyContent: 'center',
@@ -5508,7 +5515,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 flexDirection: 'column',
                 boxSizing: 'border-box',
                 overflow: 'hidden',
-                transition: 'height 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+                transition: 'height 0.24s cubic-bezier(0.2, 0.9, 0.3, 1)',
+                willChange: 'height, transform',
+                transform: 'translateZ(0)',
                 width: '100%',
                 ...(isMobileLayout
                   ? {
@@ -5797,24 +5806,47 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   </div>
                 </div>
 
-                {viewingSpot.image_url && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '145px',
-                      borderRadius: '14px',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      backgroundColor: '#ecebe7',
-                    }}
-                  >
-                    <img
-                      src={viewingSpot.image_url}
-                      alt={viewingSpot.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const spotPhotos: string[] = (viewingSpot as any).image_urls && (viewingSpot as any).image_urls.length > 0
+                    ? (viewingSpot as any).image_urls
+                    : viewingSpot.image_url
+                    ? [viewingSpot.image_url]
+                    : [];
+
+                  if (spotPhotos.length === 0) return null;
+
+                  return (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '155px',
+                        display: 'flex',
+                        gap: '8px',
+                        overflowX: 'auto',
+                        scrollSnapType: 'x mandatory',
+                        scrollbarWidth: 'none',
+                        borderRadius: '14px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {spotPhotos.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`${viewingSpot.name} ${i + 1}`}
+                          style={{
+                            height: '100%',
+                            flex: spotPhotos.length > 1 ? '0 0 88%' : '0 0 100%',
+                            scrollSnapAlign: 'start',
+                            objectFit: 'cover',
+                            borderRadius: '14px',
+                            display: 'block',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {viewingSpot.description && (
                   <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.45, wordBreak: 'break-word' }}>
@@ -6247,20 +6279,20 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         {/* Add / Edit Spot Modal */}
         {isModalOpen && (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px', pointerEvents: 'auto' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.94)' : 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${uiBorder}`, borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px', pointerEvents: 'auto' }}>
               <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, flexShrink: 0 }}>
                 <X style={{ width: '18px', height: '18px' }} />
               </button>
 
               <div style={{ marginBottom: '8px', flexShrink: 0 }}>
                 <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
-                  {isEditing ? 'Edit Curated Spot' : 'Add Curated Spot'}
+                  {isEditing ? 'Edit Curated Spot' : 'Pin Spot'}
                 </h3>
               </div>
 
               <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Spot Name</label>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Place Name</label>
                   <input
                     type="text"
                     required
@@ -6318,10 +6350,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Description / Field Notes</label>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e', display: 'block', marginBottom: '3px' }}>Notes</label>
                   <textarea
                     rows={2}
-                    placeholder="Share a tip or description..."
+                    placeholder="Tips, recommendations, or how to visit..."
                     value={newSpot.description}
                     onChange={(e) => setNewSpot({ ...newSpot, description: e.target.value })}
                     style={{ width: '100%', boxSizing: 'border-box', fontSize: '12.5px', padding: '9px 11px', borderRadius: '12px', border: '1px solid #d6d3d1', outline: 'none', color: '#1c1917', resize: 'vertical' }}
@@ -6330,7 +6362,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e' }}>Photo</label>
+                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#57534e' }}>Photos (up to 4)</label>
                     <button type="button" onClick={handleModalLocate} disabled={isModalLocating} style={{ background: 'none', border: 'none', color: '#e05a47', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
                       {isModalLocating ? <Loader2 style={{ width: '11px', height: '11px', animation: 'spin 1s linear infinite' }} /> : <Crosshair style={{ width: '11px', height: '11px' }} />}
                       Use Current GPS
@@ -6339,12 +6371,16 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', backgroundColor: '#ecebe7', border: '1px dashed #d6d3d1', borderRadius: '12px', cursor: 'pointer', fontSize: '11.5px', color: '#57534e', fontWeight: 600 }}>
                     <Camera style={{ width: '15px', height: '15px', color: '#e05a47' }} />
-                    <span>{imageFile ? imageFile.name : imagePreview ? 'Change Photo' : 'Upload Photo'}</span>
-                    <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                    <span>{imageFiles.length > 0 ? `${imageFiles.length} photo(s) selected` : 'Select Photos'}</span>
+                    <input type="file" accept="image/*" multiple onChange={handleImageSelect} style={{ display: 'none' }} />
                   </label>
-                  {imagePreview && (
-                    <div style={{ marginTop: '6px', width: '100%', height: '90px', borderRadius: '10px', overflow: 'hidden' }}>
-                      <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {imagePreviews.length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginTop: '6px', paddingBottom: '2px' }}>
+                      {imagePreviews.map((src, i) => (
+                        <div key={i} style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid #d6d3d1' }}>
+                          <img src={src} alt={`Preview ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -6370,7 +6406,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     boxShadow: '0 4px 12px rgba(224, 90, 71, 0.25)'
                   }}
                 >
-                  {saving || uploadingImage ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Publish Curated Spot')}
+                  {saving || uploadingImage ? <Loader2 style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} /> : (isEditing ? 'Save Changes' : 'Save to Guide')}
                 </button>
               </form>
             </div>
@@ -6801,6 +6837,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               backgroundColor: 'rgba(28, 25, 23, 0.45)', 
               backdropFilter: 'blur(6px)', 
               WebkitBackdropFilter: 'blur(6px)', 
+              transform: 'translateZ(0)',
               zIndex: 100000, 
               display: 'flex', 
               justifyContent: 'flex-start', 
@@ -6813,7 +6850,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 width: '100%', 
                 maxWidth: '370px', 
                 pointerEvents: 'auto', 
-                backgroundColor: '#ffffff', 
+                backgroundColor: isDarkMode ? 'rgba(26, 24, 22, 0.94)' : 'rgba(255, 255, 255, 0.94)', 
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderRight: `1px solid ${uiBorder}`,
                 height: '100%', 
                 maxHeight: '100dvh',
                 boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', 
@@ -7146,7 +7186,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-slide-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: '#ffffff',
+                backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.95)' : 'rgba(255, 255, 255, 0.94)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                border: `1px solid ${uiBorder}`,
                 width: '100%',
                 maxWidth: isMobileLayout ? '480px' : '440px',
                 height: isMobileLayout ? '86dvh' : 'auto',
