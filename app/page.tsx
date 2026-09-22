@@ -1981,7 +1981,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       setImagePreviews([]);
       setIsModalOpen(true);
       pushModalHistoryState('addSpotModal');
-      showToast('Tip: Drag the red pin to fine-tune its exact location!');
+      showToast('Tip: Drag the pin to fine-tune its exact location!');
     };
     const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
       const activeUser = currentUserRef.current;
@@ -3666,27 +3666,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         }
       });
 
-      // Long-press / contextmenu / long-click to drop a draggable preview pin
-      let pressTimer: any = null;
-      initializedMap.on('mousedown', (e) => {
-        pressTimer = setTimeout(() => {
-          const { lng, lat } = e.lngLat;
-          dropDraggablePreviewPin(lat, lng);
-        }, 500); // 500ms hold triggers drop
-      });
-      initializedMap.on('mousemove', () => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-      });
-      initializedMap.on('touchstart', (e: any) => {
-        pressTimer = setTimeout(() => {
-          if (e.lngLat) {
-            const { lng, lat } = e.lngLat;
-            dropDraggablePreviewPin(lat, lng);
-          }
-        }, 600);
-      });
-      initializedMap.on('touchmove', () => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      // Right-click on desktop (or long-press/contextmenu) to drop a draggable preview pin
+      initializedMap.on('contextmenu', (e) => {
+        e.preventDefault(); // Prevent default browser context menu
+        const { lng, lat } = e.lngLat;
+        dropDraggablePreviewPin(lat, lng);
       });
 
       initializedMap.on('dragstart', () => {
