@@ -685,6 +685,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       window.addEventListener('resize', updateViewport);
       return () => window.removeEventListener('resize', updateViewport);
     }, []);
+
     const [isPlusSubscriber, setIsPlusSubscriber] = useState<boolean>(() => {
       if (typeof window !== 'undefined') {
         // Cache only honored as optimistic default; fetchUserProfile() re-validates from Supabase shortly after mount
@@ -1279,6 +1280,74 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         window.history.pushState({ bywayr_sheet: sheetKey }, '');
       }
     }, []);
+
+    // Long-press to drop a pin (Google Maps style)
+    useEffect(() => {
+      if (!mapReady || !map.current) return;
+      const m = map.current;
+      let lpTimer: ReturnType<typeof setTimeout> | null = null;
+      let startX = 0;
+      let startY = 0;
+
+      const start = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
+        const orig: any = e.originalEvent;
+        const cx = orig?.touches?.[0]?.clientX ?? orig?.clientX ?? e.point.x;
+        const cy = orig?.touches?.[0]?.clientY ?? orig?.clientY ?? e.point.y;
+        startX = cx;
+        startY = cy;
+        const px = e.point;
+        lpTimer = setTimeout(() => {
+          lpTimer = null;
+          const ll = m.unproject(px);
+          dropDraggablePreviewPin(ll.lat, ll.lng);
+        }, 450);
+      };
+
+      const cancel = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
+        if (!lpTimer) return;
+        if (e.type === 'mousemove' || e.type === 'touchmove') {
+          const orig: any = e.originalEvent;
+          const cx = orig?.touches?.[0]?.clientX ?? orig?.clientX;
+          const cy = orig?.touches?.[0]?.clientY ?? orig?.clientY;
+          if (typeof cx === 'number' && typeof cy === 'number') {
+            const dx = cx - startX;
+            const dy = cy - startY;
+            if (dx * dx + dy * dy > 81) {
+              clearTimeout(lpTimer);
+              lpTimer = null;
+            }
+            return;
+          }
+        }
+        clearTimeout(lpTimer);
+        lpTimer = null;
+      };
+
+      const cancelAny = () => {
+        if (lpTimer) {
+          clearTimeout(lpTimer);
+          lpTimer = null;
+        }
+      };
+
+      m.on('mousedown', start);
+      m.on('touchstart', start);
+      m.on('mousemove', cancel);
+      m.on('touchmove', cancel);
+      m.on('mouseup', cancel);
+      m.on('touchend', cancel);
+      m.on('dragstart', cancelAny);
+
+      return () => {
+        m.off('mousedown', start);
+        m.off('touchstart', start);
+        m.off('mousemove', cancel);
+        m.off('touchmove', cancel);
+        m.off('mouseup', cancel);
+        m.off('touchend', cancel);
+        m.off('dragstart', cancelAny);
+      };
+    }, [mapReady]);
 
     const handleCloseModal = () => {
       if (previewMarkerRef.current && !activeSearchedSpot) {
@@ -1886,7 +1955,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       setCoordsCopied(true);
       setTimeout(() => setCoordsCopied(false), 2000);
     };
-    const dropDraggablePreviewPin = async (lat: number, lon: number) => {
+    const dropDraggablePreviewPin = async (lat?: number, lon?: number) => {
       const activeUser = currentUserRef.current;
       if (!activeUser) {
         setIsAuthModalOpen(true);
@@ -1902,78 +1971,41 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       if (previewMarkerRef.current) previewMarkerRef.current.remove();
 
-      // Create a custom branded Bywayr draggable pin element
-      const pinColor = '#e05a47'; // Signature Bywayr terracotta
+      const center = map.current.getCenter();
+      const targetLat = lat ?? center.lat;
+      const targetLng = lon ?? center.lng;
+
+      // Static branded Bywayr pin — stays where dropped, map pans freely around it
+      const pinColor = '#e05a47';
       const pinEl = document.createElement('div');
       pinEl.className = 'bywayr-map-pin animate-spring-badge';
-      pinEl.style.cursor = 'grab';
-      pinEl.style.zIndex = '20';
-      pinEl.style.display = 'flex';
-      pinEl.style.flexDirection = 'column';
-      pinEl.style.alignItems = 'center';
-      pinEl.style.transform = 'translate3d(0,0,0)';
       pinEl.innerHTML = `
         <div style="
           width: 36px;
           height: 48px;
-          position: relative;
           filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
         ">
-          <!-- Teardrop shape -->
           <svg width="36" height="48" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
-            <!-- Outer white ring -->
             <circle cx="16" cy="15" r="7" fill="white"/>
-            <!-- Inner colored dot -->
             <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
           </svg>
-          <!-- Ground Shadow -->
-          <div style="
-            position: absolute;
-            bottom: -3px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 5px;
-            border-radius: 50%;
-            background-color: rgba(0,0,0,0.3);
-            filter: blur(1px);
-          "></div>
         </div>
       `;
 
-      const draggablePin = new maplibregl.Marker({ element: pinEl, anchor: 'bottom', draggable: true })
-        .setLngLat([lon, lat])
+      previewMarkerRef.current = new maplibregl.Marker({ element: pinEl, anchor: 'bottom' })
+        .setLngLat([targetLng, targetLat])
         .addTo(map.current);
 
-      previewMarkerRef.current = draggablePin;
-
-      // When user drags the pin, update the active target coordinates
-      draggablePin.on('dragend', async () => {
-        const lngLat = draggablePin.getLngLat();
-        triggerHaptic(8);
-        const geo = await reverseGeocode(lngLat.lat, lngLat.lng);
-        setNewSpot((prev) => ({
-          ...prev,
-          latitude: parseFloat(lngLat.lat.toFixed(6)),
-          longitude: parseFloat(lngLat.lng.toFixed(6)),
-          city: geo.city || prev.city || 'Las Vegas',
-          country: geo.country || prev.country || 'United States',
-          name: prev.name || geo.name || '',
-        }));
-      });
-
-      map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
-
-      const geo = await reverseGeocode(lat, lon);
+      const geo = await reverseGeocode(targetLat, targetLng);
       setNewSpot({
         name: geo.name || '',
         category: 'Hidden Gems',
         city: geo.city || 'Las Vegas',
         country: geo.country || 'United States',
         description: '',
-        latitude: parseFloat(lat.toFixed(6)),
-        longitude: parseFloat(lon.toFixed(6)),
+        latitude: parseFloat(targetLat.toFixed(6)),
+        longitude: parseFloat(targetLng.toFixed(6)),
         image_url: '',
       });
 
@@ -1981,7 +2013,6 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       setImagePreviews([]);
       setIsModalOpen(true);
       pushModalHistoryState('addSpotModal');
-      showToast('Tip: Drag the pin to fine-tune its exact location!');
     };
     const dropPreviewAndOpenModal = async (lat: number, lon: number, defaultName: string = '') => {
       const activeUser = currentUserRef.current;
