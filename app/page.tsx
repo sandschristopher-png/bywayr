@@ -621,7 +621,7 @@ export default function Home() {
       if (params.get('upgrade') === 'success') {
         setIsPlusSubscriber(true);
         localStorage.setItem('bywayr_is_plus', 'true');
-        showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. ??');
+        showToast('Welcome to Bywayr Plus! Your 3-day free trial is active. 👑');
         window.history.replaceState({}, '', window.location.pathname);
       }
     }, []);
@@ -1794,7 +1794,21 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
 
         if (previewMarkerRef.current) previewMarkerRef.current.remove();
-        previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
+
+        const pinColor = '#e05a47';
+        const pinEl = document.createElement('div');
+        pinEl.className = 'bywayr-map-pin';
+        pinEl.innerHTML = `
+          <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+            <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
+              <circle cx="16" cy="15" r="7" fill="white"/>
+              <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+            </svg>
+          </div>
+        `;
+
+        previewMarkerRef.current = new maplibregl.Marker({ element: pinEl, anchor: 'bottom' })
           .setLngLat([lon, lat])
           .addTo(map.current);
       }
@@ -1877,7 +1891,21 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
           if (map.current) {
             if (previewMarkerRef.current) previewMarkerRef.current.remove();
-            previewMarkerRef.current = new maplibregl.Marker({ color: '#e05a47' })
+
+            const pinColor = '#e05a47';
+            const pinEl = document.createElement('div');
+            pinEl.className = 'bywayr-map-pin';
+            pinEl.innerHTML = `
+              <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+                <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
+                  <circle cx="16" cy="15" r="7" fill="white"/>
+                  <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+                </svg>
+              </div>
+            `;
+
+            previewMarkerRef.current = new maplibregl.Marker({ element: pinEl, anchor: 'bottom' })
               .setLngLat([lon, lat])
               .addTo(map.current);
             map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
@@ -1975,18 +2003,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       const targetLat = lat ?? center.lat;
       const targetLng = lon ?? center.lng;
 
-      // Static branded Bywayr pin — stays where dropped, map pans freely around it
-      // NOTE: never animate `transform` on the marker root; MapLibre owns it for positioning.
       const pinColor = '#e05a47';
       const pinEl = document.createElement('div');
       pinEl.className = 'bywayr-map-pin';
       pinEl.innerHTML = `
-        <div class="bywayr-pin-drop" style="
-          width: 36px;
-          height: 48px;
-          filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
-        ">
-          <svg width="36" height="48" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+          <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
             <circle cx="16" cy="15" r="7" fill="white"/>
             <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
@@ -2032,8 +2054,22 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       if (previewMarkerRef.current) previewMarkerRef.current.remove();
 
-      const previewPin = new maplibregl.Marker({ color: '#e05a47' }).setLngLat([lon, lat]).addTo(map.current);
-      previewMarkerRef.current = previewPin;
+      const pinColor = '#e05a47';
+      const pinEl = document.createElement('div');
+      pinEl.className = 'bywayr-map-pin';
+      pinEl.innerHTML = `
+        <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+          <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
+            <circle cx="16" cy="15" r="7" fill="white"/>
+            <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+          </svg>
+        </div>
+      `;
+
+      previewMarkerRef.current = new maplibregl.Marker({ element: pinEl, anchor: 'bottom' })
+        .setLngLat([lon, lat])
+        .addTo(map.current);
 
       map.current.flyTo({ center: [lon, lat], zoom: 16, essential: true });
 
@@ -2212,7 +2248,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           if (isNewCountryUnlocked) {
             setTimeout(() => {
               triggerHaptic(30);
-              showToast(`? New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
+              showToast(`🎉 New Passport Stamp Unlocked: ${sanitized.country || 'Curated Territory'}!`);
             }, 600);
           }
         }
@@ -2239,14 +2275,15 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
       const pinColor = resolveCategoryColor(spot.category || 'Hidden Gems');
       const pinEl = document.createElement('div');
-      pinEl.style.width = '26px';
-      pinEl.style.height = '26px';
-      pinEl.style.cursor = 'pointer';
+      pinEl.className = 'bywayr-map-pin';
       pinEl.innerHTML = `
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="${pinColor}" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-          <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
-        </svg>
+        <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+          <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
+            <circle cx="16" cy="15" r="7" fill="white"/>
+            <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
+          </svg>
+        </div>
       `;
       pinEl.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2678,7 +2715,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               <circle cx="70" cy="70" r="57" fill="none" stroke={st.color} strokeWidth="1.3" strokeDasharray="3 2" />
               <text fill={st.color} fontSize={st.country.length > 12 ? '9.5' : '11'} fontWeight="900" letterSpacing="0.12em">
                 <textPath href={`#arc-top-${page}-${idx}`} startOffset="50%" textAnchor="middle">
-                  ? {st.country.toUpperCase()} ?
+                  ✦ {st.country.toUpperCase()} ✦
                 </textPath>
               </text>
               <text fill={st.color} fontSize="8" fontWeight="800" letterSpacing="0.15em" opacity="0.85">
@@ -2709,12 +2746,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               opacity: 0.9,
             }}
           >
-            {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' ? gold' : tier === 'silver' ? ' ? silver' : ''}
+            {st.spotCount} {st.spotCount === 1 ? 'pin' : 'pins'}{tier === 'gold' ? ' · gold' : tier === 'silver' ? ' · silver' : ''}
           </span>
         </div>
       );
     };
-
 
     const renderUnclaimedSlot = (idx: number, page: number) => (
       <div
@@ -2737,7 +2773,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               UNCLAIMED
             </text>
             <text x="70" y="86" textAnchor="middle" fill="#8c8273" fontSize="18">
-              ??
+              ✈
             </text>
           </svg>
         </div>
@@ -2780,13 +2816,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             <circle cx="70" cy="70" r="64" fill="#fffdfa" stroke="#0284c7" strokeWidth="3" />
             <circle cx="70" cy="70" r="57" fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
             <text x="70" y="48" textAnchor="middle" fill="#0284c7" fontSize="9" fontWeight="900" letterSpacing="0.12em">
-              ? SPONSORED ?
+              ✦ SPONSORED ✦
             </text>
             <text x="70" y="74" textAnchor="middle" fill="#0284c7" fontSize="11" fontWeight="900" fontFamily="sans-serif">
               FLIGHT DEALS
             </text>
             <text x="70" y="98" textAnchor="middle" fill="#0284c7" fontSize="7.5" fontWeight="800" letterSpacing="0.1em">
-              VIA AVIASALES ?
+              VIA AVIASALES ↗
             </text>
           </svg>
         </div>
@@ -2985,31 +3021,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         pinEl.style.alignItems = 'center';
         pinEl.style.transform = 'translate3d(0,0,0)';
         pinEl.innerHTML = `
-          <div style="
-            width: 32px;
-            height: 42px;
-            position: relative;
-          ">
-            <!-- Teardrop shape -->
-            <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 4px rgba(0,0,0,0.55));">
+          <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+            <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
-              <!-- Outer white ring -->
               <circle cx="16" cy="15" r="7" fill="white"/>
-              <!-- Inner colored dot -->
               <circle cx="16" cy="15" r="3.5" fill="${pinColor}"/>
             </svg>
-            <!-- Shadow -->
-            <div style="
-              position: absolute;
-              bottom: -2px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 14px;
-              height: 4px;
-              border-radius: 50%;
-              background-color: rgba(0,0,0,0.25);
-              filter: blur(1px);
-            "></div>
           </div>
         `;
         pinEl.addEventListener('click', (e) => {
@@ -3368,7 +3385,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               setIsPlusSubscriber(true);
               localStorage.setItem('bywayr_is_plus', 'true');
               setIsPlusModalOpen(false);
-              showToast('Thank you for upgrading to Bywayr Plus! ??');
+              showToast('Thank you for upgrading to Bywayr Plus! 👑');
             } else {
               showToast('Verifying subscription… please check Restore in a moment');
             }
@@ -3437,7 +3454,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('Journal exported to your device ?');
+      showToast('Journal exported to your device 📥');
     };
 
     const handleImportJournal = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3550,7 +3567,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('Pins exported as GPX ???');
+      showToast('Pins exported as GPX 🗺️');
     };
 
     const handleDeleteAccount = async () => {
@@ -3797,7 +3814,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     0%   { transform: translateY(-24px) scale(1.15); opacity: 0; }
     60%  { transform: translateY(0) scale(0.97); opacity: 1; }
     100% { transform: translateY(0) scale(1); opacity: 1; }
-  }Select-String -Path "app\globals.css" -Pattern "animate-spring-badge" -Context 2,6
+  }
           html, body {
             position: fixed;
             inset: 0;
@@ -4654,7 +4671,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     boxSizing: 'border-box'
                   }}
                 >
-                  <span>{cat.icon || '??'}</span>
+                  <span>{cat.icon || '🏷️'}</span>
                   <span>{cat.name}</span>
                   <span style={{
                     fontSize: '10.5px',
@@ -4921,7 +4938,6 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           </div>
         )}
 
-        {/* 3. Floating Bottom Navigation Dock */}
         {/* 3. Floating Bottom Navigation Dock */}
         <div
           style={{
@@ -6221,7 +6237,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                                     borderRadius: '4px',
                                   }}
                                 >
-                                  {authorTier === 'gold' ? '? Gold' : authorTier === 'silver' ? '? Silver' : `${authorSpots.length} pins`}
+                                  {authorTier === 'gold' ? '👑 Gold' : authorTier === 'silver' ? '🥈 Silver' : `${authorSpots.length} pins`}
                                 </span>
                               )}
                               <span
@@ -6754,7 +6770,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        ?? {city}
+                        📍 {city}
                       </button>
                     ))}
                   </div>
@@ -6798,7 +6814,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '10px', fontWeight: 700, color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 6px', borderRadius: '4px' }}>{c.tag || '[Tip]'}</span>
-                              <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>? {c.upvotes || 0}</span>
+                              <span style={{ fontSize: '10px', fontWeight: 600, color: '#a8a29e' }}>▲ {c.upvotes || 0}</span>
                             </div>
                             <p style={{ margin: 0, fontSize: '12.5px', color: '#44403c', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.content}</p>
                           </div>
@@ -8501,6 +8517,85 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             showToast('Category deleted');
           }}
         />
+
+        {/* Claim Username Modal */}
+        {isClaimUsernameModalOpen && (
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100045, padding: '16px' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', padding: '24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1917' }}>Choose Your Handle</h3>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c' }}>Claim a username for your Field Journal & stamps.</p>
+              <form onSubmit={handleClaimUsername} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#a8a29e', fontWeight: 700 }}>@</span>
+                  <input
+                    type="text"
+                    required
+                    value={claimUsername}
+                    onChange={(e) => setClaimUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    placeholder="username"
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px 10px 28px', borderRadius: '12px', border: '1px solid #d6d3d1', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={claimCountry}
+                  onChange={(e) => setClaimCountry(e.target.value)}
+                  placeholder="Home base / Country (optional)"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '12px', border: '1px solid #d6d3d1', fontSize: '13px', outline: 'none' }}
+                />
+                {claimUsernameError && <span style={{ color: '#e05a47', fontSize: '11.5px', fontWeight: 600 }}>{claimUsernameError}</span>}
+                <button
+                  type="submit"
+                  disabled={isSavingUsername || !claimUsername.trim()}
+                  style={{ width: '100%', backgroundColor: '#e05a47', color: '#ffffff', border: 'none', borderRadius: '14px', padding: '12px', fontSize: '13px', fontWeight: 700, cursor: isSavingUsername ? 'not-allowed' : 'pointer' }}
+                >
+                  {isSavingUsername ? 'Saving...' : profileSavedAt ? 'Handle Claimed!' : 'Confirm Handle'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Account Modal */}
+        {isDeleteAccountModalOpen && (
+          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100055, padding: '16px' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', padding: '24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#dc2626' }}>Delete Account</h3>
+                <button onClick={() => setIsDeleteAccountModalOpen(false)} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X style={{ width: '15px', height: '15px' }} />
+                </button>
+              </div>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#78716c', lineHeight: 1.45 }}>
+                This will permanently remove your profile, bookmarks, and comments. Type <strong>DELETE</strong> to confirm:
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '12px', border: '1px solid #fca5a5', fontSize: '13px', outline: 'none' }}
+              />
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeletingAccount || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+                style={{
+                  width: '100%',
+                  backgroundColor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? '#dc2626' : '#fecdd3',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '14px',
+                  padding: '12px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: deleteConfirmText.trim().toUpperCase() === 'DELETE' ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {isDeletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Edit Profile Modal */}
         {isEditProfileOpen && (
