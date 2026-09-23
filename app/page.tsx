@@ -4688,7 +4688,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               </div>
 
               {/* Right Group: Account / Profile Avatar with Hydration Lock */}
-              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, pointerEvents: 'auto', width: '38px', height: '38px', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, pointerEvents: 'auto', height: '38px', justifyContent: 'flex-end' }}>
                 {authLoading ? (
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: isDarkMode ? '#2c2826' : '#e7e5e4', opacity: 0.6 }} />
                 ) : currentUser ? (
