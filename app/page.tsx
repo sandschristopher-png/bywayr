@@ -7725,7 +7725,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           gap: '12px',
                           cursor: 'pointer',
                           flexShrink: 0,
-                          boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)',
+                        
                         }}
                       >
                         {spot.image_url && (
