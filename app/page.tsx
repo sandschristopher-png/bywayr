@@ -6409,6 +6409,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
                   return (
                     <div
+                      onWheel={(e) => {
+                        if (e.deltaY !== 0) {
+                          e.currentTarget.scrollLeft += e.deltaY;
+                          e.preventDefault();
+                        }
+                      }}
                       style={{
                         width: '100%',
                         height: '155px',
@@ -6419,6 +6425,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                         scrollbarWidth: 'none',
                         borderRadius: '14px',
                         flexShrink: 0,
+                        cursor: 'grab',
                       }}
                     >
                       {spotPhotos.map((url, i) => (
