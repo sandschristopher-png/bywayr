@@ -537,6 +537,137 @@ const IconFacebook = ({ size = 14, className = "" }: { size?: number; className?
   </svg>
 );
 
+// --- ONBOARDING TACTILE ARTIFACTS ---
+const ArtifactDiscovery = () => (
+  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <div style={{ position: 'absolute', width: '160px', height: '160px', borderRadius: '50%', backgroundColor: 'rgba(224, 90, 71, 0.12)', filter: 'blur(28px)' }} />
+    <div style={{
+      width: '180px',
+      backgroundColor: '#fffdfa',
+      borderRadius: '16px',
+      padding: '10px 10px 18px 10px',
+      boxShadow: '0 20px 40px -10px rgba(40, 32, 24, 0.22), 0 2px 6px rgba(0,0,0,0.06)',
+      border: '1px solid rgba(214, 204, 187, 0.6)',
+      transform: 'rotate(-3deg)',
+      position: 'relative'
+    }}>
+      <div style={{ position: 'absolute', top: '-10px', left: '20px', width: '12px', height: '28px', borderRadius: '6px', border: '2px solid #a8a29e', borderBottom: 'none', zIndex: 3 }} />
+      <div style={{
+        width: '100%',
+        height: '118px',
+        borderRadius: '10px',
+        backgroundColor: '#f5ebe1',
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <svg viewBox="0 0 160 110" width="100%" height="100%">
+          <rect width="160" height="110" fill="#fcf6ed" />
+          <path d="M10 110 L10 65 L28 65 L28 110 M32 110 L32 50 L50 50 L50 110 M55 110 L55 75 L75 75 L75 110 M110 110 L110 60 L135 60 L135 110 M140 110 L140 70 L155 70 L155 110" fill="#eddcd0" />
+          <path d="M60 45 Q 85 30 110 45 L115 55 L55 55 Z" fill="#e05a47" opacity="0.9" />
+          <circle cx="85" cy="65" r="7" fill="#f59e0b" />
+          <circle cx="85" cy="65" r="14" fill="#f59e0b" opacity="0.25" />
+          <line x1="85" y1="55" x2="85" y2="72" stroke="#78350f" strokeWidth="1.5" />
+          <rect x="70" y="80" width="30" height="30" fill="#8c7a6b" rx="2" />
+        </svg>
+        <span style={{ position: 'absolute', bottom: '6px', right: '8px', fontSize: '9px', fontWeight: 800, color: '#e05a47', backgroundColor: '#fff1ee', padding: '2px 6px', borderRadius: '6px', letterSpacing: '0.04em' }}>
+          LOCAL SECRET
+        </span>
+      </div>
+      <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.01em' }}>Nakano Alleyway</span>
+        <span style={{ fontSize: '9px', fontWeight: 600, color: '#a8a29e', fontFamily: 'monospace' }}>35.70° N</span>
+      </div>
+    </div>
+  </div>
+);
+
+const ArtifactPinMap = () => (
+  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <div style={{
+      width: '184px',
+      height: '184px',
+      borderRadius: '50%',
+      backgroundColor: '#fbf8f2',
+      border: '1.5px solid rgba(220, 210, 195, 0.8)',
+      boxShadow: '0 24px 44px -12px rgba(40, 32, 24, 0.18)',
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden'
+    }}>
+      <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.55 }}>
+        <circle cx="100" cy="100" r="82" fill="none" stroke="#d5c8b5" strokeWidth="1" strokeDasharray="3 3" />
+        <path d="M 20 100 Q 60 40, 100 80 T 180 70" fill="none" stroke="#cfc1ad" strokeWidth="1.2" />
+        <path d="M 10 130 Q 70 90, 110 120 T 190 120" fill="none" stroke="#cfc1ad" strokeWidth="1.2" />
+        <path d="M 30 160 Q 80 140, 120 155 T 180 170" fill="none" stroke="#cfc1ad" strokeWidth="1.2" />
+        <circle cx="100" cy="100" r="42" fill="rgba(224, 90, 71, 0.08)" stroke="#e05a47" strokeWidth="1" strokeDasharray="2 3" />
+      </svg>
+      <div style={{
+        position: 'absolute',
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(224, 90, 71, 0.2)',
+        animation: 'gpsRadarPulse 2s infinite'
+      }} />
+      <div style={{
+        position: 'relative',
+        zIndex: 2,
+        transform: 'translateY(-14px)',
+        filter: 'drop-shadow(0 14px 18px rgba(224, 90, 71, 0.38))',
+      }}>
+        <svg width="48" height="60" viewBox="0 0 32 42" fill="none">
+          <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="#e05a47"/>
+          <circle cx="16" cy="15" r="7.5" fill="#ffffff"/>
+          <circle cx="16" cy="15" r="3.8" fill="#e05a47"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+);
+
+const ArtifactPassportStamps = () => (
+  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <div style={{
+      position: 'absolute',
+      transform: 'translateX(-32px) translateY(8px) rotate(-8deg)',
+      width: '124px',
+      height: '124px',
+      opacity: 0.85,
+    }}>
+      <svg viewBox="0 0 140 140" width="100%" height="100%">
+        <circle cx="70" cy="70" r="62" fill="#fffdfa" stroke="#0d9488" strokeWidth="2.8" />
+        <circle cx="70" cy="70" r="55" fill="none" stroke="#0d9488" strokeWidth="1.2" strokeDasharray="3 2" />
+        <text x="70" y="48" textAnchor="middle" fill="#0d9488" fontSize="9" fontWeight="900" letterSpacing="0.14em">✦ PHILIPPINES ✦</text>
+        <rect x="22" y="56" width="96" height="26" rx="4" fill="#fffdfa" stroke="#0d9488" strokeWidth="1.4" />
+        <text x="70" y="73" textAnchor="middle" fill="#0d9488" fontSize="11" fontWeight="900" fontFamily="monospace">14 AUG 2026</text>
+        <text x="70" y="98" textAnchor="middle" fill="#0d9488" fontSize="8" fontWeight="800" letterSpacing="0.12em">• IMMIGRATION •</text>
+      </svg>
+    </div>
+    <div style={{
+      position: 'relative',
+      zIndex: 2,
+      transform: 'translateX(26px) translateY(-6px) rotate(5deg)',
+      width: '136px',
+      height: '136px',
+      filter: 'drop-shadow(0 14px 24px rgba(40, 32, 24, 0.14))',
+    }}>
+      <svg viewBox="0 0 140 140" width="100%" height="100%">
+        <circle cx="70" cy="70" r="64" fill="#fffdfa" stroke="#e05a47" strokeWidth="3.2" />
+        <circle cx="70" cy="70" r="57" fill="none" stroke="#e05a47" strokeWidth="1.4" strokeDasharray="4 2" />
+        <text x="70" y="48" textAnchor="middle" fill="#e05a47" fontSize="10.5" fontWeight="900" letterSpacing="0.16em">✦ JAPAN ✦</text>
+        <rect x="18" y="55" width="104" height="28" rx="5" fill="#fffdfa" stroke="#e05a47" strokeWidth="1.6" />
+        <text x="70" y="74" textAnchor="middle" fill="#e05a47" fontSize="12" fontWeight="900" fontFamily="monospace">22 SEP 2026</text>
+        <text x="70" y="98" textAnchor="middle" fill="#e05a47" fontSize="8.5" fontWeight="800" letterSpacing="0.14em">• ENTRY · PERMIT •</text>
+      </svg>
+    </div>
+  </div>
+);
+
 export default function Home() {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
@@ -952,13 +1083,35 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const [showExitToast, setShowExitToast] = useState(false);
+    const [exitToastExiting, setExitToastExiting] = useState(false);
     const [uiToast, setUiToast] = useState<string | null>(null);
+    const [uiToastExiting, setUiToastExiting] = useState(false);
     const [uiToastType, setUiToastType] = useState<'success' | 'error'>('success');
-  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
-    setUiToast(msg);
-    setUiToastType(type);
-    setTimeout(() => setUiToast(null), 3200);
-  };
+
+    const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+      setUiToast(msg);
+      setUiToastType(type);
+      setUiToastExiting(false);
+      setTimeout(() => {
+        setUiToastExiting(true);
+        setTimeout(() => {
+          setUiToast(null);
+          setUiToastExiting(false);
+        }, 280);
+      }, 2600);
+    }, []);
+
+    const triggerExitToast = useCallback(() => {
+      setShowExitToast(true);
+      setExitToastExiting(false);
+      setTimeout(() => {
+        setExitToastExiting(true);
+        setTimeout(() => {
+          setShowExitToast(false);
+          setExitToastExiting(false);
+        }, 280);
+      }, 1900);
+    }, []);
     const lastBackPressTime = useRef<number>(0);
     const isPopstateHandling = useRef(false);
 
@@ -1176,7 +1329,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
     const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-    const uiGlass = isDarkMode ? 'rgba(24, 22, 20, 0.76)' : 'rgba(255, 255, 255, 0.78)';
+    const uiGlass = isDarkMode ? 'rgba(20, 18, 16, 0.65)' : 'rgba(255, 255, 255, 0.58)';
     const uiSolid = isDarkMode ? '#121110' : '#ecebe7';
     const uiBorder = isDarkMode ? '#2a2826' : '#e7e5e4';
     const uiText = isDarkMode ? '#fafaf9' : '#1c1917';
@@ -1543,11 +1696,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             return;
           }
           lastBackPressTime.current = now;
-          setShowExitToast(true);
+          triggerExitToast();
           window.history.pushState(null, '', window.location.href);
-          setTimeout(() => {
-            setShowExitToast(false);
-          }, 2000);
         }
         setTimeout(() => {
           isPopstateHandling.current = false;
@@ -2701,7 +2851,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               CapApp.exitApp();
             } else {
               lastBackPressTime.current = now;
-              showToast('Press back again to exit');
+              triggerHaptic(8);
+              triggerExitToast();
             }
           }
         });
@@ -4003,6 +4154,16 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               overflow: hidden;
             }
           }
+          /* iOS-grade springy toast & HUD physics */
+          @keyframes toastSlideUp {
+            0% { transform: translate3d(0, 28px, 0) scale(0.92); opacity: 0; }
+            65% { transform: translate3d(0, -3px, 0) scale(1.02); opacity: 1; }
+            100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+          }
+          @keyframes toastFadeOut {
+            0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; filter: blur(0px); }
+            100% { transform: translate3d(0, 16px, 0) scale(0.95); opacity: 0; filter: blur(4px); }
+          }
           @keyframes slideUp {
             from { transform: translate3d(0, 24px, 0); opacity: 0; }
             to { transform: translate3d(0, 0, 0); opacity: 1; }
@@ -4010,6 +4171,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           @keyframes slideDownOut {
             from { transform: translate3d(0, 0, 0); opacity: 1; }
             to { transform: translate3d(0, 24px, 0); opacity: 0; }
+          }
+          .animate-toast-in {
+            animation: toastSlideUp 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            will-change: transform, opacity;
+          }
+          .animate-toast-out {
+            animation: toastFadeOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            will-change: transform, opacity;
           }
           @keyframes drawerInLeft {
             from { transform: translate3d(-100%, 0, 0); }
@@ -4308,6 +4477,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           </div>
         )}
+  {/* Smooth Animated UI Toast */}
   {uiToast && (
     <div style={{
       position: 'fixed',
@@ -4320,41 +4490,86 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       padding: '20px',
       boxSizing: 'border-box',
     }}>
-    <div className="animate-slide-up" style={{
-      backgroundColor: uiToastType === 'success' ? '#fffdf9' : '#fff8f5',
-      color: uiToastType === 'success' ? '#57534e' : '#c2410c',
-      padding: '22px 28px',
-      borderRadius: '22px',
-      boxShadow: '0 20px 50px -12px rgba(87, 83, 78, 0.35)',
-      border: `1.5px solid ${uiToastType === 'success' ? '#e7e0d3' : '#fed7aa'}`,
-      zIndex: 100060,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '10px',
-      textAlign: 'center',
-      maxWidth: 'min(420px, calc(100vw - 40px))',
-      boxSizing: 'border-box',
-      pointerEvents: 'none',
-    }}>
-      <div style={{
-        width: '40px', height: '40px', borderRadius: '50%',
-        backgroundColor: uiToastType === 'success' ? '#e05a47' : '#ea580c',
-        border: 'none',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#ffffff',
-        boxShadow: '0 4px 12px rgba(224, 90, 71, 0.35)',
-      }}>
-        {uiToastType === 'success' ? (
-          <Sparkle style={{ width: '19px', height: '19px' }} />
-        ) : (
-          <AlertCircle style={{ width: '19px', height: '19px' }} />
-        )}
+      <div
+        className={uiToastExiting ? 'animate-toast-out' : 'animate-toast-in'}
+        style={{
+          backgroundColor: uiToastType === 'success' ? 'rgba(255, 253, 249, 0.96)' : 'rgba(255, 248, 245, 0.96)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          color: uiToastType === 'success' ? '#1c1917' : '#c2410c',
+          padding: '16px 24px',
+          borderRadius: '24px',
+          boxShadow: '0 24px 48px -10px rgba(28, 25, 23, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+          border: `1px solid ${uiToastType === 'success' ? '#e7e0d3' : '#fed7aa'}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          textAlign: 'left',
+          maxWidth: 'min(380px, calc(100vw - 36px))',
+          boxSizing: 'border-box',
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          backgroundColor: uiToastType === 'success' ? '#e05a47' : '#ea580c',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#ffffff',
+          boxShadow: '0 4px 12px rgba(224, 90, 71, 0.35)',
+          flexShrink: 0,
+        }}>
+          {uiToastType === 'success' ? (
+            <Sparkle style={{ width: '18px', height: '18px' }} />
+          ) : (
+            <AlertCircle style={{ width: '18px', height: '18px' }} />
+          )}
+        </div>
+        <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.35, color: '#1c1917' }}>
+          {uiToast}
+        </span>
       </div>
-      <span style={{ fontSize: '15px', fontWeight: 700, lineHeight: 1.4 }}>
-        {uiToast}
-      </span>
     </div>
+  )}
+
+  {/* Premium Floating Back-Press Exit Capsule */}
+  {showExitToast && (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 'calc(84px + env(safe-area-inset-bottom, 0px))',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 100060,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        className={exitToastExiting ? 'animate-toast-out' : 'animate-toast-in'}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '9px',
+          backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.92)' : 'rgba(28, 25, 23, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          color: '#fafaf9',
+          padding: '10px 18px',
+          borderRadius: '24px',
+          fontSize: '12.5px',
+          fontWeight: 700,
+          boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.45)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          letterSpacing: '0.01em',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#e05a47' }} />
+        <span>Press back again to exit Bywayr</span>
+      </div>
     </div>
   )}
         {/* Offline Notification Banner */}
@@ -4399,15 +4614,18 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
             <div style={{
               backgroundColor: uiGlass,
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              transform: 'translateZ(0)',
-              willChange: 'backdrop-filter',
+              backdropFilter: 'blur(24px) saturate(190%) contrast(105%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(190%) contrast(105%)',
+              transform: 'translate3d(0, 0, 0)',
+              WebkitTransform: 'translate3d(0, 0, 0)',
+              isolation: 'isolate',
               padding: '0 10px 0 14px',
               borderRadius: showDropdown ? '28px 28px 0 0' : '28px',
               height: '56px',
-              boxShadow: isDarkMode ? '0 8px 32px rgba(0, 0, 0, 0.45)' : '0 8px 32px rgba(28, 25, 23, 0.12)',
-              border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.65)'}`,
+              boxShadow: isDarkMode 
+                ? '0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)' 
+                : '0 12px 32px rgba(28, 25, 23, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+              border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid rgba(255, 255, 255, 0.85)',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
@@ -4630,11 +4848,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               <button
                 onClick={() => setOnlyMySpots(!onlyMySpots)}
                 style={{
-                  backgroundColor: onlyMySpots ? '#fff1ee' : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                                  color: onlyMySpots ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                  border: onlyMySpots ? '1px solid #fecdd3' : `1px solid ${uiBorder}`,
+                  backgroundColor: onlyMySpots ? '#fff1ee' : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  transform: 'translate3d(0, 0, 0)',
+                  WebkitTransform: 'translate3d(0, 0, 0)',
+                  color: onlyMySpots ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
+                  border: onlyMySpots ? '1px solid #fecdd3' : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
                   height: '34px',
                   padding: '0 12px',
                   borderRadius: '18px',
@@ -4642,7 +4862,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   fontWeight: 600,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                  boxShadow: onlyMySpots ? '0 4px 12px rgba(224, 90, 71, 0.2)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
+                  boxShadow: onlyMySpots ? '0 4px 12px rgba(224, 90, 71, 0.2)' : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
@@ -4662,11 +4882,13 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 else setMaxRadiusKm(null);
               }}
               style={{
-                backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
+                backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
                 color: maxRadiusKm !== null ? '#0284c7' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                border: maxRadiusKm !== null ? '1px solid #bae6fd' : `1px solid ${uiBorder}`,
+                border: maxRadiusKm !== null ? '1px solid #bae6fd' : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
                 height: '34px',
                 padding: '0 12px',
                 borderRadius: '18px',
@@ -4674,7 +4896,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                boxShadow: maxRadiusKm !== null ? '0 4px 12px rgba(2, 132, 199, 0.2)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)',
+                boxShadow: maxRadiusKm !== null ? '0 4px 12px rgba(2, 132, 199, 0.2)' : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -4708,12 +4930,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   key={cat.label}
                   onClick={() => setSelectedCategory(cat.label)}
                   style={{ 
-                    backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? 'rgba(38, 35, 32, 0.72)' : 'rgba(255, 255, 255, 0.78)'),
-                    backdropFilter: 'blur(16px) saturate(160%)',
-                    WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-                    transform: 'translateZ(0)',
+                    backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    transform: 'translate3d(0, 0, 0)',
+                    WebkitTransform: 'translate3d(0, 0, 0)',
                     color: isSelected ? '#ffffff' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                    border: isSelected ? '1px solid #e05a47' : `1px solid ${uiBorder}`,
+                    border: isSelected ? '1px solid #e05a47' : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
+                    boxShadow: isSelected ? '0 6px 16px rgba(224, 90, 71, 0.35)' : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
                     height: '34px', 
                     padding: '0 12px', 
                     borderRadius: '18px', 
@@ -4721,7 +4945,6 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     fontWeight: 600, 
                     cursor: 'pointer', 
                     whiteSpace: 'nowrap', 
-                    boxShadow: isSelected ? '0 6px 16px rgba(224, 90, 71, 0.35)' : '0 10px 25px -5px rgba(28, 25, 23, 0.06), 0 0 1px 1px rgba(28, 25, 23, 0.03)', 
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '6px',
@@ -4755,11 +4978,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   key={cat.id}
                   onClick={() => setSelectedCategory(isSelected ? 'All' : cat.name)}
                   style={{
-                    backgroundColor: isSelected ? (cat.color || '#2563eb') : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
+                    backgroundColor: isSelected ? (cat.color || '#2563eb') : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    transform: 'translate3d(0, 0, 0)',
+                    WebkitTransform: 'translate3d(0, 0, 0)',
                     color: isSelected ? '#ffffff' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                    border: isSelected ? `1px solid ${cat.color || '#2563eb'}` : `1px solid ${uiBorder}`,
+                    border: isSelected ? `1px solid ${cat.color || '#2563eb'}` : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
+                    boxShadow: isSelected ? `0 6px 16px ${cat.color}40` : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
                     height: '34px',
                     padding: '0 12px',
                     borderRadius: '18px',
@@ -4767,7 +4993,6 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     fontWeight: 600,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    boxShadow: isSelected ? `0 6px 16px ${cat.color}40` : '0 10px 25px -5px rgba(28, 25, 23, 0.06)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
@@ -9214,23 +9439,23 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </div>
           </div>
         )}        
-        {/* Welcome / Onboarding Carousel â€” full screen */}
-          {showWelcome && (() => {
+        {/* Welcome / Onboarding Carousel — Editorial Explorer Edition */}
+        {showWelcome && (() => {
           const ONBOARDING_STEPS = [
             {
-              image: '/onboarding-1.png',
-              title: 'Skip the tourist traps',
-              body: 'Find the back-alley ramen bars, quiet rooftops, and hidden corners the big maps miss.',
+              artifact: <ArtifactDiscovery />,
+              title: 'Uncover what the algorithms miss.',
+              body: "Discover back-alley ramen bars, quiet rooftops, and neighborhood staples that never buy sponsored ads.",
             },
             {
-              image: '/onboarding-2.png',
-              title: 'Pin what you uncover',
-              body: 'Map your favorite finds and share them with fellow wanderers.',
+              artifact: <ArtifactPinMap />,
+              title: 'Pin what you uncover.',
+              body: 'Map personal field notes as you wander, organize by custom collections, and keep coordinates saved offline.',
             },
             {
-              image: '/onboarding-3.png',
-              title: 'Fill your passport',
-              body: 'Every country you pin earns a stamp in your Passport.',
+              artifact: <ArtifactPassportStamps />,
+              title: 'Collect real passport cachets.',
+              body: 'Every territory and country you pin earns an archival immigration stamp in your personal Field Passport.',
             },
           ];
 
@@ -9243,7 +9468,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             setTimeout(() => {
               dismissModalWithHistory(handleDismissWelcome);
               setTimeout(() => setIsOnboardingExiting(false), 400);
-            }, 450);
+            }, 400);
           };
 
           const goToNext = () => {
@@ -9267,170 +9492,234 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             <div
               className="animate-fade-in"
               onPointerDown={(e) => {
-    if ((e.target as HTMLElement).closest('button, a')) {
-      touchStartXRef.current = 0;
-      return;
-    }
-    touchStartXRef.current = e.clientX;
-  }}
-  onPointerUp={(e) => {
-    if (touchStartXRef.current === 0) return;
-    const dx = e.clientX - touchStartXRef.current;
-    touchStartXRef.current = 0;
-    if (Math.abs(dx) > 60) { if (dx < 0) goToNext(); else goToPrev(); }
-  }}
-  onKeyDown={(e) => {
-    if (e.key === 'ArrowRight') goToNext();
-    if (e.key === 'ArrowLeft') goToPrev();
-  }}
-              style={{ position: 'fixed', inset: 0, zIndex: 100030, padding: '0', boxSizing: 'border-box', backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isOnboardingExiting ? 0 : 1, transform: isOnboardingExiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                if ((e.target as HTMLElement).closest('button, a')) {
+                  touchStartXRef.current = 0;
+                  return;
+                }
+                touchStartXRef.current = e.clientX;
+              }}
+              onPointerUp={(e) => {
+                if (touchStartXRef.current === 0) return;
+                const dx = e.clientX - touchStartXRef.current;
+                touchStartXRef.current = 0;
+                if (Math.abs(dx) > 50) { if (dx < 0) goToNext(); else goToPrev(); }
+              }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 100030,
+                padding: '0',
+                boxSizing: 'border-box',
+                backgroundColor: 'rgba(24, 22, 20, 0.65)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: isOnboardingExiting ? 0 : 1,
+                transform: isOnboardingExiting ? 'scale(1.03)' : 'scale(1)',
+                transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
             >
-              <div className="onboarding-shell">
               <div
-                key={onboardingStep}
+                className="onboarding-shell"
                 style={{
-                  flex: '1 1 0%',
-                  minHeight: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingTop: 'max(env(safe-area-inset-top, 0px), 18px)',
-                  paddingBottom: '8px',
-                  animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.35s cubic-bezier(0.16, 1, 0.3, 1) both`,
+                  backgroundColor: '#fbf8f2',
+                  boxShadow: '0 32px 72px -16px rgba(18, 14, 11, 0.45)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <div
-                  style={{
-                    width: '60%',
-                    maxWidth: '230px',
-                    maxHeight: 'min(190px, 26vh)',
-                    flexShrink: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'visible',
-                    animation: 'onboardingImgFloat 4s ease-in-out infinite',
-                  }}
-                >
-                  <img
-                    src={step.image}
-                    alt={step.title}
-                    style={{
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                      width: 'auto',
-                      height: 'auto',
-                      display: 'block',
-                      objectFit: 'contain',
-                    }}
-                  />
+                {/* Subtle bank-note security watermark background */}
+                <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.28 }}>
+                  <defs>
+                    <pattern id="onboarding-mesh" width="48" height="48" patternUnits="userSpaceOnUse">
+                      <circle cx="24" cy="24" r="23" fill="none" stroke="#d5c7b3" strokeWidth="0.5" strokeDasharray="2 3" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#onboarding-mesh)" />
+                </svg>
+
+                {/* Top Header: Brand Name + Quick Skip */}
+                <div style={{
+                  padding: 'calc(max(env(safe-area-inset-top, 0px), 16px) + 6px) 24px 0 24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  zIndex: 10,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#e05a47' }} />
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#1c1917', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                      Bywayr Field Guide
+                    </span>
+                  </div>
+                  {!isLastStep && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); finishOnboarding(); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: '#a8a29e',
+                        cursor: 'pointer',
+                        padding: '4px 6px',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      Skip
+                    </button>
+                  )}
                 </div>
-              </div>
 
-              <div
-                key={`text-${onboardingStep}`}
-                style={{ padding: '10px 32px 0 32px', textAlign: 'center', flexShrink: 0, minHeight: '88px', animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both` }}
-              >
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.02em' }}>
-                  {step.title}
-                </h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#78716c', lineHeight: 1.55 }}>
-                  {step.body}
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '22px 0 10px 0' }}>
-                {ONBOARDING_STEPS.map((_, idx) => (
-                  <div
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (idx === onboardingStep) return;
-                      triggerHaptic(6);
-                      setSlideDirection(idx > onboardingStep ? 'forward' : 'back');
-                      setOnboardingStep(idx);
-                    }}
-                    style={{
-                      width: idx === onboardingStep ? '22px' : '8px',
-                      height: '8px',
-                      borderRadius: '4px',
-                      backgroundColor: idx === onboardingStep ? '#e05a47' : '#e7e5e4',
-                      cursor: 'pointer',
-                      transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease',
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div style={{ padding: '4px 24px calc(max(env(safe-area-inset-bottom, 0px), 20px) + 12px) 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                {/* Center Hero: Tactile Artifact */}
+                <div
+                  key={`art-${onboardingStep}`}
                   style={{
-                    width: '100%',
-                    backgroundColor: '#1c1917',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '16px',
-                    padding: '14px',
-                    fontSize: '14px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
+                    flex: '1 1 0%',
+                    minHeight: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '7px',
-                    boxShadow: '0 6px 16px rgba(28, 25, 23, 0.22)',
+                    position: 'relative',
+                    zIndex: 5,
+                    animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.35s cubic-bezier(0.16, 1, 0.3, 1) both`,
                   }}
                 >
-                  {isLastStep ? 'Open Your Field Guide' : 'Next'}
-                  {!isLastStep && <ArrowRight style={{ width: '15px', height: '15px' }} />}
-                </button>
+                  <div style={{ width: '220px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {step.artifact}
+                  </div>
+                </div>
 
-                {isLastStep ? (
+                {/* Editorial Copy Block */}
+                <div
+                  key={`text-${onboardingStep}`}
+                  style={{
+                    padding: '0 32px',
+                    textAlign: 'center',
+                    flexShrink: 0,
+                    minHeight: '100px',
+                    position: 'relative',
+                    zIndex: 5,
+                    animation: `${slideDirection === 'forward' ? 'onboardingSlideInForward' : 'onboardingSlideInBack'} 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both`,
+                  }}
+                >
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '22px', fontWeight: 800, color: '#1c1917', letterSpacing: '-0.025em', lineHeight: 1.25 }}>
+                    {step.title}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '13.5px', color: '#665e57', lineHeight: 1.55, maxWidth: '340px', marginInline: 'auto' }}>
+                    {step.body}
+                  </p>
+                </div>
+
+                {/* Progress Indicators (Spring Pill) */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '24px 0 14px 0', position: 'relative', zIndex: 5 }}>
+                  {ONBOARDING_STEPS.map((_, idx) => (
+                    <div
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (idx === onboardingStep) return;
+                        triggerHaptic(6);
+                        setSlideDirection(idx > onboardingStep ? 'forward' : 'back');
+                        setOnboardingStep(idx);
+                      }}
+                      style={{
+                        width: idx === onboardingStep ? '28px' : '7px',
+                        height: '7px',
+                        borderRadius: '4px',
+                        backgroundColor: idx === onboardingStep ? '#e05a47' : 'rgba(214, 204, 187, 0.7)',
+                        cursor: 'pointer',
+                        transition: 'width 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Bottom Actions */}
+                <div style={{
+                  padding: '0 24px calc(max(env(safe-area-inset-bottom, 0px), 20px) + 8px) 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  position: 'relative',
+                  zIndex: 5,
+                }}>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic(6);
-                      localStorage.setItem('bywayr_seen_welcome', 'true');
-                      setShowWelcome(false);
-                      setTimeout(() => {
-                        setMagicLinkSent(false);
-                        setIsAuthModalOpen(true);
-                        pushModalHistoryState('auth');
-                      }, 500);
-                    }}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); goToNext(); }}
                     style={{
-                      background: 'none',
+                      width: '100%',
+                      backgroundColor: '#1c1917',
+                      color: '#fafaf9',
                       border: 'none',
-                      color: '#a8a29e',
-                      fontSize: '12.5px',
-                      fontWeight: 600,
+                      borderRadius: '18px',
+                      padding: '14px',
+                      fontSize: '14px',
+                      fontWeight: 700,
                       cursor: 'pointer',
-                      padding: '6px',
-                      minHeight: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '7px',
+                      boxShadow: '0 8px 20px -4px rgba(28, 25, 23, 0.3)',
                     }}
                   >
-                    Already exploring with us? Sign in
+                    {isLastStep ? 'Open Your Field Guide' : 'Continue'}
+                    {!isLastStep && <ArrowRight style={{ width: '15px', height: '15px' }} />}
                   </button>
-                ) : (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); goToPrev(); }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#a8a29e',
-                      fontSize: '12.5px',
-                      fontWeight: 600,
-                      cursor: onboardingStep === 0 ? 'default' : 'pointer',
-                      opacity: onboardingStep === 0 ? 0.35 : 1,
-                      padding: '6px',
-                      minHeight: '32px',
-                    }}
-                  >
-                    Back
-                  </button>
-                )}
-              </div>
+
+                  {isLastStep ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic(6);
+                        localStorage.setItem('bywayr_seen_welcome', 'true');
+                        setShowWelcome(false);
+                        setTimeout(() => {
+                          setMagicLinkSent(false);
+                          setIsAuthModalOpen(true);
+                          pushModalHistoryState('auth');
+                        }, 400);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#8c827a',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: '6px',
+                        minHeight: '32px',
+                      }}
+                    >
+                      Already exploring with us? <strong style={{ color: '#e05a47' }}>Sign in</strong>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#a8a29e',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: onboardingStep === 0 ? 'default' : 'pointer',
+                        opacity: onboardingStep === 0 ? 0 : 1,
+                        padding: '6px',
+                        minHeight: '32px',
+                        pointerEvents: onboardingStep === 0 ? 'none' : 'auto',
+                      }}
+                    >
+                      Back
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
