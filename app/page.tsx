@@ -1115,6 +1115,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const lastBackPressTime = useRef<number>(0);
     const isPopstateHandling = useRef(false);
     const lastHistoryPushTime = useRef<number>(0);
+    const expectingDismissPop = useRef(false);
 
     const [authEmail, setAuthEmail] = useState('');
     const [authUsername, setAuthUsername] = useState('');
@@ -1690,6 +1691,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     useEffect(() => {
       const handlePopState = () => {
         isPopstateHandling.current = true;
+        if (expectingDismissPop.current) {
+          // This popstate is just our own modal-dismiss history.back() echoing back — ignore it
+          expectingDismissPop.current = false;
+          return;
+        }
         if (activeOverlayRef.current) {
           closeTopmostSheet();
         } else if (Date.now() - lastHistoryPushTime.current < 600) {
@@ -1718,6 +1724,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const dismissModalWithHistory = (closeFn: () => void) => {
       closeFn();
       if (!isPopstateHandling.current && typeof window !== 'undefined' && (window.history.state as any)?.bywayr_sheet) {
+        expectingDismissPop.current = true;
         window.history.back();
       }
     };
