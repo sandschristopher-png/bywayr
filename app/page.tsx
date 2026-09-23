@@ -5422,7 +5422,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Walk</span>
           </button>
 
-          {/* Loop Trigger */}
+          {/* Curated Route Trigger */}
           <button
             type="button"
             onClick={handleOpenBywayLoop}
@@ -5439,8 +5439,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               color: isLoopModalOpen ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
             }}
           >
-            <Repeat style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Loop</span>
+            <Compass style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em' }}>Route</span>
           </button>
         </div>
 
@@ -5587,12 +5587,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-slide-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.96)' : 'rgba(255, 255, 255, 0.96)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: `1px solid ${uiBorder}`,
+                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.74)' : 'rgba(255, 255, 255, 0.72)',
+                backdropFilter: 'blur(28px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                 borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
-                boxShadow: '0 -10px 40px rgba(28, 25, 23, 0.25)',
+                boxShadow: '0 24px 50px rgba(0, 0, 0, 0.25)',
                 width: '100%',
                 maxWidth: isMobileLayout ? '480px' : '410px',
                 maxHeight: isMobileLayout ? '82dvh' : '82vh',
@@ -5708,7 +5710,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           padding: '10px 12px',
                           borderRadius: '14px',
                           border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
-                          backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : '#ffffff',
+                          backgroundColor: walkTargetSpot?.id === spot.id ? 'rgba(255, 241, 238, 0.85)' : 'rgba(255, 255, 255, 0.65)',
                           cursor: 'pointer',
                           display: 'flex',
                           justifyContent: 'space-between',
@@ -5893,15 +5895,15 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         {/* Byway Loop Modal */}
         {isLoopModalOpen && (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '84vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.74)' : 'rgba(255, 255, 255, 0.72)', backdropFilter: 'blur(28px) saturate(190%)', WebkitBackdropFilter: 'blur(28px) saturate(190%)', transform: 'translate3d(0, 0, 0)', WebkitTransform: 'translate3d(0, 0, 0)', border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '84vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
-                    <Repeat style={{ width: '19px', height: '19px' }} />
+                    <Compass style={{ width: '19px', height: '19px' }} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Byway Loop</h3>
-                    <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Curated circular walking route</p>
+                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Curated Route</h3>
+                    <p style={{ margin: '1px 0 0 0', fontSize: '11.5px', color: '#78716c' }}>Walking tour connecting multiple neighborhood finds</p>
                   </div>
                 </div>
                 <button onClick={() => dismissModalWithHistory(() => setIsLoopModalOpen(false))} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -6023,7 +6025,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     boxShadow: '0 4px 14px rgba(224, 90, 71, 0.28)',
                   }}
                 >
-                  <Navigation2 style={{ width: '15px', height: '15px' }} /> Start Walk in Maps
+                  <Navigation2 style={{ width: '15px', height: '15px' }} /> Follow Route in Maps
                 </button>
               )}
             </div>
@@ -6051,28 +6053,31 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               onClick={(e) => e.stopPropagation()}
               style={{
                 pointerEvents: 'auto',
-                backgroundColor: '#ffffff',
-                boxShadow: '0 -10px 40px rgba(28, 25, 23, 0.25)',
+                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.88)' : 'rgba(255, 253, 249, 0.88)',
+                backdropFilter: 'blur(28px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.28)',
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
                 overflow: 'hidden',
                 transition: 'height 0.24s cubic-bezier(0.2, 0.9, 0.3, 1)',
                 willChange: 'height, transform',
-                transform: 'translateZ(0)',
                 width: '100%',
                 ...(isMobileLayout
                   ? {
                       maxWidth: '480px',
                       height: isSheetExpanded ? '94dvh' : '68dvh',
                       borderRadius: '28px 28px 0 0',
-                      border: 'none',
+                      borderTop: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                     }
                   : {
                       maxWidth: '430px',
                       height: isSheetExpanded ? '90vh' : '82vh',
                       borderRadius: '28px',
-                      border: '1px solid #e7e5e4',
+                      border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                     }),
               }}
             >
@@ -6709,8 +6714,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   flexDirection: 'column',
                   gap: '8px',
                   padding: '10px 18px calc(12px + env(safe-area-inset-bottom, 0px))',
-                  borderTop: '1px solid #e7e5e4',
-                  backgroundColor: '#ffffff',
+                  borderTop: isDarkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(231, 229, 228, 0.8)',
+                  backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.92)' : 'rgba(255, 253, 249, 0.92)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
                   boxSizing: 'border-box',
                 }}
               >
@@ -6846,12 +6853,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-slide-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.96)' : 'rgba(255, 255, 255, 0.96)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: `1px solid ${uiBorder}`,
+                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.88)' : 'rgba(255, 253, 249, 0.88)',
+                backdropFilter: 'blur(28px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                 borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
-                boxShadow: isMobileLayout ? '0 -10px 40px rgba(28, 25, 23, 0.3)' : '0 25px 50px -12px rgba(28, 25, 23, 0.35)',
+                boxShadow: isMobileLayout ? '0 -10px 40px rgba(0, 0, 0, 0.3)' : '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
                 width: '100%',
                 maxWidth: isMobileLayout ? '480px' : '410px',
                 maxHeight: isMobileLayout ? '88dvh' : '86vh',
@@ -7439,13 +7448,15 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 width: '100%', 
                 maxWidth: '370px', 
                 pointerEvents: 'auto', 
-                backgroundColor: isDarkMode ? 'rgba(26, 24, 22, 0.94)' : 'rgba(255, 255, 255, 0.94)', 
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                borderRight: `1px solid ${uiBorder}`,
+                backgroundColor: isDarkMode ? 'rgba(22, 20, 18, 0.74)' : 'rgba(255, 255, 255, 0.72)', 
+                backdropFilter: 'blur(28px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                borderRight: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                 height: '100%', 
                 maxHeight: '100dvh',
-                boxShadow: '10px 0 35px rgba(28, 25, 23, 0.18)', 
+                boxShadow: '10px 0 40px rgba(0, 0, 0, 0.22)', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 padding: 'clamp(14px, 4vw, 20px)', 
@@ -7725,14 +7736,16 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                         style={{
                           padding: '12px 13px',
                           borderRadius: '14px',
-                          border: '1px solid #e7e5e4',
-                          backgroundColor: '#ffffff',
+                          border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(255, 255, 255, 0.9)',
+                          backgroundColor: isDarkMode ? 'rgba(34, 30, 27, 0.60)' : 'rgba(255, 255, 255, 0.65)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '12px',
                           cursor: 'pointer',
                           flexShrink: 0,
-                          boxShadow: '0 1px 3px rgba(28, 25, 23, 0.03)',
+                          boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)',
                         }}
                       >
                         {spot.image_url && (
@@ -8773,9 +8786,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-scale-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: "#ffffff",
+                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.88)' : 'rgba(255, 253, 249, 0.88)',
+                backdropFilter: 'blur(28px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                transform: 'translate3d(0, 0, 0)',
+                WebkitTransform: 'translate3d(0, 0, 0)',
+                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                 borderRadius: "28px",
-                boxShadow: "0 25px 50px -12px rgba(28, 25, 23, 0.35)",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
                 width: "100%",
                 maxWidth: "380px",
                 padding: "24px 22px 20px 22px",
