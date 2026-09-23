@@ -557,6 +557,7 @@ export default function Home() {
 
     const [catBounce, setCatBounce] = useState<'left' | 'right' | null>(null);
     const lastBounceTimeRef = useRef<number>(0);
+    const lastZoomTimeRef = useRef<number>(0);
     const handleCategoryScroll = () => {
       const el = categoryScrollRef.current;
       if (!el) return;
@@ -611,6 +612,7 @@ export default function Home() {
     }, [stopZoomHold]);
 
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [authLoading, setAuthLoading] = useState(true);
     const currentUserRef = useRef<any>(null);
 
     const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -1080,35 +1082,36 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const myUserSpots = currentUser ? spots.filter((s: Spot) => s.user_id === currentUser.id) : [];
     const myPassportStamps = extractPassportStamps(myUserSpots);
 
-    const filteredSpots = spots
-      .filter((spot: Spot) => {
-        if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
-        if (selectedCountryFilter && (spot.country || '').toLowerCase() !== selectedCountryFilter.toLowerCase()) return false;
-        if (maxRadiusKm !== null) {
-          const anchorLat = userCoords ? userCoords.lat : (map.current ? map.current.getCenter().lat : 36.1699);
-          const anchorLng = userCoords ? userCoords.lng : (map.current ? map.current.getCenter().lng : -115.1398);
-          const dist = getDistanceFromLatLonInKm(anchorLat, anchorLng, spot.latitude, spot.longitude);
-          if (dist > maxRadiusKm) return false;
-        }
-        if (selectedCategory === 'All') return true;
-        return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
-      })
-      .sort((a, b) => {
-        if (drawerSortMode === 'nearest') {
-          const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
-          const refLat = 'lat' in center ? center.lat : 36.1699;
-          const refLng = 'lng' in center ? center.lng : -115.1398;
-          const distA = getDistanceFromLatLonInKm(refLat, refLng, a.latitude, a.longitude);
-          const distB = getDistanceFromLatLonInKm(refLat, refLng, b.latitude, b.longitude);
-          return distA - distB;
-        }
-        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        if (timeA !== timeB) return timeB - timeA;
-        const idA = a.id ? Number(a.id) : 0;
-        const idB = b.id ? Number(b.id) : 0;
-        return idB - idA;
-      });
+    const filteredSpots = useMemo(() => {
+      // Use stable userCoords or fixed defaults — NEVER read dynamic map.current.getCenter() during pans
+      const refLat = userCoords ? userCoords.lat : 36.1699;
+      const refLng = userCoords ? userCoords.lng : -115.1398;
+
+      return spots
+        .filter((spot: Spot) => {
+          if (onlyMySpots && currentUser && spot.user_id !== currentUser.id) return false;
+          if (selectedCountryFilter && (spot.country || '').toLowerCase() !== selectedCountryFilter.toLowerCase()) return false;
+          if (maxRadiusKm !== null) {
+            const dist = getDistanceFromLatLonInKm(refLat, refLng, spot.latitude, spot.longitude);
+            if (dist > maxRadiusKm) return false;
+          }
+          if (selectedCategory === 'All') return true;
+          return spot.category?.toLowerCase() === selectedCategory.toLowerCase();
+        })
+        .sort((a, b) => {
+          if (drawerSortMode === 'nearest') {
+            const distA = getDistanceFromLatLonInKm(refLat, refLng, a.latitude, a.longitude);
+            const distB = getDistanceFromLatLonInKm(refLat, refLng, b.latitude, b.longitude);
+            return distA - distB;
+          }
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          if (timeA !== timeB) return timeB - timeA;
+          const idA = a.id ? Number(a.id) : 0;
+          const idB = b.id ? Number(b.id) : 0;
+          return idB - idA;
+        });
+    }, [spots, onlyMySpots, currentUser?.id, selectedCountryFilter, maxRadiusKm, selectedCategory, drawerSortMode, userCoords]);
 
     const mustTryList = spots
       .filter((s: Spot) => s.id && mustTrySpotIds.includes(s.id))
@@ -1173,7 +1176,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
     const activeCategoryObject = CATEGORIES.find((c) => c.label.toLowerCase() === selectedCategory.toLowerCase());
 
-    const uiGlass = isDarkMode ? 'rgba(20, 18, 16, 0.96)' : 'rgba(255, 255, 255, 0.92)';
+    const uiGlass = isDarkMode ? 'rgba(24, 22, 20, 0.76)' : 'rgba(255, 255, 255, 0.78)';
     const uiSolid = isDarkMode ? '#121110' : '#ecebe7';
     const uiBorder = isDarkMode ? '#2a2826' : '#e7e5e4';
     const uiText = isDarkMode ? '#fafaf9' : '#1c1917';
@@ -1281,71 +1284,125 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       }
     }, []);
 
-    // Long-press to drop a pin (Google Maps style)
+    // Long-press to drop a pin (mobile only, zero-interference with drag, pinch, or edge back-swipes)
     useEffect(() => {
       if (!mapReady || !map.current) return;
       const m = map.current;
       let lpTimer: ReturnType<typeof setTimeout> | null = null;
-      let startX = 0;
-      let startY = 0;
+      let isMapMoving = false;
+      const EDGE_THRESHOLD = 80; // Comprehensive gesture bezel exclusion
 
-      const start = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
-        const orig: any = e.originalEvent;
-        const cx = orig?.touches?.[0]?.clientX ?? orig?.clientX ?? e.point.x;
-        const cy = orig?.touches?.[0]?.clientY ?? orig?.clientY ?? e.point.y;
-        startX = cx;
-        startY = cy;
-        const px = e.point;
-        lpTimer = setTimeout(() => {
-          lpTimer = null;
-          const ll = m.unproject(px);
-          dropDraggablePreviewPin(ll.lat, ll.lng);
-        }, 450);
-      };
-
-      const cancel = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
-        if (!lpTimer) return;
-        if (e.type === 'mousemove' || e.type === 'touchmove') {
-          const orig: any = e.originalEvent;
-          const cx = orig?.touches?.[0]?.clientX ?? orig?.clientX;
-          const cy = orig?.touches?.[0]?.clientY ?? orig?.clientY;
-          if (typeof cx === 'number' && typeof cy === 'number') {
-            const dx = cx - startX;
-            const dy = cy - startY;
-            if (dx * dx + dy * dy > 81) {
-              clearTimeout(lpTimer);
-              lpTimer = null;
-            }
-            return;
-          }
-        }
-        clearTimeout(lpTimer);
-        lpTimer = null;
-      };
-
-      const cancelAny = () => {
+      const abortTimer = () => {
         if (lpTimer) {
           clearTimeout(lpTimer);
           lpTimer = null;
         }
       };
 
-      m.on('mousedown', start);
-      m.on('touchstart', start);
-      m.on('mousemove', cancel);
-      m.on('touchmove', cancel);
-      m.on('mouseup', cancel);
-      m.on('touchend', cancel);
-      m.on('dragstart', cancelAny);
+      // When the map pans, zooms, or moves in ANY way, kill timer immediately
+      const onMapMotionStart = () => {
+        isMapMoving = true;
+        abortTimer();
+      };
+      const onMapMotionEnd = () => {
+        isMapMoving = false;
+        abortTimer();
+      };
+
+      m.on('movestart', onMapMotionStart);
+      m.on('move', abortTimer);
+      m.on('moveend', onMapMotionEnd);
+      m.on('dragstart', onMapMotionStart);
+      m.on('drag', abortTimer);
+      m.on('dragend', onMapMotionEnd);
+      m.on('zoomstart', onMapMotionStart);
+      m.on('zoom', abortTimer);
+      m.on('zoomend', onMapMotionEnd);
+
+      // Native DOM touch handler directly on the map container
+      const container = mapContainer.current;
+      if (!container) return;
+
+      let startTouchX = 0;
+      let startTouchY = 0;
+
+      const handleTouchStart = (e: TouchEvent) => {
+        // Multi-touch (pinch) or map actively moving -> never drop a pin
+        if (e.touches.length !== 1 || isMapMoving) {
+          abortTimer();
+          return;
+        }
+
+        const touch = e.touches[0];
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        // Ignore touches starting near ANY screen bezel (back gesture, notification shade, nav bar)
+        if (
+          touch.clientX <= EDGE_THRESHOLD ||
+          touch.clientX >= screenW - EDGE_THRESHOLD ||
+          touch.clientY <= 60 ||
+          touch.clientY >= screenH - 70
+        ) {
+          abortTimer();
+          return;
+        }
+
+        startTouchX = touch.clientX;
+        startTouchY = touch.clientY;
+
+        const rect = container.getBoundingClientRect();
+        const pointX = touch.clientX - rect.left;
+        const pointY = touch.clientY - rect.top;
+
+        abortTimer();
+        // True intentional stationary hold (700ms)
+        lpTimer = setTimeout(() => {
+          lpTimer = null;
+          if (isMapMoving) return;
+          const ll = m.unproject([pointX, pointY]);
+          dropDraggablePreviewPin(ll.lat, ll.lng);
+        }, 700);
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!lpTimer) return;
+        if (e.touches.length !== 1) {
+          abortTimer();
+          return;
+        }
+        const touch = e.touches[0];
+        const dx = touch.clientX - startTouchX;
+        const dy = touch.clientY - startTouchY;
+        // Any drag greater than 6 pixels is an intentional pan, cancel hold immediately
+        if (dx * dx + dy * dy > 36) {
+          abortTimer();
+        }
+      };
+
+      container.addEventListener('touchstart', handleTouchStart, { passive: true });
+      container.addEventListener('touchmove', handleTouchMove, { passive: true });
+      container.addEventListener('touchend', abortTimer, { passive: true });
+      container.addEventListener('touchcancel', abortTimer, { passive: true });
+      window.addEventListener('touchcancel', abortTimer, { passive: true });
 
       return () => {
-        m.off('mousedown', start);
-        m.off('touchstart', start);
-        m.off('mousemove', cancel);
-        m.off('touchmove', cancel);
-        m.off('mouseup', cancel);
-        m.off('touchend', cancel);
-        m.off('dragstart', cancelAny);
+        abortTimer();
+        m.off('movestart', onMapMotionStart);
+        m.off('move', abortTimer);
+        m.off('moveend', onMapMotionEnd);
+        m.off('dragstart', onMapMotionStart);
+        m.off('drag', abortTimer);
+        m.off('dragend', onMapMotionEnd);
+        m.off('zoomstart', onMapMotionStart);
+        m.off('zoom', abortTimer);
+        m.off('zoomend', onMapMotionEnd);
+
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchmove', handleTouchMove);
+        container.removeEventListener('touchend', abortTimer);
+        container.removeEventListener('touchcancel', abortTimer);
+        window.removeEventListener('touchcancel', abortTimer);
       };
     }, [mapReady]);
 
@@ -1404,6 +1461,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
 
     const closeTopmostSheet = useCallback(() => {
+      if (isEditProfileOpen) { setIsEditProfileOpen(false); return; }
+      if (isCreateCategoryOpen) { setIsCreateCategoryOpen(false); return; }
+      if (isTagModalOpen) { setIsTagModalOpen(false); return; }
+      if (isManageCategoriesOpen) { setIsManageCategoriesOpen(false); return; }
       if (isPassportBookOpen) { handleClosePassportBook(); return; }
       if (isPlusModalOpen) { setIsPlusModalOpen(false); return; }
       if (isDeleteAccountModalOpen) { setIsDeleteAccountModalOpen(false); return; }
@@ -1445,6 +1506,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         return;
       }
     }, [
+      isEditProfileOpen,
+      isCreateCategoryOpen,
+      isTagModalOpen,
+      isManageCategoriesOpen,
       isPassportBookOpen,
       isPlusModalOpen,
       isDeleteAccountModalOpen,
@@ -1797,7 +1862,6 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
         const pinColor = '#e05a47';
         const pinEl = document.createElement('div');
-        pinEl.className = 'bywayr-map-pin';
         pinEl.innerHTML = `
           <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
             <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2610,6 +2674,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         if (user) {
           fetchUserUpvotes(user.id);
         }
+        setAuthLoading(false);
+      }).catch(() => {
+        setAuthLoading(false);
       });
 
       if (Capacitor.isNativePlatform()) {
@@ -2622,10 +2689,27 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             }
           }
         });
+
+        // Native Android Hardware & Gesture Back Button Handler
+        CapApp.addListener('backButton', ({ canGoBack }) => {
+          if (activeOverlayRef.current) {
+            closeTopmostSheet();
+          } else {
+            const now = Date.now();
+            if (now - lastBackPressTime.current < 2000) {
+              setShowExitToast(false);
+              CapApp.exitApp();
+            } else {
+              lastBackPressTime.current = now;
+              showToast('Press back again to exit');
+            }
+          }
+        });
       }
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         const user = session?.user ?? null;
+        setAuthLoading(false);
         if (event === 'SIGNED_IN' && user) {
           setIsAuthModalOpen(false);
           setCurrentUser(user);
@@ -2994,17 +3078,14 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       };
     }, []);
 
-    // Render All Pinned Locations as DOM Markers
+    // Render All Pinned Locations as DOM Markers without animation jump
     useEffect(() => {
       if (!map.current || !mapReady) return;
 
-      // Remove existing spot markers
       spotMarkersRef.current.forEach((m) => m.remove());
       spotMarkersRef.current = [];
 
-      const spotsToRender = filteredSpots;
-
-    const validSpots: Spot[] = spotsToRender.filter((s: Spot) => {
+      const validSpots: Spot[] = filteredSpots.filter((s: Spot) => {
         const lat = Number(s.latitude);
         const lng = Number(s.longitude);
         return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
@@ -3019,9 +3100,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         pinEl.style.display = 'flex';
         pinEl.style.flexDirection = 'column';
         pinEl.style.alignItems = 'center';
-        pinEl.style.transform = 'translate3d(0,0,0)';
         pinEl.innerHTML = `
-          <div class="bywayr-pin-drop" style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
+          <div style="width: 28px; height: 38px; position: relative; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); cursor: pointer;">
             <svg width="28" height="38" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="${pinColor}"/>
               <circle cx="16" cy="15" r="7" fill="white"/>
@@ -3042,7 +3122,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
         spotMarkersRef.current.push(marker);
       });
-    }, [filteredSpots, spots, mapReady, customCategories, resolveCategoryColor, isDarkMode]);
+    }, [filteredSpots, mapReady, resolveCategoryColor]);
     // Apply map tile filter to canvas only, so markers keep true brand colors
 
     // Consolidated Single Geolocation Watcher (Battery & Thread Efficient)
@@ -3715,15 +3795,28 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         }
       });
 
-      // Right-click on desktop (or long-press/contextmenu) to drop a draggable preview pin
+      initializedMap.on('zoomstart', () => {
+        lastZoomTimeRef.current = Date.now();
+      });
+      initializedMap.on('zoomend', () => {
+        lastZoomTimeRef.current = Date.now();
+      });
+
+      // Desktop-only right click (button === 2). Never triggers on touch or mobile
       initializedMap.on('contextmenu', (e) => {
-        e.preventDefault(); // Prevent default browser context menu
+        e.preventDefault();
+        if (Capacitor.isNativePlatform() || (typeof window !== 'undefined' && 'ontouchstart' in window)) {
+          return;
+        }
+        const orig: any = e.originalEvent;
+        if (orig && orig.button !== 2) {
+          return;
+        }
         const { lng, lat } = e.lngLat;
         dropDraggablePreviewPin(lat, lng);
       });
 
       initializedMap.on('dragstart', () => {
-        setTimeout(() => setIsInteracting(false), 1500);
         setShowDropdown(false);
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
@@ -3806,14 +3899,18 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     return (
       <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', fontFamily: "var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", backgroundColor: isDarkMode ? '#0a0a0a' : '#ecebe7', transition: 'background-color 1.2s cubic-bezier(0.33, 1, 0.68, 1)' }}>
         <style jsx global>{`
-  .bywayr-map-pin .bywayr-pin-drop {
-    animation: bywayrPinDrop 420ms cubic-bezier(0.175, 0.885, 0.32, 1.35) both;
-    transform-origin: 50% 100%;
+  .bywayr-preview-pin .bywayr-pin-drop,
+  .bywayr-map-pin .bywayr-pin-drop,
+  .bywayr-pin-drop {
+    /* No bounce or vertical transform animations on map pins — keeps them strictly locked to ground coordinates */
+    animation: none !important;
+    transform: none !important;
   }
-  @keyframes bywayrPinDrop {
-    0%   { transform: translateY(-24px) scale(1.15); opacity: 0; }
-    60%  { transform: translateY(0) scale(0.97); opacity: 1; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
+  .bywayr-map-pin {
+    pointer-events: auto;
+  }
+  .category-desc-fade {
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
           html, body {
             position: fixed;
@@ -4289,7 +4386,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         {/* 2. Unified Search & Actions Bar */}
         <div style={{ 
           position: 'absolute', 
-          top: isOffline ? 'calc(max(min(env(safe-area-inset-top, 0px), 36px), 28px) + 30px)' : 'max(min(env(safe-area-inset-top, 0px), 36px), 28px)', 
+          top: isOffline ? 'calc(max(env(safe-area-inset-top, 16px), 16px) + 38px)' : 'calc(max(env(safe-area-inset-top, 16px), 16px) + 8px)', 
           left: '16px', 
           right: '16px', 
           maxWidth: '460px', 
@@ -4302,13 +4399,15 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           <div style={{ position: 'relative', width: '100%', pointerEvents: 'auto' }}>
             <div style={{
               backgroundColor: uiGlass,
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              transform: 'translateZ(0)',
+              willChange: 'backdrop-filter',
               padding: '0 10px 0 14px',
               borderRadius: showDropdown ? '28px 28px 0 0' : '28px',
               height: '56px',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06)',
-              border: `1px solid ${uiBorder}`,
+              boxShadow: isDarkMode ? '0 8px 32px rgba(0, 0, 0, 0.45)' : '0 8px 32px rgba(28, 25, 23, 0.12)',
+              border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.65)'}`,
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
@@ -4370,9 +4469,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 </div>
               </div>
 
-              {/* Right Group: Account / Profile Avatar */}
-              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, pointerEvents: 'auto' }}>
-                {currentUser ? (
+              {/* Right Group: Account / Profile Avatar with Hydration Lock */}
+              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, pointerEvents: 'auto', width: '38px', height: '38px', justifyContent: 'center' }}>
+                {authLoading ? (
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: isDarkMode ? '#2c2826' : '#e7e5e4', opacity: 0.6 }} />
+                ) : currentUser ? (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -4386,7 +4487,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                       border: '2px solid #e05a47',
                       borderRadius: '50%',
                       width: '38px',
-                    height: '38px',
+                      height: '38px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -4402,7 +4503,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     {userProfile?.avatar_url ? (
                       <img src={userProfile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
                     ) : (
-                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#e05a47', userSelect: 'none', pointerEvents: 'none' }}>{((userProfile?.username || userProfile?.full_name || 'E')[0]).toUpperCase()}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#e05a47', userSelect: 'none', pointerEvents: 'none' }}>
+                        {((userProfile?.username || userProfile?.full_name || currentUser?.email || 'U')[0]).toUpperCase()}
+                      </span>
                     )}
                   </button>
                 ) : (
@@ -4605,9 +4708,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   key={cat.label}
                   onClick={() => setSelectedCategory(cat.label)}
                   style={{ 
-                    backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? 'rgba(43, 41, 38, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
+                    backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? 'rgba(38, 35, 32, 0.72)' : 'rgba(255, 255, 255, 0.78)'),
+                    backdropFilter: 'blur(16px) saturate(160%)',
+                    WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                    transform: 'translateZ(0)',
                     color: isSelected ? '#ffffff' : (isDarkMode ? '#d6d3d1' : '#57534e'),
                     border: isSelected ? '1px solid #e05a47' : `1px solid ${uiBorder}`,
                     height: '34px', 
@@ -4730,9 +4834,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             </button>
           </div>
 
-          {/* Category Description Banner */}
+          {/* Category Description Banner with Smooth Transition */}
           {selectedCategory !== 'All' && activeCategoryObject && (
-            <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 12px', backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.92)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: `1px solid ${uiBorder}`, fontSize: '11.5px', color: isDarkMode ? '#d6d3d1' : '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
+            <div key={activeCategoryObject.label} className="animate-fade-in category-desc-fade" style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 12px', backgroundColor: isDarkMode ? 'rgba(38, 36, 33, 0.92)' : 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '14px', border: `1px solid ${uiBorder}`, fontSize: '11.5px', color: isDarkMode ? '#d6d3d1' : '#57534e', fontWeight: 500, boxShadow: '0 20px 40px -15px rgba(28, 25, 23, 0.08), 0 0 1px 1px rgba(28, 25, 23, 0.04)' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeCategoryObject.color, flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <strong>{activeCategoryObject.label}:</strong> {activeCategoryObject.desc}
@@ -5016,7 +5120,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>Journal</span>
           </button>
 
-          {/* Center Primary Action: Add Spot */}
+          {/* Center Primary Action: Add Spot (Fades out when modals open) */}
           <button
             type="button"
             onClick={() => {
@@ -5043,6 +5147,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               boxShadow: '0 4px 14px rgba(224, 90, 71, 0.4)',
               margin: '0 4px',
               flexShrink: 0,
+              opacity: isAnyOverlayActive ? 0.35 : 1,
+              pointerEvents: isAnyOverlayActive ? 'none' : 'auto',
+              transition: 'opacity 0.2s ease',
             }}
             title="Pin Curated Spot"
           >
@@ -5223,14 +5330,48 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           </div>
         )}
 
-        {/* Proximity Walk Modal */}
+        {/* Proximity Walk Modal — Universal Bottom Sheet */}
         {isWalkModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.94)' : 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${uiBorder}`, borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+          <div
+            className="animate-fade-in"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              dismissModalWithHistory(() => { setIsWalkModalOpen(false); setWalkSearchQuery(''); });
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: isMobileLayout ? 'flex-end' : 'center', justifyContent: 'center', zIndex: 100005, padding: isMobileLayout ? 0 : '16px', touchAction: 'none' }}
+          >
+            <div
+              className="animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: `1px solid ${uiBorder}`,
+                borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
+                boxShadow: '0 -10px 40px rgba(28, 25, 23, 0.25)',
+                width: '100%',
+                maxWidth: isMobileLayout ? '480px' : '410px',
+                maxHeight: isMobileLayout ? '82dvh' : '82vh',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '14px 20px 20px 20px',
+                position: 'relative',
+                boxSizing: 'border-box',
+                pointerEvents: 'auto',
+              }}
+            >
+              {isMobileLayout && (
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                  <div style={{ width: '38px', height: '4px', borderRadius: '2px', backgroundColor: '#d6d3d1' }} />
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
-                    <Footprints style={{ width: '19px', height: '19px' }} />
+                  <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
+                    <Footprints style={{ width: '18px', height: '18px' }} />
                   </div>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>Where to Walk?</h3>
@@ -6436,18 +6577,65 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
           </div>
         )}
 
-        {/* Add / Edit Spot Modal */}
+        {/* Add / Edit Spot Modal — Universal Bottom Sheet Shell */}
         {isModalOpen && (
-          <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.94)' : 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${uiBorder}`, borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(28, 25, 23, 0.35)', width: '100%', maxWidth: '380px', maxHeight: '82vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', overflowY: 'auto', gap: '10px', pointerEvents: 'auto' }}>
-              <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ position: 'absolute', top: '18px', right: '18px', border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, flexShrink: 0 }}>
-                <X style={{ width: '18px', height: '18px' }} />
-              </button>
-
-              <div style={{ marginBottom: '8px', flexShrink: 0 }}>
-                <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
+          <div
+            className="animate-fade-in"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              dismissModalWithHistory(handleCloseModal);
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(28, 25, 23, 0.55)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: isMobileLayout ? 'flex-end' : 'center',
+              justifyContent: 'center',
+              zIndex: 100005,
+              padding: isMobileLayout ? 0 : '16px',
+              touchAction: 'none',
+            }}
+          >
+            <div
+              className="animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: isDarkMode ? 'rgba(30, 28, 26, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: `1px solid ${uiBorder}`,
+                borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
+                boxShadow: isMobileLayout ? '0 -10px 40px rgba(28, 25, 23, 0.3)' : '0 25px 50px -12px rgba(28, 25, 23, 0.35)',
+                width: '100%',
+                maxWidth: isMobileLayout ? '480px' : '410px',
+                maxHeight: isMobileLayout ? '88dvh' : '86vh',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '14px 22px calc(18px + env(safe-area-inset-bottom, 0px)) 22px',
+                position: 'relative',
+                boxSizing: 'border-box',
+                overflowY: 'auto',
+                gap: '10px',
+                pointerEvents: 'auto',
+              }}
+            >
+              {isMobileLayout && (
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
+                  <div style={{ width: '38px', height: '4px', borderRadius: '2px', backgroundColor: '#d6d3d1' }} />
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexShrink: 0 }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.02em' }}>
                   {isEditing ? 'Edit Curated Spot' : 'Pin Spot'}
                 </h3>
+                <button onClick={() => dismissModalWithHistory(handleCloseModal)} style={{ border: 'none', background: '#ecebe7', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#78716c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
               </div>
 
               <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
