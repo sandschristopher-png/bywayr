@@ -119,7 +119,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
   Link as LinkIcon,
   Repeat,
 } from 'lucide-react';
-import { generateBywayLoopStops, launchNativeWalkingLoop } from '../lib/bywayLoop';
+import { generateBywayLoopStops, generateCuratedRouteWithFallback, launchNativeWalkingLoop } from '../lib/bywayLoop';
   import { AdMob } from '@capacitor-community/admob';
 
   const ADMOB_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888';
@@ -1358,6 +1358,50 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
         setIsSearching(true);
         try {
+          // 1. Direct Coordinates Pattern Detection (e.g. "36.1699, -115.1398" or "36.1699 -115.1398")
+          const coordRegex = /^\s*(-?\d{1,2}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)\s*$/;
+          const coordMatch = q.match(coordRegex);
+          if (coordMatch) {
+            const parsedLat = parseFloat(coordMatch[1]);
+            const parsedLon = parseFloat(coordMatch[2]);
+            if (!isNaN(parsedLat) && !isNaN(parsedLon) && Math.abs(parsedLat) <= 90 && Math.abs(parsedLon) <= 180) {
+              const geo = await reverseGeocode(parsedLat, parsedLon);
+              setSearchResults([{
+                display_name: `📍 Coordinates: ${parsedLat.toFixed(5)}, ${parsedLon.toFixed(5)}${geo.city ? ` (${geo.city})` : ''}`,
+                name: geo.name || `GPS Location (${parsedLat.toFixed(4)}, ${parsedLon.toFixed(4)})`,
+                lat: parsedLat,
+                lon: parsedLon,
+                address: { city: geo.city || 'Custom Coordinates', country: geo.country || '' },
+                isCoordinate: true,
+              }]);
+              setShowDropdown(true);
+              setIsSearching(false);
+              return;
+            }
+          }
+
+          // 2. Google Plus Code Pattern Detection (e.g. "8586Q2XJ+8J" or "Q2XJ+8J Las Vegas")
+          const isPlusCode = /[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}/i.test(q);
+          if (isPlusCode) {
+            try {
+              const plusRes = await fetchWithRetry(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=4&accept-language=en`,
+                { headers: { 'User-Agent': 'BywayrApp/1.0 (contact@bywayr.com)', 'Accept-Language': 'en' } }
+              );
+              const plusData = await plusRes.json();
+              if (Array.isArray(plusData) && plusData.length > 0) {
+                setSearchResults(plusData.map((item) => ({
+                  ...item,
+                  display_name: `📍 Plus Code: ${item.display_name}`,
+                })));
+                setShowDropdown(true);
+                setIsSearching(false);
+                return;
+              }
+            } catch {}
+          }
+
+          // 3. Local Community Spot Matches
           const localMatches = spots
             .filter(
               (spot) =>
@@ -1376,6 +1420,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             }))
             .slice(0, 4);
 
+          // 4. Viewport Bounded Nominatim Search
           const center = map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 };
           const spanDeg = Math.max(0.5, 20 / Math.pow(2, map.current ? map.current.getZoom() : 13.5));
           let west = center.lng - spanDeg, east = center.lng + spanDeg;
@@ -1389,9 +1434,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 'Accept-Language': 'en',
               },
             }
-          );        const osmData = await res.json();
+          );
+          const osmData = await res.json();
 
-          const combined = [...localMatches, ...(osmData || [])];
+          const combined = [...localMatches, ...(Array.isArray(osmData) ? osmData : [])];
           setSearchResults(combined);
           setShowDropdown(true);
         } catch (err) {
@@ -1983,17 +2029,22 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       }
     };
 
-    const handleOpenBywayLoop = () => {
+    const handleOpenBywayLoop = async () => {
       triggerHaptic(10);
       const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
       const origin = { lat: 'lat' in center ? center.lat : 36.1699, lng: 'lng' in center ? center.lng : -115.1398 };
 
       const radius = loopDuration === 30 ? 1.5 : loopDuration === 45 ? 2.5 : 3.5;
-      const stops = generateBywayLoopStops(origin, spots, 3, radius);
-
-      setLoopStops(stops);
       setIsLoopModalOpen(true);
       pushModalHistoryState('bywayLoop');
+
+      const immediate = generateBywayLoopStops(origin, spots, 3, radius);
+      setLoopStops(immediate);
+
+      if (immediate.length < 3) {
+        const enriched = await generateCuratedRouteWithFallback(origin, spots, 3, radius);
+        setLoopStops(enriched);
+      }
     };
 
     const handleSelectSearchResult = (item: any) => {
@@ -5910,13 +5961,18 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     <button
                       key={mins}
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         triggerHaptic(6);
                         setLoopDuration(mins);
                         const center = userCoords || (map.current ? map.current.getCenter() : { lat: 36.1699, lng: -115.1398 });
                         const origin = { lat: 'lat' in center ? center.lat : 36.1699, lng: 'lng' in center ? center.lng : -115.1398 };
                         const radius = mins === 30 ? 1.5 : mins === 45 ? 2.5 : 3.5;
-                        setLoopStops(generateBywayLoopStops(origin, spots, 3, radius));
+                        const immediate = generateBywayLoopStops(origin, spots, 3, radius);
+                        setLoopStops(immediate);
+                        if (immediate.length < 3) {
+                          const enriched = await generateCuratedRouteWithFallback(origin, spots, 3, radius);
+                          setLoopStops(enriched);
+                        }
                       }}
                       style={{
                         flex: 1,
