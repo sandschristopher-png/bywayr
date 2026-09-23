@@ -5581,20 +5581,16 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-slide-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.74)' : 'rgba(255, 255, 255, 0.72)',
-                backdropFilter: 'blur(28px) saturate(190%)',
-                WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
+                backgroundColor: isDarkMode ? '#1c1a18' : '#faf8f5',
+                border: isDarkMode ? '1px solid #2e2b27' : '1px solid #e7e2d9',
                 borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
-                boxShadow: '0 24px 50px rgba(0, 0, 0, 0.25)',
+                boxShadow: isMobileLayout ? '0 -12px 40px rgba(0, 0, 0, 0.25)' : '0 28px 64px -12px rgba(28, 25, 23, 0.3)',
                 width: '100%',
                 maxWidth: isMobileLayout ? '480px' : '410px',
-                maxHeight: isMobileLayout ? '82dvh' : '82vh',
+                maxHeight: isMobileLayout ? '84dvh' : '82vh',
                 display: 'flex',
                 flexDirection: 'column',
-                padding: '14px 20px 20px 20px',
+                padding: '16px 20px 20px 20px',
                 position: 'relative',
                 boxSizing: 'border-box',
                 pointerEvents: 'auto',
@@ -5704,7 +5700,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                           padding: '10px 12px',
                           borderRadius: '14px',
                           border: walkTargetSpot?.id === spot.id ? '1.5px solid #e05a47' : '1px solid #e7e5e4',
-                          backgroundColor: walkTargetSpot?.id === spot.id ? 'rgba(255, 241, 238, 0.85)' : 'rgba(255, 255, 255, 0.65)',
+                          backgroundColor: walkTargetSpot?.id === spot.id ? '#fff1ee' : (isDarkMode ? '#25221f' : '#ffffff'),
+                          boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)',
                           cursor: 'pointer',
                           display: 'flex',
                           justifyContent: 'space-between',
@@ -5889,7 +5886,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         {/* Byway Loop Modal */}
         {isLoopModalOpen && (
           <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 25, 23, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100005, padding: '16px', pointerEvents: 'none' }}>
-            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.74)' : 'rgba(255, 255, 255, 0.72)', backdropFilter: 'blur(28px) saturate(190%)', WebkitBackdropFilter: 'blur(28px) saturate(190%)', transform: 'translate3d(0, 0, 0)', WebkitTransform: 'translate3d(0, 0, 0)', border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)', width: '100%', maxWidth: '390px', maxHeight: '84vh', display: 'flex', flexDirection: 'column', padding: '20px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
+            <div className="animate-scale-up" style={{ backgroundColor: isDarkMode ? '#1c1a18' : '#faf8f5', border: isDarkMode ? '1px solid #2e2b27' : '1px solid #e7e2d9', borderRadius: '28px', boxShadow: '0 28px 64px -12px rgba(28, 25, 23, 0.3)', width: '100%', maxWidth: '400px', maxHeight: '84vh', display: 'flex', flexDirection: 'column', padding: '20px 22px', position: 'relative', boxSizing: 'border-box', pointerEvents: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '12px', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e05a47', flexShrink: 0 }}>
@@ -5943,9 +5940,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               {/* Stops Preview */}
               <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '42vh', paddingRight: '2px' }}>
                 {loopStops.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '24px 10px', color: '#78716c', fontSize: '12.5px' }}>
-                    <Compass style={{ width: '28px', height: '28px', color: '#a8a29e', margin: '0 auto 8px auto', display: 'block' }} />
-                    Not enough nearby pinned spots to form a loop in this range. Try increasing the duration or panning the map!
+                  <div style={{ textAlign: 'center', padding: '28px 16px', color: '#78716c', fontSize: '12.5px', backgroundColor: isDarkMode ? '#24211e' : '#f0ece3', borderRadius: '18px', border: isDarkMode ? '1px dashed #3a3632' : '1px dashed #d5cfc2' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#fff1ee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px auto', color: '#e05a47' }}>
+                      <Compass style={{ width: '22px', height: '22px' }} />
+                    </div>
+                    <div style={{ fontWeight: 700, color: '#1c1917', fontSize: '13.5px', marginBottom: '4px' }}>No Walking Route Nearby</div>
+                    <p style={{ margin: 0, lineHeight: 1.45, color: '#78716c' }}>Pan the map toward a town or city with pinned spots, or select a longer duration.</p>
                   </div>
                 ) : (
                   <>
@@ -7433,15 +7433,11 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 width: '100%', 
                 maxWidth: '370px', 
                 pointerEvents: 'auto', 
-                backgroundColor: isDarkMode ? 'rgba(22, 20, 18, 0.74)' : 'rgba(255, 255, 255, 0.72)', 
-                backdropFilter: 'blur(28px) saturate(190%)',
-                WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                borderRight: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
+                backgroundColor: isDarkMode ? '#1c1a18' : '#faf8f5', 
+                borderRight: isDarkMode ? '1px solid #2e2b27' : '1px solid #e7e2d9',
                 height: '100%', 
                 maxHeight: '100dvh',
-                boxShadow: '10px 0 40px rgba(0, 0, 0, 0.22)', 
+                boxShadow: '12px 0 44px -8px rgba(28, 25, 23, 0.22)', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 padding: 'clamp(14px, 4vw, 20px)', 
@@ -7721,10 +7717,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                         style={{
                           padding: '12px 13px',
                           borderRadius: '14px',
-                          border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(255, 255, 255, 0.9)',
-                          backgroundColor: isDarkMode ? 'rgba(34, 30, 27, 0.60)' : 'rgba(255, 255, 255, 0.65)',
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
+                          border: isDarkMode ? '1px solid #2e2b27' : '1px solid #ede8e0',
+                          backgroundColor: isDarkMode ? '#25221f' : '#ffffff',
+                          boxShadow: '0 2px 8px rgba(28, 25, 23, 0.04)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '12px',
