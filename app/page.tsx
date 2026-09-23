@@ -127,7 +127,7 @@ import { generateBywayLoopStops, generateCuratedRouteWithFallback, launchNativeW
   interface Spot {
     id?: string;
     name: string;
-    description: string;
+    description?: string;
     category: string;
     city: string;
     country?: string;
