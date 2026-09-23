@@ -4864,13 +4864,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               <button
                 onClick={() => setOnlyMySpots(!onlyMySpots)}
                 style={{
-                  backgroundColor: onlyMySpots ? '#fff1ee' : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
-                  backdropFilter: 'blur(20px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                  transform: 'translate3d(0, 0, 0)',
-                  WebkitTransform: 'translate3d(0, 0, 0)',
-                  color: onlyMySpots ? '#e05a47' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                  border: onlyMySpots ? '1px solid #fecdd3' : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
+                  backgroundColor: onlyMySpots ? '#fff1ee' : (isDarkMode ? '#22201d' : '#ffffff'),
+                  color: onlyMySpots ? '#e05a47' : (isDarkMode ? '#e7e5e4' : '#44403c'),
+                  border: onlyMySpots ? '1px solid #fecdd3' : (isDarkMode ? '1px solid #2e2b27' : '1px solid rgba(0, 0, 0, 0.06)'),
                   height: '34px',
                   padding: '0 12px',
                   borderRadius: '18px',
@@ -4878,7 +4874,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   fontWeight: 600,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                  boxShadow: onlyMySpots ? '0 4px 12px rgba(224, 90, 71, 0.2)' : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+                  boxShadow: onlyMySpots 
+                    ? '0 4px 12px rgba(224, 90, 71, 0.25)' 
+                    : (isDarkMode ? '0 2px 8px rgba(0, 0, 0, 0.4)' : '0 3px 10px rgba(28, 25, 23, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)'),
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
@@ -4898,13 +4896,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 else setMaxRadiusKm(null);
               }}
               style={{
-                backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
-                backdropFilter: 'blur(20px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                color: maxRadiusKm !== null ? '#0284c7' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                border: maxRadiusKm !== null ? '1px solid #bae6fd' : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
+                backgroundColor: maxRadiusKm !== null ? '#e0f2fe' : (isDarkMode ? '#22201d' : '#ffffff'),
+                color: maxRadiusKm !== null ? '#0284c7' : (isDarkMode ? '#e7e5e4' : '#44403c'),
+                border: maxRadiusKm !== null ? '1px solid #bae6fd' : (isDarkMode ? '1px solid #2e2b27' : '1px solid rgba(0, 0, 0, 0.06)'),
                 height: '34px',
                 padding: '0 12px',
                 borderRadius: '18px',
@@ -4912,7 +4906,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                boxShadow: maxRadiusKm !== null ? '0 4px 12px rgba(2, 132, 199, 0.2)' : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+                boxShadow: maxRadiusKm !== null 
+                  ? '0 4px 12px rgba(2, 132, 199, 0.25)' 
+                  : (isDarkMode ? '0 2px 8px rgba(0, 0, 0, 0.4)' : '0 3px 10px rgba(28, 25, 23, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)'),
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -4946,14 +4942,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   key={cat.label}
                   onClick={() => setSelectedCategory(cat.label)}
                   style={{ 
-                    backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? 'rgba(34, 30, 27, 0.65)' : 'rgba(255, 255, 255, 0.58)'),
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                    transform: 'translate3d(0, 0, 0)',
-                    WebkitTransform: 'translate3d(0, 0, 0)',
-                    color: isSelected ? '#ffffff' : (isDarkMode ? '#d6d3d1' : '#57534e'),
-                    border: isSelected ? '1px solid #e05a47' : (isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.8)'),
-                    boxShadow: isSelected ? '0 6px 16px rgba(224, 90, 71, 0.35)' : '0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+                    backgroundColor: isSelected ? '#e05a47' : (isDarkMode ? '#22201d' : '#ffffff'),
+                    color: isSelected ? '#ffffff' : (isDarkMode ? '#e7e5e4' : '#44403c'),
+                    border: isSelected ? '1px solid #e05a47' : (isDarkMode ? '1px solid #2e2b27' : '1px solid rgba(0, 0, 0, 0.06)'),
+                    boxShadow: isSelected 
+                      ? '0 6px 16px rgba(224, 90, 71, 0.35)' 
+                      : (isDarkMode ? '0 2px 8px rgba(0, 0, 0, 0.4)' : '0 3px 10px rgba(28, 25, 23, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)'),
                     height: '34px', 
                     padding: '0 12px', 
                     borderRadius: '18px', 
@@ -4973,7 +4967,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                   <span style={{ 
                     fontSize: '10.5px', 
                     fontWeight: 700, 
-                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.22)' : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'), 
+                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.22)' : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : '#f5f4f0'), 
                     padding: '1px 6px', 
                     borderRadius: '10px',
                     color: isSelected ? '#fafaf9' : (isDarkMode ? '#a8a29e' : '#78716c')
@@ -6039,7 +6033,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(28, 25, 23, 0.6)',
+              backgroundColor: 'rgba(28, 25, 23, 0.24)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
               display: 'flex',
               alignItems: isMobileLayout ? 'flex-end' : 'center',
               justifyContent: 'center',
@@ -6053,12 +6047,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               onClick={(e) => e.stopPropagation()}
               style={{
                 pointerEvents: 'auto',
-                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.88)' : 'rgba(255, 253, 249, 0.88)',
-                backdropFilter: 'blur(28px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.28)',
+                backgroundColor: isDarkMode ? '#1c1a18' : '#ffffff',
+                boxShadow: isMobileLayout ? '0 -12px 40px rgba(0, 0, 0, 0.22)' : '0 25px 60px -12px rgba(28, 25, 23, 0.28)',
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
@@ -6066,18 +6056,17 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                 transition: 'height 0.24s cubic-bezier(0.2, 0.9, 0.3, 1)',
                 willChange: 'height, transform',
                 width: '100%',
+                border: isDarkMode ? '1px solid #2e2b27' : '1px solid #ede8e0',
                 ...(isMobileLayout
                   ? {
                       maxWidth: '480px',
                       height: isSheetExpanded ? '94dvh' : '68dvh',
                       borderRadius: '28px 28px 0 0',
-                      borderTop: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                     }
                   : {
                       maxWidth: '430px',
                       height: isSheetExpanded ? '90vh' : '82vh',
                       borderRadius: '28px',
-                      border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
                     }),
               }}
             >
@@ -6838,7 +6827,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(28, 25, 23, 0.55)',
+              backgroundColor: 'rgba(28, 25, 23, 0.24)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               display: 'flex',
@@ -6853,20 +6842,16 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-slide-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.88)' : 'rgba(255, 253, 249, 0.88)',
-                backdropFilter: 'blur(28px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
+                backgroundColor: isDarkMode ? '#1c1a18' : '#ffffff',
+                border: isDarkMode ? '1px solid #2e2b27' : '1px solid #ede8e0',
                 borderRadius: isMobileLayout ? '28px 28px 0 0' : '28px',
-                boxShadow: isMobileLayout ? '0 -10px 40px rgba(0, 0, 0, 0.3)' : '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+                boxShadow: isMobileLayout ? '0 -12px 40px rgba(0, 0, 0, 0.22)' : '0 28px 64px -12px rgba(28, 25, 23, 0.28)',
                 width: '100%',
                 maxWidth: isMobileLayout ? '480px' : '410px',
                 maxHeight: isMobileLayout ? '88dvh' : '86vh',
                 display: 'flex',
                 flexDirection: 'column',
-                padding: '14px 22px calc(18px + env(safe-area-inset-bottom, 0px)) 22px',
+                padding: '16px 22px calc(18px + env(safe-area-inset-bottom, 0px)) 22px',
                 position: 'relative',
                 boxSizing: 'border-box',
                 overflowY: 'auto',
@@ -7807,7 +7792,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(28, 25, 23, 0.5)',
+              backgroundColor: 'rgba(28, 25, 23, 0.24)',
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
               display: 'flex',
@@ -8766,9 +8751,9 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
             style={{
               position: "fixed",
               inset: 0,
-              backgroundColor: "rgba(28, 25, 23, 0.55)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
+              backgroundColor: "rgba(28, 25, 23, 0.24)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -8786,14 +8771,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
               className="animate-scale-up"
               onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: isDarkMode ? 'rgba(24, 22, 20, 0.88)' : 'rgba(255, 253, 249, 0.88)',
-                backdropFilter: 'blur(28px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                transform: 'translate3d(0, 0, 0)',
-                WebkitTransform: 'translate3d(0, 0, 0)',
-                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.85)',
+                backgroundColor: isDarkMode ? "#1c1a18" : "#ffffff",
+                border: isDarkMode ? "1px solid #2e2b27" : "1px solid #ede8e0",
                 borderRadius: "28px",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+                boxShadow: "0 28px 64px -12px rgba(28, 25, 23, 0.28)",
                 width: "100%",
                 maxWidth: "380px",
                 padding: "24px 22px 20px 22px",
