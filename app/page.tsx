@@ -1114,6 +1114,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     }, []);
     const lastBackPressTime = useRef<number>(0);
     const isPopstateHandling = useRef(false);
+    const lastHistoryPushTime = useRef<number>(0);
 
     const [authEmail, setAuthEmail] = useState('');
     const [authUsername, setAuthUsername] = useState('');
@@ -1433,6 +1434,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
 
     const pushModalHistoryState = useCallback((sheetKey: string) => {
       if (typeof window !== 'undefined') {
+        lastHistoryPushTime.current = Date.now();
         window.history.pushState({ bywayr_sheet: sheetKey }, '');
       }
     }, []);
@@ -1671,7 +1673,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       isAuthModalOpen,
       shareDialogSpot,
       shareDialogCustomUrl,
-      isWalkModalOpen,
+     isWalkModalOpen,
+      isLoopModalOpen,
       viewingProfile,
       isDiscussionModalOpen,
       isModalOpen,
@@ -1689,6 +1692,10 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         isPopstateHandling.current = true;
         if (activeOverlayRef.current) {
           closeTopmostSheet();
+        } else if (Date.now() - lastHistoryPushTime.current < 600) {
+          // Spurious popstate racing a programmatic modal push — re-anchor and bail
+          window.history.pushState(null, '', window.location.href);
+          return;
         } else {
           const now = Date.now();
           if (now - lastBackPressTime.current < 2000) {
