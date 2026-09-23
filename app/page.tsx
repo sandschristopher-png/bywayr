@@ -4738,11 +4738,12 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                       pushModalHistoryState('auth');
                     }}
                     style={{
-                      backgroundColor: '#1c1917',
-                      border: 'none',
-                      borderRadius: '18px',
-                      padding: '7px 12px',
-                      color: '#fafaf9',
+                      backgroundColor: '#fff1ee',
+                      border: '2px solid #e05a47',
+                      borderRadius: '19px',
+                      height: '38px',
+                      padding: '0 14px',
+                      color: '#e05a47',
                       fontSize: '12.5px',
                       fontWeight: 600,
                       lineHeight: 1,
@@ -4754,6 +4755,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       pointerEvents: 'auto',
+                      boxShadow: '0 2px 8px rgba(224, 90, 71, 0.2)',
                     }}
                   >
                     <LogIn style={{ width: '13px', height: '13px', display: 'block' }} /> <span>Sign In</span>
