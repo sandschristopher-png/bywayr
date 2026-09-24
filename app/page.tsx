@@ -120,6 +120,7 @@ async function fetchWithRetry(resource: RequestInfo | URL, options: RequestInit 
   Repeat,
 } from 'lucide-react';
 import { generateBywayLoopStops, generateCuratedRouteWithFallback, launchNativeWalkingLoop } from '../lib/bywayLoop';
+import { getCachedTile, cacheTile, downloadAreaTiles } from '../lib/offlinetiles';
   import { AdMob } from '@capacitor-community/admob';
 
   const ADMOB_NATIVE_AD_UNIT_ID = 'ca-app-pub-9375478521280538/5358655888';
@@ -1087,6 +1088,8 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
     const [uiToast, setUiToast] = useState<string | null>(null);
     const [uiToastExiting, setUiToastExiting] = useState(false);
     const [uiToastType, setUiToastType] = useState<'success' | 'error'>('success');
+    const [isDownloadingTiles, setIsDownloadingTiles] = useState(false);
+    const [tileDownloadProgress, setTileDownloadProgress] = useState<{ total: number; completed: number; percent: number } | null>(null);
 
     const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
       setUiToast(msg);
@@ -3866,6 +3869,7 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
       showToast('Pins exported as GPX 🗺️');
     };
 
+
     const handleDeleteAccount = async () => {
       const activeUser = currentUserRef.current;
       if (!activeUser || deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
@@ -3889,6 +3893,35 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         setIsDeleteAccountModalOpen(false);
         setIsProfileModalOpen(false);
         setIsDeletingAccount(false);
+      }
+    };
+
+    const handleDownloadCurrentArea = async () => {
+      if (!map.current || isDownloadingTiles) return;
+      triggerHaptic(10);
+      setIsDownloadingTiles(true);
+      setTileDownloadProgress({ total: 0, completed: 0, percent: 0 });
+
+      try {
+        const bounds = map.current.getBounds();
+        const bbox = {
+          west: bounds.getWest(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          north: bounds.getNorth(),
+        };
+
+        const count = await downloadAreaTiles(bbox, 13, 16, (prog) => {
+          setTileDownloadProgress(prog);
+        });
+
+        showToast(`Saved ${count} tiles for offline exploration! 🗺️`);
+      } catch (err) {
+        console.error('Offline area download failed:', err);
+        showToast('Download interrupted. Check network and retry.', 'error');
+      } finally {
+        setIsDownloadingTiles(false);
+        setTimeout(() => setTileDownloadProgress(null), 2500);
       }
     };
 
@@ -3936,6 +3969,18 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
         },
         center: initialCenter,
         zoom: initialZoom,
+        transformRequest: (url: string, resourceType?: any): { url: string } => {
+          if (resourceType === 'Tile' && (url.includes('cartocdn.com') || url.includes('openstreetmap.org'))) {
+            // Asynchronously pre-cache tiles in IndexedDB whenever fetched
+            fetch(url)
+              .then((res) => (res.ok ? res.blob() : null))
+              .then((blob) => {
+                if (blob) cacheTile(url, blob);
+              })
+              .catch(() => {});
+          }
+          return { url };
+        },
       });
 
       // Active probe: Test CARTO reachability; switch to OSM fallback if unreachable
@@ -8145,19 +8190,53 @@ const [isJournalSettingsOpen, setIsJournalSettingsOpen] = useState(false);
                     </button>
                   </div>
 
-                  {isPlusSubscriber ? (
-                    <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '12px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '5px' }}><Crown style={{ width: '13px', height: '13px' }} /> Bywayr Plus Active</span>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={handleExportJournal} style={{ flex: 1, border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', color: '#44403c' }}>Export JSON</button>
-                        <button onClick={handleExportGpx} style={{ flex: 1, border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '10px', padding: '8px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', color: '#44403c' }}>Export GPX</button>
-                      </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadCurrentArea}
+                    disabled={isDownloadingTiles}
+                    style={{
+                      border: '1px solid #e7e5e4',
+                      background: isDownloadingTiles ? '#f5f5f4' : '#ffffff',
+                      borderRadius: '12px',
+                      padding: '11px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: isDownloadingTiles ? 'not-allowed' : 'pointer',
+                      color: '#1c1917',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <HardDrive style={{ width: '14px', height: '14px', color: '#e05a47' }} />
+                        Download Visible Map Area
+                      </span>
+                      {isDownloadingTiles && tileDownloadProgress && (
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#e05a47' }}>
+                          {tileDownloadProgress.percent}%
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <button onClick={() => { triggerHaptic(8); setIsJournalSettingsOpen(false); setIsPlusModalOpen(true); pushModalHistoryState('plusModal'); }} style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px', fontSize: '12px', fontWeight: 600, color: '#92400e', cursor: 'pointer', textAlign: 'left' }}>
-                      <strong>Upgrade to Bywayr Plus</strong> — custom categories, journal export, ad-free exploring
-                    </button>
-                  )}
+                    {isDownloadingTiles && tileDownloadProgress ? (
+                      <div style={{ width: '100%', height: '4px', borderRadius: '2px', backgroundColor: '#e7e5e4', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${tileDownloadProgress.percent}%`,
+                            height: '100%',
+                            backgroundColor: '#e05a47',
+                            transition: 'width 0.2s ease',
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '11px', color: '#78716c', fontWeight: 400 }}>
+                        Pre-cache zoom levels 13–16 for offline walking
+                      </span>
+                    )}
+                  </button>
 
                   <button onClick={handleTogglePrivacy} disabled={savingPrivacy} style={{ border: '1px solid #e7e5e4', background: '#ffffff', borderRadius: '12px', padding: '11px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#44403c', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lock style={{ width: '13px', height: '13px' }} /> Private journal &amp; comments</span>
